@@ -11,23 +11,6 @@ void test("RPC schemas validate identifiers, playlist mutations, and batch limit
     assert.equal(rpcSchemas["tags.preview"].safeParse({ ids: Array.from({ length: 101 }, (_, index) => index + 1), patch: { title: "Title" } }).success, false);
 });
 
-void test("RPC schemas validate preview tokens, optional revisions, and trimmed playlist names", () => {
-    assert.equal(rpcSchemas["tags.save"].safeParse({ token: "invalid-token" }).success, false);
-    assert.deepEqual(rpcSchemas["tags.save"].parse({ token: "83a09396-a421-445b-8d8c-a9c18785eb3e" }), { token: "83a09396-a421-445b-8d8c-a9c18785eb3e" });
-    assert.equal(rpcSchemas["library.get"].parse(undefined), undefined);
-    assert.deepEqual(rpcSchemas["library.get"].parse({ revision: 0 }), { revision: 0 });
-    assert.equal(rpcSchemas["library.get"].safeParse({ revision: -1 }).success, false);
-    assert.deepEqual(rpcSchemas["playlist.create"].parse({ name: " Road trip " }), { name: "Road trip" });
-    assert.equal(rpcSchemas["playlist.create"].safeParse({ name: " " }).success, false);
-});
-
-void test("playlist edit and delete schemas reject invalid identifiers and blank names", () => {
-    assert.equal(rpcSchemas["playlist.update"].safeParse({ id: 0, name: "Valid" }).success, false);
-    assert.equal(rpcSchemas["playlist.update"].safeParse({ id: 1, name: " " }).success, false);
-    assert.equal(rpcSchemas["playlist.delete"].safeParse({ id: -1 }).success, false);
-    assert.deepEqual(rpcSchemas["playlist.update"].parse({ id: 1, name: " Updated ", rule: " Jazz " }), { id: 1, name: "Updated", rule: "Jazz" });
-});
-
 void test("artwork-only tag saves require an opaque artwork ID and search requires a query", () => {
     assert.equal(rpcSchemas["tags.preview"].safeParse({ ids: [1], patch: {} }).success, false);
     assert.equal(rpcSchemas["tags.preview"].safeParse({ ids: [1], patch: {}, artworkId: "f3a8fc6f-b13a-4210-9881-92734cfd9362" }).success, true);

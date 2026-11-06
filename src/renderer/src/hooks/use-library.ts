@@ -37,6 +37,18 @@ export function useLibrary() {
         return request;
     };
 
+    async function reconcile() {
+        setBusy(true);
+        try {
+            const result = await rpc("library.refresh", undefined);
+            await refresh();
+            setNotice(result.errors.length ? "Some music folders could not be refreshed. Check that they are available." : "Library refreshed.");
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+
     const reportError = (error: unknown) => setError(getErrorMessage(error));
 
     const pollLibrary = useEffectEvent(() => {
@@ -104,6 +116,7 @@ export function useLibrary() {
         error,
         notice,
         refresh,
+        reconcile,
         setError,
         setNotice,
         reportError,

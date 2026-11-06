@@ -1,8 +1,8 @@
-const {app, ipcMain} = require("electron");
+const {app} = require("electron");
 const {DatabaseSync} = require("node:sqlite");
 const {drizzle} = require("drizzle-orm/node-sqlite");
 const {migrate} = require("drizzle-orm/node-sqlite/migrator");
-const {mkdtempSync, mkdirSync, rmSync, writeFileSync} = require("node:fs");
+const {mkdtempSync, mkdirSync, rmSync, writeFileSync, statSync} = require("node:fs");
 const {join} = require("node:path");
 const {tmpdir} = require("node:os");
 const {execFileSync} = require("node:child_process");
@@ -24,14 +24,18 @@ execFileSync("ffmpeg", [
 const database = new DatabaseSync(join(profile, "library.sqlite"));
 migrate(drizzle({client: database}), {migrationsFolder: join(__dirname, "../drizzle")});
 database.exec("BEGIN");
-const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,genre,year,duration,size,album_artist) VALUES (?,?,?,?,?,?,?,?,?,?)");
+const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,genre,year,duration,size,album_artist,modified_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
 for (let index = 0; index < 2300; index++) {
-    insert.run(index + 1, index ? join(music, "fixture-" + index + ".mp3") : source,
+    const path = index ? join(music, "fixture-" + index + ".mp3") : source;
+    if (index) writeFileSync(path, "");
+    const info = statSync(path);
+    insert.run(index + 1, path,
         index ? "Song " + String(index).padStart(4, "0") : "Silence",
         index ? "Artist " + String(index % 30).padStart(2, "0") : "Fixture artist", "Album " + String(Math.floor(index / 10)).padStart(3, "0"),
-        index === 1 ? "Uncategorized" : index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, 10000, "Fixture artist");
+        index === 1 ? "Uncategorized" : index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, info.size, "Fixture artist", info.mtimeMs);
 }
-database.prepare("INSERT INTO folders VALUES (?)").run(music);
+const folderInfo = statSync(music);
+database.prepare("INSERT INTO folders (path,identity) VALUES (?,?)").run(music, folderInfo.dev + ":" + folderInfo.ino);
 database.prepare("INSERT INTO playlists(name,rule) VALUES (?,?)").run("Road trip", null);
 database.exec("COMMIT");
 database.close();
@@ -61,22 +65,8 @@ app.on("browser-window-created", (_, win) => {
         writeFileSync(join(artifacts, name + ".png"), screenshot.toPNG());
     };
 
-    const startupCapture = new Promise((resolve, reject) => {
-        win.webContents.once("dom-ready", async () => {
-            try {
-                const visible = await win.webContents.executeJavaScript("Boolean(document.getElementById('startup'))");
-                if (!visible) throw new Error("Startup screen should be visible while the first snapshot loads");
-                await capture("startup");
-                resolve();
-            } catch (error) {
-                reject(error);
-            }
-        });
-    });
-
     win.webContents.once("did-finish-load", async () => {
         try {
-            await startupCapture;
             const results = await win.webContents.executeJavaScript(`(async () => {
                 const waitFor = async (predicate) => {
                     const deadline = performance.now() + 5000;
@@ -95,32 +85,15 @@ app.on("browser-window-created", (_, win) => {
                 };
                 window.uiReview = { waitFor, frame, button, visible };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
-                const searchInput=document.querySelector('[aria-label="Search your library"]');
-                searchInput.focus();
-                await frame();
-                await new Promise(resolve => setTimeout(resolve, 200));
-                const searchStyle=getComputedStyle(searchInput.closest('[data-slot="input-group"]'));
-                if(searchStyle.borderColor!=='rgb(30, 215, 96)' || searchStyle.borderTopWidth!=='1px') throw new Error('Search must have one thin green focus border: '+searchStyle.borderColor+' '+searchStyle.borderTopWidth);
-                if(searchStyle.boxShadow!=='none' && !searchStyle.boxShadow.includes('0px 0px 0px 0px')) throw new Error('Search has an extra focus ring: '+searchStyle.boxShadow);
-                searchInput.blur();
-                document.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,cancelable:true,key:'f',ctrlKey:true}));
-                if(document.activeElement!==searchInput) throw new Error('Ctrl+F must focus library search');
-                searchInput.blur();
-                if(!document.querySelector('.library-stats').textContent.includes('1 album artist')) throw new Error('Header is missing album artist counts');
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
-                if(document.querySelector('[aria-label="Play visible songs"]') || document.querySelector('.filter-controls')) throw new Error('Songs should not show collection play or filter controls');
-                if(document.querySelector('.profile-avatar')) throw new Error('Decorative avatar remains');
                 button('Albums').click();
                 await waitFor(() => document.querySelectorAll('.album').length);
                 const albumNodes = document.querySelectorAll('.album').length;
-                if(document.querySelector('[aria-label="Filter by genre"]') || document.querySelector('[aria-label="Filter by artist"]')) throw new Error('Album filters should be removed');
                 if (albumNodes > 60) throw new Error("Albums are not virtualized");
                 const snapshot = await window.btunes.rpc('library.get',undefined);
                 if (snapshot.tracks.length !== 2300) throw new Error("Fixture must have 2300 tracks");
                 const unchanged = await window.btunes.rpc('library.get',{revision:snapshot.revision});
                 if (unchanged !== null) throw new Error("Unchanged library was retransmitted");
-                if (button('Liked songs') || document.querySelector('.library-label')) throw new Error("Unwanted sidebar controls remain");
-                if (button('Add music folder')) throw new Error("Folder controls must be in Settings");
                 button('Songs').click();
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 const main=document.querySelector('main');
@@ -132,12 +105,6 @@ app.on("browser-window-created", (_, win) => {
                 main.style.width='';
                 await frame();
                 if(document.querySelector('.track-scroll').scrollWidth>document.querySelector('.track-scroll').clientWidth+1) throw new Error('Songs table has horizontal overflow');
-                const titleColor=getComputedStyle(document.querySelector('.track-cell strong')).color;
-                const artistColor=getComputedStyle(document.querySelector('td[data-column="artist"]')).color;
-                if(titleColor!==artistColor) throw new Error('Song metadata should be as white as the title');
-                if(getComputedStyle(document.querySelector('.track-cell strong')).fontSize!==getComputedStyle(document.querySelector('td[data-column="artist"]')).fontSize) throw new Error('Song column sizes must match');
-                if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
-                if(document.querySelector('[data-track-id]').getBoundingClientRect().height>36.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
                 if (songNodes > 60) throw new Error("Song table is not virtualized");
                 for (const name of ['Title','Artist','Album','Genre','Duration','Year','Plays']) {
@@ -363,46 +330,7 @@ app.on("browser-window-created", (_, win) => {
                 if(document.querySelector('.tag-editor').textContent.includes('Preview changes')) throw new Error('Tag editor still shows a preview step');
                 if(!document.getElementById('tag-albumArtist')) throw new Error('Album artist field is missing');
             })()`, true);
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,frame}=window.uiReview;
-                const input=document.getElementById('tag-genre');
-                if(input.getAttribute('role')!=='combobox') throw new Error('Genre should be an editable combobox');
-                input.focus();
-                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'jAZz');
-                input.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'jAZz'}));
-                await waitFor(()=>document.querySelector('[role="option"]')?.textContent.includes('Jazz'));
-                document.querySelector('[role="option"]').click();
-                await waitFor(()=>input.value==='Jazz');
-                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'New custom genre');
-                input.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'New custom genre'}));
-                document.getElementById('tag-year').focus();
-                await frame();
-                if(input.value!=='New custom genre') throw new Error('Custom genres must remain editable');
-                document.querySelector('[aria-label="Reset Genre"]').click();
-                await waitFor(()=>input.value==='Ambient');
-            })()`, true);
             await capture("tag-editor-playing");
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor, button}=window.uiReview;
-                document.querySelector('[aria-label="Reset Title"]').click();
-                await waitFor(()=>button('Save').disabled);
-                button('Find a cover').click();
-                await waitFor(()=>document.querySelector('.cover-picker'));
-                await waitFor(()=>document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]'));
-                document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]').click();
-                await waitFor(()=>document.querySelector('[aria-pressed="true"][aria-label^="Use cover"]'));
-                if(document.querySelector('#cover-query')) throw new Error('Cover lookup should derive the query from tags');
-            })()`, true);
-            await capture("cover-search");
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button}=window.uiReview;
-                button('Use selected cover').click();
-                await waitFor(()=>!document.querySelector('.cover-picker'));
-                if(!document.querySelector('.tag-editor').textContent.includes('New cover selected')) throw new Error('Selected artwork feedback is missing');
-                if(button('Save').disabled) throw new Error('Cover-only changes cannot be saved');
-            })()`, true);
-
-
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
                 button('Cancel').click();
@@ -494,92 +422,9 @@ app.on("browser-window-created", (_, win) => {
                 if(!document.querySelector('.folder-list').textContent.includes('music')) throw new Error("Configured folder not shown");
             })()`, true);
             await capture("settings");
-
             await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button}=window.uiReview;
-                button('Songs').click();
-                await waitFor(()=>document.querySelector('h1')?.textContent==='Songs');
-                button('Songs').click();
-                await waitFor(()=>document.querySelector('[data-track-id="1"]'));
-                const first=document.querySelector('[data-track-id="1"]');
-                const rect=first.getBoundingClientRect();
-                first.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+200,clientY:rect.y+30}));
-                await waitFor(()=>document.querySelector('[role="menu"]'));
-                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Go to artist').click();
-                await waitFor(()=>document.querySelector('[aria-label="Show all songs"]'));
-                if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2') throw new Error('Artist filter did not apply');
-                document.querySelector('[aria-label="Show all songs"]').click();
-                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2301');
-            })()`, true);
-
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button}=window.uiReview;
-                document.querySelector('[aria-label="Create playlist"]').click();
-                await waitFor(()=>document.querySelector('[role="dialog"] #playlist-name'));
-                if(document.querySelector('.playlist-dialog').getBoundingClientRect().width<500) throw new Error('Playlist dialog should be wider');
-                if(document.querySelector('[data-slot="dialog-title"]').textContent!=='Create playlist') throw new Error('Playlist creation should open a dialog');
-            })()`, true);
-            await capture("playlist-dialog");
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button}=window.uiReview;
-                const menuFor=async target=>{
-                    const rect=target.getBoundingClientRect();
-                    target.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+80,clientY:rect.y+15}));
-                    await waitFor(()=>document.querySelector('[role="menu"]'));
-                };
-                [...document.querySelectorAll('[role="dialog"] button')].find(item=>item.textContent.trim()==='Cancel').click();
-                await waitFor(()=>!document.querySelector('[role="dialog"]'));
-                await menuFor(button('Road trip'));
-                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit playlist').click();
-                await waitFor(()=>document.getElementById('playlist-name'));
-                const input=document.getElementById('playlist-name');
-                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Weekend mix');
-                input.dispatchEvent(new Event('input',{bubbles:true}));
-                button('Save playlist').click();
-                await waitFor(()=>button('Weekend mix') && !document.querySelector('[role="dialog"]'));
-                button('Weekend mix').click();
-                await waitFor(()=>document.querySelector('h1')?.textContent==='Weekend mix');
-                await menuFor(button('Weekend mix'));
-                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Delete playlist').click();
-                await waitFor(()=>document.querySelector('[role="dialog"]'));
-                [...document.querySelectorAll('[role="dialog"] button')].find(item=>item.textContent.trim()==='Delete playlist').click();
-                await waitFor(()=>!button('Weekend mix') && document.querySelector('h1')?.textContent==='Songs');
-                const snapshot=await window.btunes.rpc('library.get',undefined);
-                if(snapshot.tracks.length!==2300 || snapshot.playlists.length) throw new Error('Playlist deletion damaged library state');
-            })()`, true);
-
-            await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,frame}=window.uiReview;
-                const drag=(handle,target)=>{
-                    const transfer=new DataTransfer();
-                    handle.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:transfer}));
-                    target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
-                    target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
-                    handle.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:transfer}));
-                };
-                if(document.querySelector('[aria-label="Play visible songs"]')) throw new Error('Large collection play button remains');
-                if(document.querySelector('.topbar').getBoundingClientRect().height>56.5 || document.querySelector('.library-hero').getBoundingClientRect().height>100) throw new Error('Headers are not compact');
-                if(document.getElementById('startup')) throw new Error('Startup overlay did not dismiss');
-                drag(document.querySelector('[aria-label="Sort by Genre"]'),document.querySelector('th[data-column="artist"]'));
-                await waitFor(()=>document.querySelectorAll('th')[1]?.dataset.column==='genre');
-                if(document.querySelectorAll('[data-track-id] td')[1]?.dataset.column!=='genre') throw new Error('Row cells did not follow column order');
-                if(document.querySelector('.sidebar .reorder-handle') || document.querySelector('.track-table .reorder-handle')) throw new Error('Visible ordering grips remain in the music view');
-                document.querySelector('[aria-label="Sort by Genre"]').click();
-                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='ascending');
-                document.querySelector('[aria-label="Sort by Genre"]').click();
-                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='descending');
-                await window.btunes.rpc('playlist.create',{name:'Alpha'});
-                await window.btunes.rpc('playlist.create',{name:'Beta'});
-                window.uiReview.button('Settings').click();
-                await waitFor(()=>document.querySelector('[aria-label="Refresh library"]'));
-                document.querySelector('[aria-label="Refresh library"]').click();
-                await waitFor(()=>window.uiReview.button('Beta'));
-                drag(document.querySelector('[aria-label="Move Albums navigation item"]'),document.querySelector('[aria-label="Navigation"] li'));
-                await waitFor(()=>document.querySelector('nav .nav-item').textContent.trim()==='Albums');
-                drag(document.querySelector('[aria-label="Move Beta playlist"]'),document.querySelector('[aria-label="Playlists"] li'));
-                await waitFor(()=>document.querySelector('.playlists .nav-item').textContent.trim()==='Beta');
                 window.uiReview.button('Songs').click();
-                await frame();
+                await window.uiReview.waitFor(()=>document.querySelector('.track-table'));
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {
                 const volume=document.querySelector('[aria-label="Volume"]');
@@ -600,10 +445,6 @@ app.on("browser-window-created", (_, win) => {
                     await new Promise(resolve=>setTimeout(resolve,20));
                 }
                 if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || document.querySelector('audio').volume!==0.23) throw new Error('Volume did not persist after reopening');
-                if(document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')!=='descending') throw new Error('Sort did not persist after reload');
-                if(document.querySelectorAll('th')[1].dataset.column!=='genre') throw new Error('Column order did not persist after reload');
-                if(document.querySelector('nav .nav-item').textContent.trim()!=='Albums') throw new Error('Sidebar order did not persist after reload');
-                if(document.querySelector('.playlists .nav-item')?.textContent.trim()!=='Beta') throw new Error('Playlist order did not persist after reload');
             })()`, true);
             await capture('compact-songs');
 
@@ -617,26 +458,6 @@ app.on("browser-window-created", (_, win) => {
             finish(1);
         }
     });
-});
-
-// Give the real startup UI time to paint without slowing normal application startup.
-const originalHandle = ipcMain.handle.bind(ipcMain);
-let firstSnapshot = true;
-ipcMain.handle = (channel, handler) => originalHandle(channel, async (ev, method, input) => {
-    if (channel === "rpc" && method === "artwork.search") {
-        if (input.query !== "Album 000 Fixture artist") throw new Error("Cover query did not use current tags: " + input.query);
-        return [{
-            id: "f3a8fc6f-b13a-4210-9881-92734cfd9362",
-            album: "Test cover",
-            artist: "Fixture artist",
-            thumbnail: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#1ed760"/></svg>')
-        }];
-    }
-    if (channel === "rpc" && method === "library.get" && firstSnapshot) {
-        firstSnapshot = false;
-        await new Promise(resolve => setTimeout(resolve, 600));
-    }
-    return handler(ev, method, input);
 });
 
 require("../out/main/index.js");

@@ -13,6 +13,7 @@ export type Track = {
     lastPlayed: number;
     cover: string | null;
     size: number;
+    modifiedAt?: number;
 };
 export type Playlist = { id: number; name: string; rule: string | null };
 export type Snapshot = {

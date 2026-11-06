@@ -20,6 +20,7 @@ export const rpcSchemas = {
     "artwork.search": artworkSearchSchema,
     "tags.save": z.object({ token: z.uuid() }),
     "library.get": z.object({ revision: z.number().int().nonnegative() }).optional(),
+    "library.refresh": z.undefined(),
     "library.import": z.undefined(),
     "track.reveal": idSchema,
     "track.favorite": idSchema,

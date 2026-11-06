@@ -10,6 +10,7 @@ type RpcOutputs = {
     "tags.preview": TagPreview;
     "tags.save": TagSaveResult;
     "library.get": Snapshot | null;
+    "library.refresh": { errors: string[] };
     "library.import": { imported: number; errors: string[] } | null;
     "track.reveal": void;
     "track.favorite": void;
@@ -31,3 +32,10 @@ declare global {
         btunes: { rpc: Rpc };
     }
 }
+
+export type RpcRoutes = {
+    [K in keyof RpcOutputs]: {
+        schema: (typeof rpcSchemas)[K];
+        run: (input: RpcInput<K>) => RpcOutputs[K] | Promise<RpcOutputs[K]>;
+    };
+};

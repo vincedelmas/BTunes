@@ -3,7 +3,7 @@ import {pathToFileURL} from "node:url";
 import {TagService} from "./services/tags";
 import {serveAudio} from "./services/audio";
 import {rpcSchemas} from "../shared/schemas/rpc";
-import type {RpcInput} from "../shared/types/rpc";
+import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {ArtworkService} from "./services/artwork";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
@@ -55,6 +55,7 @@ void app.whenReady().then(async () => {
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 
     const routes = {
+        "library.refresh": { schema: rpcSchemas["library.refresh"], run: () => service.reconcile() },
         "artwork.search": {
             schema: rpcSchemas["artwork.search"],
             run: (input: RpcInput<"artwork.search">) => artwork.search(input.query),
@@ -141,7 +142,7 @@ void app.whenReady().then(async () => {
             schema: rpcSchemas["playlist.tracks"],
             run: (input: RpcInput<"playlist.tracks">) => repo.playlist(input.id),
         },
-    };
+    } satisfies RpcRoutes;
 
     const win = new BrowserWindow({
         width: 1440,
@@ -163,6 +164,7 @@ void app.whenReady().then(async () => {
     win.webContents.on("will-navigate", (ev) => ev.preventDefault());
 
     ipcMain.handle("rpc", async (ev, method: unknown, input: unknown) => {
+        if (quitting) throw new Error("The application is shutting down.");
         if (ev.sender !== win.webContents || ev.senderFrame !== win.webContents.mainFrame) {
             throw new Error("Access denied");
 
@@ -199,7 +201,7 @@ void app.whenReady().then(async () => {
     });
 
     await service.startWatching();
-    void service.refreshLegacyMetadata().catch(console.error);
+    void service.reconcile().catch(console.error);
 
     if (process.env.ELECTRON_RENDERER_URL) {
         await win.loadURL(process.env.ELECTRON_RENDERER_URL);

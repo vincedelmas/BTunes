@@ -11,6 +11,7 @@ export const tracks = sqliteTable("tracks", {
     genre: text().notNull(),
     year: integer().notNull(),
     size: integer().notNull(),
+    modifiedAt: real("modified_at").notNull().default(0),
     duration: real().notNull(),
     plays: integer().notNull().default(0),
     favorite: integer().notNull().default(0),
@@ -23,6 +24,7 @@ export const tracks = sqliteTable("tracks", {
 
 export const folders = sqliteTable("folders", {
     path: text().primaryKey(),
+    identity: text().notNull().default(""),
 });
 
 

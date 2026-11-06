@@ -13,7 +13,7 @@ import {groupAlbums} from "../src/renderer/src/lib/music.ts";
 
 const run = promisify(execFile);
 
-void test("legacy ID3 slash names and album artists are repaired in the index without changing files", async () => {
+void test("ID3 slash names and album artists are indexed without changing files", async () => {
     const root = await mkdtemp(join(tmpdir(), "btunes-metadata-"));
     const repo = new LibraryRepository(":memory:");
     const library = new LibraryService(repo, join(root, "covers"));
@@ -30,7 +30,7 @@ void test("legacy ID3 slash names and album artists are repaired in the index wi
         repo.played(id);
         const playlist = repo.create("Keep me");
         repo.add(playlist, id);
-        await library.refreshLegacyMetadata();
+        await library.index(path);
         const track = repo.get(id)!;
         assert.equal(track.artist, "AC/DC");
         assert.equal(track.albumArtist, "AC/DC");

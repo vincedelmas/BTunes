@@ -35,7 +35,7 @@ bun run dev
 - **Selection:** Ctrl-click toggles songs, Shift-click selects a range, and Ctrl+A selects all filtered songs.
 - **Context menus:** right-click songs or albums for playback, queue, playlist, tag, and file actions.
 - **Playlists:** use **+** to create one; right-click a playlist to edit or delete it.
-- **Settings:** manage music folders and sidebar order. After **Go to artist**, choose **All songs** to clear the filter.
+- **Settings:** manage music folders and sidebar order. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
 
 To edit tags, select up to **100 songs**, right-click → **Edit tags**, change fields, then **Save**.
 Batch edits apply only checked fields. Genre suggestions reuse existing spellings, ignoring case, while still allowing new genres. **Find a
@@ -63,7 +63,7 @@ Screenshots are saved to `/tmp/btunes-ui-review/`. The smoke test intentionally 
 Packaging is configured but has not been validated.
 
 The renderer talks to main-process services through one typed, Zod-validated RPC channel; repositories handle database access.
-Versioned migrations live in `drizzle/` and run automatically at startup. Generate new migrations instead of rewriting shipped ones.
+Drizzle manages the database schema in `drizzle/`; schema updates run at startup.
 
 Application data lives in `~/.config/BTunes/`, including `library.sqlite`, `covers/`, and `tag-backups/`.
 

@@ -1,7 +1,7 @@
-import {genreKey} from "../../shared/genres.ts";
 import {resolve} from "node:path";
 import {DatabaseSync} from "node:sqlite";
 import {drizzle} from "drizzle-orm/node-sqlite";
+import {genreKey} from "../../shared/genres.ts";
 import {and, eq, inArray, sql} from "drizzle-orm";
 import {migrate} from "drizzle-orm/node-sqlite/migrator";
 import type {IndexedTrack, Snapshot} from "../../shared/types/library";
@@ -94,14 +94,32 @@ export class LibraryRepository {
         this.revision++;
     }
 
-    folder(path: string) {
+    folder(path: string, identity = "") {
         this.queries
             .insert(folders)
-            .values({ path })
-            .onConflictDoNothing()
+            .values({ path, identity })
+            .onConflictDoUpdate({ target: folders.path, set: { identity } })
             .run();
 
         this.revision++;
+    }
+
+    watchedFolders() {
+        return this.queries
+            .select()
+            .from(folders)
+            .all();
+    }
+
+    indexedFiles() {
+        return this.queries
+            .select({
+                path: tracks.path,
+                size: tracks.size,
+                modifiedAt: tracks.modifiedAt,
+                albumArtist: tracks.albumArtist,
+            }).from(tracks)
+            .all();
     }
 
     remove(path: string) {
@@ -129,9 +147,11 @@ export class LibraryRepository {
         const updated = this.queries.update(playlists)
             .set({ name, rule: rule ?? null })
             .where(eq(playlists.id, id))
-            .returning({ id: playlists.id }).get();
+            .returning({ id: playlists.id })
+            .get();
 
         if (!updated) throw new Error("Playlist not found.");
+
         this.revision++;
     }
 
@@ -141,6 +161,7 @@ export class LibraryRepository {
             .returning({ id: playlists.id }).get();
 
         if (!deleted) throw new Error("Playlist not found.");
+
         this.revision++;
     }
 

@@ -207,8 +207,7 @@ export function App() {
                         playlists={library.data.playlists}
                         songCount={library.data.tracks.length}
                         onImport={() => void library.importFolder()}
-                        onRefresh={() => void library.refresh()
-                            .then(() => library.setNotice("Library refreshed."))
+                        onRefresh={() => void library.reconcile()
                             .catch(library.reportError)
                         }
                     />
