@@ -113,6 +113,7 @@ app.on("browser-window-created", (_, win) => {
                 if(tableWidth < viewportWidth - 1) throw new Error('Songs table does not fill a wide viewport');
                 main.style.width='';
                 await frame();
+                if(document.querySelector('.track-scroll').scrollWidth>document.querySelector('.track-scroll').clientWidth+1) throw new Error('Songs table has horizontal overflow');
                 if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
                 if(document.querySelector('[data-track-id]').getBoundingClientRect().height>36.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
@@ -282,14 +283,35 @@ app.on("browser-window-created", (_, win) => {
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Responsive while playing');
                 input.dispatchEvent(new Event('input',{bubbles:true}));
                 await frame();
-                if(input.value!=='Responsive while playing' || button('Preview changes').disabled) throw new Error("Editor did not accept input during playback");
+                if(input.value!=='Responsive while playing' || button('Save').disabled) throw new Error("Editor did not accept input during playback");
                 if(audio.paused) throw new Error("Editing tags interrupted playback");
                 return {openTagEditorMs, libraryMutationsDuringProgress:libraryMutations};
+            })()`, true);
+            const editorPosition = await win.webContents.executeJavaScript(`(() => {
+                const header=document.querySelector('[aria-label="Move tag editor"]').getBoundingClientRect();
+                const dialog=document.querySelector('.tag-editor').getBoundingClientRect();
+                return {x:Math.round(header.x+80),y:Math.round(header.y+20),left:dialog.x,top:dialog.y};
+            })()`);
+            win.webContents.sendInputEvent({type: 'mouseDown', x: editorPosition.x, y: editorPosition.y, button: 'left', clickCount: 1});
+            win.webContents.sendInputEvent({type: 'mouseMove', x: editorPosition.x + 70, y: editorPosition.y + 20, movementX: 70, movementY: 20});
+            win.webContents.sendInputEvent({type: 'mouseUp', x: editorPosition.x + 70, y: editorPosition.y + 20, button: 'left', clickCount: 1});
+            await win.webContents.executeJavaScript(`(async () => {
+                await window.uiReview.waitFor(()=>document.querySelector('.tag-editor').getBoundingClientRect().x>${editorPosition.left}+30);
+                const dialog=document.querySelector('.tag-editor').getBoundingClientRect();
+                if(dialog.right>window.innerWidth+1 || dialog.bottom>window.innerHeight+1) throw new Error('Tag editor moved outside the window');
+                if(document.querySelector('[data-slot="dialog-overlay"]')) throw new Error('Tag editor should not block the music view');
+                if(document.querySelector('.tag-editor').textContent.includes('Preview changes')) throw new Error('Tag editor still shows a preview step');
             })()`, true);
             await capture("tag-editor-playing");
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
+                const anotherRow=document.querySelector('[data-track-id="2"]');
+                const anotherRect=anotherRow.getBoundingClientRect();
+                anotherRow.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:anotherRect.x+120,clientY:anotherRect.y+15}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit tags').click();
+                await waitFor(()=>document.getElementById('tag-title')?.value==='Song 0001');
                 button('Cancel').click();
                 await waitFor(()=>!document.querySelector('[role="dialog"]'));
                 button('Possible duplicates').click();
@@ -333,6 +355,11 @@ app.on("browser-window-created", (_, win) => {
                     target.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+80,clientY:rect.y+15}));
                     await waitFor(()=>document.querySelector('[role="menu"]'));
                 };
+                document.querySelector('[aria-label="Create playlist"]').click();
+                await waitFor(()=>document.querySelector('[role="dialog"] #playlist-name'));
+                if(document.querySelector('[data-slot="dialog-title"]').textContent!=='Create playlist') throw new Error('Playlist creation should open a dialog');
+                [...document.querySelectorAll('[role="dialog"] button')].find(item=>item.textContent.trim()==='Cancel').click();
+                await waitFor(()=>!document.querySelector('[role="dialog"]'));
                 await menuFor(button('Road trip'));
                 [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit playlist').click();
                 await waitFor(()=>document.getElementById('playlist-name'));
@@ -364,11 +391,10 @@ app.on("browser-window-created", (_, win) => {
                 if(document.querySelector('[aria-label="Play visible songs"]')) throw new Error('Large collection play button remains');
                 if(document.querySelector('.topbar').getBoundingClientRect().height>56.5 || document.querySelector('.library-hero').getBoundingClientRect().height>100) throw new Error('Headers are not compact');
                 if(document.getElementById('startup')) throw new Error('Startup overlay did not dismiss');
-                drag(document.querySelector('[aria-label="Move Genre column"]'),document.querySelector('th[data-column="artist"]'));
+                drag(document.querySelector('[aria-label="Sort by Genre"]'),document.querySelector('th[data-column="artist"]'));
                 await waitFor(()=>document.querySelectorAll('th')[1]?.dataset.column==='genre');
                 if(document.querySelectorAll('[data-track-id] td')[1]?.dataset.column!=='genre') throw new Error('Row cells did not follow column order');
-                drag(document.querySelector('[aria-label="Move Albums navigation item"]'),document.querySelector('nav .sidebar-order-item'));
-                await waitFor(()=>document.querySelector('nav .nav-item').textContent.trim()==='Albums');
+                if(document.querySelector('.sidebar .reorder-handle') || document.querySelector('.track-table .reorder-handle')) throw new Error('Visible ordering grips remain in the music view');
                 document.querySelector('[aria-label="Sort by Genre"]').click();
                 await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='ascending');
                 document.querySelector('[aria-label="Sort by Genre"]').click();
@@ -379,10 +405,11 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('[aria-label="Refresh library"]'));
                 document.querySelector('[aria-label="Refresh library"]').click();
                 await waitFor(()=>window.uiReview.button('Beta'));
-                window.uiReview.button('Back to music').click();
-                await waitFor(()=>document.querySelector('[aria-label="Move Beta playlist"]'));
-                drag(document.querySelector('[aria-label="Move Beta playlist"]'),document.querySelector('.playlists .sidebar-order-item'));
+                drag(document.querySelector('[aria-label="Move Albums navigation item"]'),document.querySelector('[aria-label="Navigation"] li'));
+                await waitFor(()=>document.querySelector('nav .nav-item').textContent.trim()==='Albums');
+                drag(document.querySelector('[aria-label="Move Beta playlist"]'),document.querySelector('[aria-label="Playlists"] li'));
                 await waitFor(()=>document.querySelector('.playlists .nav-item').textContent.trim()==='Beta');
+                window.uiReview.button('Back to music').click();
                 await frame();
             })()`, true);
             win.webContents.session.flushStorageData();

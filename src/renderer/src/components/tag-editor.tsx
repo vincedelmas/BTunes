@@ -1,17 +1,17 @@
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
+import {Check} from "lucide-react";
 import {Cover} from "@/components/cover";
 import {getErrorMessage} from "@/lib/music";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {TagForm} from "@/components/tag-form";
 import {tagFields} from "../../../shared/tags";
-import {TagPreviewList} from "@/components/tag-preview";
 import type {Track} from "../../../shared/types/library";
+import type {TagPatch} from "../../../shared/types/tags";
+import {useMovablePanel} from "@/hooks/use-movable-panel";
 import {tagPatchSchema} from "../../../shared/schemas/tags";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import type {TagPatch, TagPreview} from "../../../shared/types/tags";
-import {ArrowLeft, ArrowRight, Check} from "lucide-react";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
@@ -32,16 +32,20 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const [values, setValues] = useState(initialValues);
-    const [preview, setPreview] = useState<TagPreview>();
+    const { panel, style, handleProps } = useMovablePanel();
     const [enabled, setEnabled] = useState<Set<keyof TagPatch>>(new Set());
 
     function change(field: keyof TagPatch, value: string) {
         setValues((prev) => ({ ...prev, [field]: value }));
-        setEnabled((prev) => new Set([...prev, field]));
-        setPreview(undefined);
+        setEnabled((previous) => {
+            const next = new Set(previous);
+            if (tracks.length === 1 && value === initialValues[field]) next.delete(field);
+            else next.add(field);
+            return next;
+        });
     }
 
-    async function prepare() {
+    async function save() {
         setError("");
         setBusy(true);
 
@@ -61,24 +65,16 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                 }
 
                 return rpc("tags.preview", { ids: tracks.map((track) => track.id), patch: validated.data });
-            }).then(setPreview)
-            .catch((error: unknown) => setError(getErrorMessage(error)))
-            .finally(() => setBusy(false));
-    }
-
-    async function save() {
-        if (!preview) return;
-
-        setError("");
-        setBusy(true);
-
-        await rpc("tags.save", { token: preview.token })
+            })
+            .then((prepared) => rpc("tags.save", { token: prepared.token }))
             .then(async (result) => {
-                await onSaved(result.updated === 1 ? "Tags saved." : "Tags saved for " + result.updated + " songs.");
+                let message = "No tag changes.";
+                if (result.updated === 1) message = "Tags saved.";
+                else if (result.updated > 1) message = "Tags saved for " + result.updated + " songs.";
+                await onSaved(message);
                 onClose();
             }).catch((error: unknown) => {
                 setError(getErrorMessage(error));
-                setPreview(undefined);
             }).finally(() => setBusy(false));
     }
 
@@ -90,7 +86,6 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
             return next;
         });
 
-        setPreview(undefined);
     }
 
     function reset(field: keyof TagPatch) {
@@ -104,15 +99,27 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
     return (
         <Dialog
             open
+            modal={false}
+            disablePointerDismissal
             onOpenChange={(open) => {
                 if (!open && !busy) onClose();
             }}
         >
             <DialogContent
+                ref={panel}
+                initialFocus={() => document.getElementById("tag-title")}
+                style={style}
                 showCloseButton={!busy}
+                showOverlay={false}
                 className="tag-editor"
             >
-                <DialogHeader className="tag-editor-header">
+                <DialogHeader
+                    className="tag-editor-header"
+                    tabIndex={0}
+                    aria-label="Move tag editor"
+                    title="Drag to move, or hold Alt and use the arrow keys"
+                    {...handleProps}
+                >
                     <div className="tag-summary">
                         <Cover track={first}/>
                         <div className="tag-summary-copy">
@@ -135,21 +142,15 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     </div>
                 </DialogHeader>
                 <div className="tag-editor-body">
-                    {!preview ?
-                        <TagForm
-                            busy={busy}
-                            batch={batch}
-                            values={values}
-                            onReset={reset}
-                            enabled={enabled}
-                            onChange={change}
-                            onToggle={toggle}
-                        />
-                        :
-                        <TagPreviewList
-                            preview={preview}
-                        />
-                    }
+                    <TagForm
+                        busy={busy}
+                        batch={batch}
+                        values={values}
+                        onReset={reset}
+                        enabled={enabled}
+                        onChange={change}
+                        onToggle={toggle}
+                    />
 
                     {error &&
                         <Alert variant="destructive">
@@ -160,26 +161,13 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     }
                 </div>
                 <DialogFooter className="tag-editor-footer">
-                    {preview ?
-                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}>
-                            <ArrowLeft/> Details
-                        </Button>
-                        :
-                        <Button variant="ghost" disabled={busy} onClick={onClose}>
-                            Cancel
-                        </Button>
-                    }
-                    {preview ?
-                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}>
-                            <Check/>
-                            {busy ? "Saving…" : "Save to files"}
-                        </Button>
-                        :
-                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>
-                            {busy ? "Preparing…" : "Preview changes"}
-                            <ArrowRight/>
-                        </Button>
-                    }
+                    <Button variant="ghost" disabled={busy} onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button disabled={busy || !enabled.size} onClick={() => void save()}>
+                        <Check/>
+                        {busy ? "Saving…" : "Save"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

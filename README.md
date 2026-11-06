@@ -29,7 +29,7 @@ Click a song-table heading to sort by title, artist, album, genre, duration, yea
 
 After **Go to artist**, use **All songs** above the table to clear filters. Settings is a dedicated page; **Back to music** returns to your previous view and filters. Use **Refresh library** in Settings to refresh the index.
 
-Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Click a row to select it, Ctrl-click to toggle additional songs, and Shift-click to select a range in the current sort order. Ctrl+Shift-click adds a range; Ctrl+A selects all filtered songs. Right-click the selection to act on it. Classic playlist menus also offer **Remove from playlist**.
+Create playlists with the **+** button in the sidebar, which opens a playlist dialog. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Click a row to select it, Ctrl-click to toggle additional songs, and Shift-click to select a range in the current sort order. Ctrl+Shift-click adds a range; Ctrl+A selects all filtered songs. Right-click the selection to act on it. Classic playlist menus also offer **Remove from playlist**.
 
 ## Editing tags
 
@@ -37,8 +37,9 @@ Supported write formats: **MP3, FLAC, and M4A**. Other formats remain readable a
 
 1. Right-click a song or a selection and choose **Edit tags**, or use an album's pencil button.
 2. Edit title, artist, album, genre, or year. Batch edits apply only checked fields; mixed values are initially blank. Single-song edits offer a reset button for each changed field.
-3. Choose **Preview changes** to review the exact before/after values for each file.
-4. Choose **Save to files** to apply the preview.
+3. Choose **Save** to apply the changes. Validation and original-file backups run automatically.
+
+The editor is a floating, non-modal panel. Drag its header to move it, or focus the header and use **Alt + arrow keys**. Playback and the rest of the library remain usable while editing.
 
 Edits support up to 100 songs at a time. Text fields require a nonempty value; set the year to 0 to remove it. Embedded artwork is retained but cannot yet be replaced through the editor.
 
@@ -231,9 +232,9 @@ Song rows use a 36px layout. Page headers are compact throughout the app, and
 collection play buttons are removed; play a song from its row, a context menu,
 or an album card.
 
-Drag a column's grip to reorder it. Sidebar navigation and playlists each have
-matching grips. Focus a grip and hold **Alt** with the arrow keys to reorder by
-keyboard. Column order, column widths/visibility, sidebar order, playlist order,
+Drag a column label to reorder it, or focus its sort button and hold **Alt**
+with the arrow keys. Use **Settings → Sidebar order** to reorder navigation
+and playlists; ordering controls stay out of the sidebar itself. Column order, column widths/visibility, sidebar order, playlist order,
 and the last collection sort are stored locally. Recently played keeps its own
 sort without replacing the saved collection sort. New items are appended to saved
 orders, and invalid preferences fall back to defaults.
@@ -245,3 +246,8 @@ support and no forced startup delay.
 
 Run `bun run desktop:install` after moving this development checkout to reinstall
 the user-level BTunes launcher and icon. Packaged builds carry their own icon.
+
+The song table always fits its viewport. Column widths act as proportions of the
+available width, with ellipsis for longer text, so resizing or showing columns
+never adds a horizontal scrollbar. Vertical scrollbars use a slim gray thumb and
+small arrow buttons. The top bar puts search on the left without a Music label.

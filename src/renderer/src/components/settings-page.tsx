@@ -4,7 +4,13 @@ import {Folder, FolderPlus, RefreshCw} from "lucide-react";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 
 
+import type {Playlist} from "../../../shared/types/library";
+import type {SidebarLayout} from "@/types/sidebar";
+import {SidebarOrderSettings} from "@/components/sidebar-order-settings";
+
 interface SettingsPageProps {
+    sidebarLayout: SidebarLayout;
+    playlists: Playlist[];
     busy: boolean;
     error: string;
     notice: string;
@@ -15,7 +21,7 @@ interface SettingsPageProps {
 }
 
 
-export function SettingsPage({ folders, busy, songCount, notice, error, onImport, onRefresh }: SettingsPageProps) {
+export function SettingsPage({ folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
     return (
         <div className="settings-page">
             <div className="settings-heading">
@@ -125,6 +131,7 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     </Button>
                 </CardFooter>
             </Card>
+            <SidebarOrderSettings layout={sidebarLayout} playlists={playlists}/>
         </div>
     );
 }

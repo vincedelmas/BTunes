@@ -181,11 +181,11 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                 className="track-table"
                 aria-rowcount={tracks.length + 1}
                 aria-multiselectable="true"
-                style={{ width: table.getTotalSize(), minWidth: "100%" }}
+                style={{ width: "100%" }}
             >
                 <colgroup>{visibleColumns.map((column) => <col
                     key={column.id}
-                    style={{ width: column.getSize() }}
+                    style={{ width: (column.getSize() / table.getTotalSize()) * 100 + "%" }}
                 />)}</colgroup>
                 <ColumnVisibilityMenu
                     columns={table.getAllLeafColumns().map((column) => ({

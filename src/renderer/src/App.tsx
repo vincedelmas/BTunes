@@ -7,6 +7,7 @@ import {useLibrary} from "@/hooks/use-library";
 import {TagEditor} from "@/components/tag-editor";
 import {EmptyState} from "@/components/empty-state";
 import {Sidebar} from "@/components/library/sidebar";
+import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
 import {useCollection} from "@/hooks/use-collection";
 import type {Track} from "../../shared/types/library";
 import {SettingsPage} from "@/components/settings-page";
@@ -18,13 +19,14 @@ import {QueuePanel} from "@/components/player/queue-panel";
 import {ArtistGrid} from "@/components/library/artist-grid";
 import {TrackTable} from "@/components/library/track-table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import {ArrowLeft, Headphones, Smartphone} from "lucide-react";
+import {ArrowLeft, Smartphone} from "lucide-react";
 import {CollectionEmptyState} from "@/components/library/collection-empty-state";
 
 
 export function App() {
     const library = useLibrary();
     const player = usePlayer(library.setError);
+    const sidebarLayout = useSidebarLayout(library.data.playlists);
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
     const collection = useCollection(library.data, library.reportError);
@@ -107,6 +109,7 @@ export function App() {
     return (
         <div className="app-shell">
             <Sidebar
+                layout={sidebarLayout}
                 view={view}
                 genres={genres}
                 data={library.data}
@@ -123,10 +126,6 @@ export function App() {
                         </Button>
                         :
                         <>
-                            <div className="page-context">
-                                <Headphones size={20}/>
-                                <span>Music</span>
-                            </div>
                             <LibrarySearch
                                 value={search}
                                 onChange={setSearch}
@@ -136,6 +135,8 @@ export function App() {
                 </header>
                 {view === "settings" ?
                     <SettingsPage
+                        sidebarLayout={sidebarLayout}
+                        playlists={library.data.playlists}
                         busy={library.busy}
                         error={library.error}
                         notice={library.notice}
@@ -226,6 +227,7 @@ export function App() {
             />
             {editing &&
                 <TagEditor
+                    key={editing.map((track) => track.id).join(",")}
                     tracks={editing}
                     onSaved={tagsSaved}
                     onClose={() => setEditing(undefined)}

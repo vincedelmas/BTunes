@@ -1,12 +1,11 @@
 import type {Header} from "@tanstack/react-table";
 import type {KeyboardEvent} from "react";
-import {ArrowDown, ArrowUp, ArrowUpDown} from "lucide-react";
+import {ChevronDown, ChevronUp, ChevronsUpDown} from "lucide-react";
 import type {Track} from "../../../../shared/types/library";
 import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import type {songTableFeatures} from "@/lib/song-columns";
 import type {useDragOrder} from "@/hooks/use-drag-order";
 import {TableHead} from "@/components/ui/table";
-import {ReorderHandle} from "@/components/reorder-handle";
 import {cn} from "@/lib/utils";
 
 interface SongColumnHeaderProps {
@@ -25,7 +24,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
     const label = String(column.columnDef.header);
     const active = sort.field === field;
     const direction = sort.descending ? "descending" : "ascending";
-    const SortIcon = sort.descending ? ArrowDown : ArrowUp;
+    const SortIcon = sort.descending ? ChevronDown : ChevronUp;
 
     function resizeWithKeys(ev: KeyboardEvent) {
         if (ev.key === "Home") {
@@ -49,19 +48,18 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
             data-dragging={reordering.dragging === column.id || undefined}
             aria-sort={active ? direction : undefined}
         >
-            <ReorderHandle
-                label={"Move " + label + " column"}
+            <button
+                className={cn("column-sort", active && "is-sorted")}
+                draggable
+                title="Click to sort; drag to reorder. Alt+arrow keys also reorder."
                 onDragStart={(ev) => reordering.start(ev, column.id)}
                 onDragEnd={reordering.end}
                 onKeyDown={(ev) => reordering.keyDown(ev, column.id)}
-            />
-            <button
-                className={cn("column-sort", active && "is-sorted")}
                 aria-label={"Sort by " + label}
                 onClick={() => onSort({ field, descending: active ? !sort.descending : false })}
             >
                 <span>{label}</span>
-                {active ? <SortIcon/> : <ArrowUpDown/>}
+                {active ? <SortIcon/> : <ChevronsUpDown/>}
             </button>
             <div
                 role="separator"

@@ -1,8 +1,3 @@
-import {usePreference} from "@/hooks/use-preference";
-import {useDragOrder} from "@/hooks/use-drag-order";
-import {normalizeOrder} from "@/lib/preferences";
-import {itemOrderSchema} from "../../../../shared/schemas/preferences";
-import {ReorderHandle} from "@/components/reorder-handle";
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Button} from "@/components/ui/button";
@@ -10,21 +5,14 @@ import type {Playlist, Snapshot} from "../../../../shared/types/library";
 import {PlaylistForm} from "@/components/library/playlist-form";
 import {PlaylistItem} from "@/components/library/playlist-item";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
-import {Copy, Disc3, Settings, History, Library, Music2, Plus, Smartphone} from "lucide-react";
-
-
-const navigation = [
-    { id: "tracks", label: "Songs", icon: Music2 },
-    { id: "albums", label: "Albums", icon: Disc3 },
-    { id: "artists", label: "Artists", icon: Library },
-    { id: "history", label: "Recently played", icon: History },
-    { id: "duplicates", label: "Possible duplicates", icon: Copy },
-    { id: "android", label: "Devices", icon: Smartphone },
-];
+import {Settings, Plus} from "lucide-react";
+import {navigationItems} from "@/lib/sidebar-navigation";
+import type {SidebarLayout} from "@/types/sidebar";
 
 
 interface SidebarProps {
     view: string;
+    layout: SidebarLayout;
 
     data: Snapshot;
     genres: string[];
@@ -35,13 +23,7 @@ interface SidebarProps {
 }
 
 
-export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh, onError }: SidebarProps) {
-    const [navigationOrder, setNavigationOrder] = usePreference("btunes.sidebar-order.v1", itemOrderSchema, navigation.map((item) => item.id));
-    const orderedNavigation = normalizeOrder(navigationOrder, navigation.map((item) => item.id));
-    const navDrag = useDragOrder(orderedNavigation, setNavigationOrder, "navigation");
-    const [playlistOrder, setPlaylistOrder] = usePreference("btunes.playlist-order.v1", itemOrderSchema, []);
-    const orderedPlaylistIds = normalizeOrder(playlistOrder, data.playlists.map((playlist) => String(playlist.id)));
-    const playlistDrag = useDragOrder(orderedPlaylistIds, setPlaylistOrder, "playlists");
+export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, onRefresh, onError }: SidebarProps) {
     const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState<Playlist>();
     const [deleting, setDeleting] = useState<Playlist>();
@@ -72,32 +54,20 @@ export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh,
             </div>
 
             <nav aria-label="Library navigation">
-                {orderedNavigation.map((id) => {
-                    const item = navigation.find((entry) => entry.id === id)!;
-                    return <div
-                        key={id}
-                        className="sidebar-order-item"
-                        onDragOver={navDrag.over}
-                        onDrop={(ev) => navDrag.drop(ev, id)}
-                    >
+                {layout.navigationIds.map((id) => {
+                    const item = navigationItems.find((entry) => entry.id === id)!;
+                    return (
                         <Button
-                            key={item.id}
+                            key={id}
                             className="nav-item"
-                            onClick={() => onNavigate(item.id)}
-                            variant={view === item.id ? "secondary" : "ghost"}
-                            aria-current={view === item.id ? "page" : undefined}
+                            onClick={() => onNavigate(id)}
+                            variant={view === id ? "secondary" : "ghost"}
+                            aria-current={view === id ? "page" : undefined}
                         >
                             <item.icon data-icon="inline-start"/>
                             {item.label}
-
                         </Button>
-                        <ReorderHandle
-                            label={"Move " + item.label + " navigation item"}
-                            onDragStart={(ev) => navDrag.start(ev, id)}
-                            onDragEnd={navDrag.end}
-                            onKeyDown={(ev) => navDrag.keyDown(ev, id)}
-                        />
-                    </div>;
+                    );
                 })}
             </nav>
 
@@ -113,70 +83,52 @@ export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh,
                 </Button>
             </div>
 
-            {creating && <PlaylistForm
-                genres={genres}
-                onCancel={() => setCreating(false)}
-                onError={onError}
-                onSaved={async (id) => {
-                    await onRefresh();
-                    setCreating(false);
-                    onNavigate("playlist:" + id);
-                }}
-            />}
-
             <div className="playlists">
-                {orderedPlaylistIds.map((id) => {
+                {layout.playlistIds.map((id) => {
                     const playlist = data.playlists.find((entry) => String(entry.id) === id)!;
-                    return <div
-                        key={id}
-                        className="sidebar-order-item"
-                        onDragOver={playlistDrag.over}
-                        onDrop={(ev) => playlistDrag.drop(ev, id)}
-                    >
+                    return (
                         <PlaylistItem
-                            key={playlist.id}
+                            key={id}
                             playlist={playlist}
-                            active={view === "playlist:" + playlist.id}
-                            onNavigate={() => onNavigate("playlist:" + playlist.id)}
-                            onEdit={() => {
-                                setCreating(false);
-                                setEditing(playlist);
-                            }}
+                            active={view === "playlist:" + id}
+                            onNavigate={() => onNavigate("playlist:" + id)}
+                            onEdit={() => setEditing(playlist)}
                             onDelete={() => setDeleting(playlist)}
                         />
-                        <ReorderHandle
-                            label={"Move " + playlist.name + " playlist"}
-                            onDragStart={(ev) => playlistDrag.start(ev, id)}
-                            onDragEnd={playlistDrag.end}
-                            onKeyDown={(ev) => playlistDrag.keyDown(ev, id)}
-                        />
-                    </div>;
+                    );
                 })}
             </div>
 
-            {editing && <Dialog
-                open
-                onOpenChange={(open) => {
-                    if (!open) setEditing(undefined);
-                }}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit playlist</DialogTitle>
-                        <DialogDescription>Change its name or automatic genre rule.</DialogDescription>
-                    </DialogHeader>
-                    <PlaylistForm
-                        playlist={editing}
-                        genres={genres}
-                        onCancel={() => setEditing(undefined)}
-                        onError={onError}
-                        onSaved={async () => {
-                            await onRefresh();
-                            setEditing(undefined);
-                        }}
-                    />
-                </DialogContent>
-            </Dialog>}
+            {(creating || editing) && (
+                <Dialog open onOpenChange={(open) => {
+                    if (open) return;
+                    setCreating(false);
+                    setEditing(undefined);
+                }}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
+                            <DialogDescription>Choose a name and an optional automatic genre rule.</DialogDescription>
+                        </DialogHeader>
+                        <PlaylistForm
+                            key={editing?.id ?? "new"}
+                            playlist={editing}
+                            genres={genres}
+                            onCancel={() => {
+                                setCreating(false);
+                                setEditing(undefined);
+                            }}
+                            onError={onError}
+                            onSaved={async (id) => {
+                                await onRefresh();
+                                if (creating) onNavigate("playlist:" + id);
+                                setCreating(false);
+                                setEditing(undefined);
+                            }}
+                        />
+                    </DialogContent>
+                </Dialog>
+            )}
 
             {deleting && <Dialog
                 open

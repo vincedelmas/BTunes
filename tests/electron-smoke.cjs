@@ -102,11 +102,9 @@ app.on("browser-window-created", (_, win) => {
     const titleInput=document.getElementById('tag-title');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(titleInput,'Edited through UI');
     titleInput.dispatchEvent(new Event('input',{bubbles:true}));
-    await waitFor(()=>!findButton('Preview changes').disabled);
-    findButton('Preview changes').click();
-    await waitFor(()=>findButton('Save to files'));
-    if(!document.querySelector('[aria-label="Tag change preview"]').textContent.includes('Edited through UI'))throw new Error('Preview missing edit');
-    findButton('Save to files').click();
+    await waitFor(()=>!findButton('Save').disabled);
+    if(findButton('Preview changes'))throw new Error('Preview step should not be shown');
+    findButton('Save').click();
     await waitFor(()=>!document.querySelector('[role="dialog"]'));
     const saved=await window.btunes.rpc('library.get',undefined);
     if(saved.tracks[0].title!=='Edited through UI')throw new Error('UI tag save failed');

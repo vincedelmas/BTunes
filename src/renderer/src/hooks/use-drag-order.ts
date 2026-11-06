@@ -4,7 +4,7 @@ import {moveItem} from "@/lib/preferences";
 
 export function useDragOrder(order: string[], onChange: (order: string[]) => void, group: string) {
     const [dragging, setDragging] = useState<string>();
-    const format = "application/x-btunes-" + group;
+    const format = "application/x-btunes-" + group.replace(/\s+/g, "-");
 
     function start(ev: DragEvent, id: string) {
         ev.dataTransfer.setData(format, id);
