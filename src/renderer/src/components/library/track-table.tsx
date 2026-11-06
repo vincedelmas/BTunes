@@ -245,7 +245,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     {visibleColumns.map((column) => (
                                         <TableCell
                                             key={column.id}
-                                            className="min-w-0 truncate px-2 py-1 text-xs text-foreground"
+                                            className="min-w-0 truncate px-2 py-1 text-[13px] text-foreground"
                                             data-column={column.id}
                                         >
                                             {renderCell(track, column.id)}

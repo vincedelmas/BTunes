@@ -1,5 +1,5 @@
 import {genreChoices} from "../../../shared/genres";
-import {useDeferredValue, useEffect, useState} from "react";
+import {useDeferredValue, useEffect, useRef, useState} from "react";
 import type {Snapshot} from "../../../shared/types/library";
 import type {TrackSort} from "../../../shared/types/track-sorting";
 import {compareTracks} from "../../../shared/track-sorting";
@@ -18,6 +18,7 @@ const viewTitles: Record<string, string> = {
 };
 
 export function useCollection(data: Snapshot, onError: (error: unknown) => void) {
+    const history = useRef<{ view: string; search: string; artist: string; albumArtistFilter: boolean }[]>([]);
     const [view, setView] = useState("tracks");
     const [search, setSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
@@ -82,9 +83,27 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         setArtist("");
     }
 
+    function rememberView() {
+        history.current.push({ view, search, artist, albumArtistFilter });
+        if (history.current.length > 100) history.current.shift();
+    }
+
+    function goBack() {
+        const previous = history.current.pop();
+        if (!previous) return;
+        const missingPlaylist = previous.view.startsWith("playlist:") && !data.playlists.some((playlist) => "playlist:" + playlist.id === previous.view);
+        setView(missingPlaylist ? "tracks" : previous.view);
+        setSearch(previous.search);
+        setArtist(previous.artist);
+        setAlbumArtistFilter(previous.albumArtistFilter);
+        setSelected([]);
+        setPlaylistIds([]);
+    }
+
     function navigate(nextView: string) {
         if (nextView === view) return;
 
+        rememberView();
         setView(nextView);
         setSelected([]);
         setPlaylistIds([]);
@@ -92,6 +111,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     function showArtist(name: string, useAlbumArtist = false) {
+        if (view === "tracks") rememberView();
         navigate("tracks");
         clearFilters();
         setSelected([]);
@@ -103,6 +123,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         view, search, artist, sort, selected, tracks, albums, genres,
         activePlaylist, title,
         setSearch, setArtist, setSort, setSelected,
-        navigate, showArtist, clearFilters,
+        navigate, goBack, showArtist, clearFilters,
     };
 }

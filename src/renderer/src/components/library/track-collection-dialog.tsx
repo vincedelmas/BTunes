@@ -1,3 +1,4 @@
+import {cn} from "@/lib/utils";
 import {useItemReveal} from "@/hooks/use-item-reveal";
 import {ShowPlayingButton} from "@/components/player/show-playing-button";
 import {useState} from "react";
@@ -15,8 +16,9 @@ import type {Playlist, Track} from "../../../../shared/types/library";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
-interface AlbumDialogProps {
+interface TrackCollectionDialogProps {
     tracks: Track[];
+    artistName?: string;
     genres: string[];
     playing: boolean;
     currentId?: number;
@@ -27,17 +29,18 @@ interface AlbumDialogProps {
 }
 
 
-export function AlbumDialog({ genres, tracks, playlists, actions, currentId, playing, onClose, onSaved }: AlbumDialogProps) {
+export function TrackCollectionDialog({ artistName, genres, tracks, playlists, actions, currentId, playing, onClose, onSaved }: TrackCollectionDialogProps) {
     const [editing, setEditing] = useState<Track[]>();
     const [selected, setSelected] = useState<number[]>([]);
     const locator = useItemReveal();
     const [sort, setSort] = useState<TrackSort>({ field: "title", descending: false });
 
     const first = tracks[0];
+    const editLabel = artistName ? "Edit artist tags" : "Edit album tags";
     const selectedTracks = tracks.filter((track) => selected.includes(track.id));
     const orderedTracks = [...tracks].sort((first, second) => compareTracks(first, second, sort));
 
-    const albumActions: TrackActions = {
+    const collectionActions: TrackActions = {
         ...actions,
         onEdit: setEditing,
         onRemove: undefined,
@@ -56,8 +59,7 @@ export function AlbumDialog({ genres, tracks, playlists, actions, currentId, pla
             }}
         >
             <DialogContent
-                className="album-dialog flex h-[min(760px,88vh)] w-[calc(100vw-64px)] max-w-6xl flex-col gap-0 overflow-hidden
-                    p-0 sm:max-w-6xl"
+                className={cn("collection-dialog flex h-[min(760px,88vh)] w-[calc(100vw-64px)] max-w-6xl flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl", artistName ? "artist-dialog" : "album-dialog")}
             >
                 <DialogHeader className="shrink-0 bg-linear-to-br from-primary/10 to-card p-6">
                     <div className="flex items-center gap-5">
@@ -66,13 +68,13 @@ export function AlbumDialog({ genres, tracks, playlists, actions, currentId, pla
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="mb-2 text-[10px] font-semibold tracking-widest text-primary">
-                                ALBUM
+                                {artistName ? "ARTIST" : "ALBUM"}
                             </p>
                             <DialogTitle className="truncate text-2xl font-bold">
-                                {first.album}
+                                {artistName ?? first.album}
                             </DialogTitle>
                             <DialogDescription className="mt-2 truncate">
-                                {getAlbumArtist(first)}
+                                {artistName ? "Songs in your library" : getAlbumArtist(first)}
                             </DialogDescription>
 
                             <LibraryStats
@@ -88,14 +90,14 @@ export function AlbumDialog({ genres, tracks, playlists, actions, currentId, pla
                             data-icon="inline-start"
                             fill="currentColor"
                         />
-                        Play album
+                        {artistName ? "Play artist" : "Play album"}
                     </Button>
                     <Button
                         variant="secondary"
                         onClick={() => setEditing(selectedTracks.length ? selectedTracks : tracks)}
                     >
                         <Pencil data-icon="inline-start"/>
-                        {selectedTracks.length ? "Edit selected songs" : "Edit album tags"}
+                        {selectedTracks.length ? "Edit selected songs" : editLabel}
                     </Button>
 
                     <div className="ml-auto flex items-center gap-3">
@@ -119,7 +121,7 @@ export function AlbumDialog({ genres, tracks, playlists, actions, currentId, pla
                         reveal={locator.target}
                         onRevealed={locator.clear}
                         tracks={orderedTracks}
-                        actions={albumActions}
+                        actions={collectionActions}
                         onSelect={setSelected}
                     />
                 </div>

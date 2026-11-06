@@ -1,6 +1,6 @@
 import {useItemReveal} from "@/hooks/use-item-reveal";
 import {albumKey, getAlbumArtist} from "@/lib/music";
-import {useEffect, useState} from "react";
+import {useEffect, useEffectEvent, useState} from "react";
 import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
 import {useLibrary} from "@/hooks/use-library";
@@ -20,7 +20,7 @@ import {ArtistGrid} from "@/components/library/artist-grid";
 import {TrackTable} from "@/components/library/track-table";
 import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import {AlbumDialog} from "@/components/library/album-dialog";
+import {TrackCollectionDialog} from "@/components/library/track-collection-dialog";
 import {LibraryStats} from "@/components/library/library-stats";
 import {LibrarySearch} from "@/components/library/library-search";
 import {CollectionEmptyState} from "@/components/library/collection-empty-state";
@@ -33,13 +33,13 @@ export function App() {
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
     const sidebarLayout = useSidebarLayout(library.data.playlists);
-    const [openedAlbumIds, setOpenedAlbumIds] = useState<number[]>();
+    const [openedCollection, setOpenedCollection] = useState<{ ids: number[]; artistName?: string }>();
     const collection = useCollection(library.data, library.reportError);
 
     const { audio: audioRef } = player;
     const {
         view, search, artist, sort, selected, tracks, albums, genres, activePlaylist, title,
-        setSearch, setArtist, setSort, setSelected, navigate, showArtist, clearFilters,
+        setSearch, setArtist, setSort, setSelected, navigate, goBack, showArtist, clearFilters,
     } = collection;
 
     useEffect(() => {
@@ -48,7 +48,7 @@ export function App() {
         }
     }, [library.ready]);
 
-    const openedAlbumTracks = library.data.tracks.filter((track) => openedAlbumIds?.includes(track.id));
+    const openedCollectionTracks = library.data.tracks.filter((track) => openedCollection?.ids.includes(track.id));
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
 
     const actions: TrackActions = {
@@ -77,6 +77,33 @@ export function App() {
         locator.show(key);
     }
 
+    const handleMouseBack = useEffectEvent((ev: MouseEvent) => {
+        if (ev.button !== 3) return;
+        ev.preventDefault();
+        const dialogs = document.querySelectorAll('[data-slot="dialog-content"]');
+        const dialog = dialogs.item(dialogs.length - 1);
+        if (dialog) {
+            dialog.querySelector<HTMLButtonElement>('[data-slot="dialog-close"]')?.click();
+            return;
+        }
+        goBack();
+    });
+
+    useEffect(() => {
+        const preventBrowserBack = (ev: MouseEvent) => {
+            if (ev.button === 3) ev.preventDefault();
+        };
+        const back = (ev: MouseEvent) => handleMouseBack(ev);
+        window.addEventListener("mousedown", preventBrowserBack);
+        window.addEventListener("mouseup", back);
+        window.addEventListener("auxclick", preventBrowserBack);
+        return () => {
+            window.removeEventListener("mousedown", preventBrowserBack);
+            window.removeEventListener("mouseup", back);
+            window.removeEventListener("auxclick", preventBrowserBack);
+        };
+    }, []);
+
     const tagsSaved = async () => {
         await library.refresh();
     };
@@ -102,7 +129,7 @@ export function App() {
                     albums={albums}
                     actions={actions}
                     playlists={library.data.playlists}
-                    onOpen={(tracks) => setOpenedAlbumIds(tracks.map((track) => track.id))}
+                    onOpen={(tracks) => setOpenedCollection({ ids: tracks.map((track) => track.id) })}
                 />
             );
         }
@@ -114,7 +141,10 @@ export function App() {
                     currentTrack={current}
                     reveal={locator.target}
                     onRevealed={locator.clear}
-                    onArtist={(name) => showArtist(name, true)}
+                    onArtist={(name) => setOpenedCollection({
+                        artistName: name,
+                        ids: library.data.tracks.filter((track) => getAlbumArtist(track) === name).map((track) => track.id)
+                    })}
                 />
             );
         }
@@ -261,15 +291,16 @@ export function App() {
                 onReveal={revealPlaying}
                 onQueue={() => setShowQueue(!showQueue)}
             />
-            {openedAlbumTracks.length > 0 && <AlbumDialog
+            {openedCollectionTracks.length > 0 && <TrackCollectionDialog
+                artistName={openedCollection?.artistName}
                 genres={genres}
                 actions={actions}
                 onSaved={tagsSaved}
                 currentId={current?.id}
                 playing={player.playing}
-                tracks={openedAlbumTracks}
+                tracks={openedCollectionTracks}
                 playlists={library.data.playlists}
-                onClose={() => setOpenedAlbumIds(undefined)}
+                onClose={() => setOpenedCollection(undefined)}
             />}
             {editing &&
                 <TagEditor

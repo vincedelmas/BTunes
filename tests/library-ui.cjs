@@ -135,6 +135,7 @@ app.on("browser-window-created", (_, win) => {
                 const titleColor=getComputedStyle(document.querySelector('.track-cell strong')).color;
                 const artistColor=getComputedStyle(document.querySelector('td[data-column="artist"]')).color;
                 if(titleColor!==artistColor) throw new Error('Song metadata should be as white as the title');
+                if(getComputedStyle(document.querySelector('.track-cell strong')).fontSize!==getComputedStyle(document.querySelector('td[data-column="artist"]')).fontSize) throw new Error('Song column sizes must match');
                 if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
                 if(document.querySelector('[data-track-id]').getBoundingClientRect().height>36.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
@@ -445,6 +446,18 @@ app.on("browser-window-created", (_, win) => {
             })()`, true);
             await capture("playing-artist");
             await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor}=window.uiReview;
+                document.querySelector('.artist[aria-current="true"]').click();
+                await waitFor(()=>document.querySelector('.artist-dialog .track-table'));
+                if(document.querySelector('.artist-dialog [data-slot="dialog-title"]').textContent.trim()!=='Fixture artist') throw new Error('Artist dialog has the wrong title');
+                if(document.querySelector('.artist-dialog .track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Artist dialog must contain all album-artist songs');
+                if(document.querySelectorAll('.artist-dialog [data-track-id]').length>40) throw new Error('Artist dialog must remain virtualized');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>!document.querySelector('.artist-dialog'));
+                if(document.querySelector('h1').textContent!=='Artists') throw new Error('Mouse back should close the dialog first');
+            })()`, true);
+
+            await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button,visible}=window.uiReview;
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('.track-table'));
@@ -452,6 +465,11 @@ app.on("browser-window-created", (_, win) => {
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(search,'Song 2299');
                 search.dispatchEvent(new Event('input',{bubbles:true}));
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                button('Albums').click();
+                await waitFor(()=>document.querySelector('h1').textContent==='Albums');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('h1').textContent==='Songs' && document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                if(document.querySelector('[aria-label="Search your library"]').value!=='Song 2299') throw new Error('Back navigation should restore search');
                 document.querySelector('.player-bar [aria-label="Show playing song"]').click();
                 await waitFor(()=>!search.value && visible(document.querySelector('[data-track-id="1"]'),document.querySelector('.track-scroll')));
                 if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Reveal should clear filters hiding the playing song');
