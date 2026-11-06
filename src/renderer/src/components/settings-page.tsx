@@ -1,5 +1,7 @@
 import type {Playlist} from "../../../shared/types/library";
 import type {SidebarLayout} from "@/types/sidebar";
+import {AppUpdates} from "@/components/settings/app-updates";
+import type {AppUpdateController} from "@/types/updates";
 import type {SettingsTab} from "@/types/settings";
 import {DownloadSettings} from "@/components/downloads/download-settings";
 import {LibrarySettings} from "@/components/settings/library-settings";
@@ -9,6 +11,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 
 interface SettingsPageProps {
     tab: SettingsTab;
+    updates: AppUpdateController;
     onTabChange: (tab: SettingsTab) => void;
     busy: boolean;
     error: string;
@@ -22,13 +25,13 @@ interface SettingsPageProps {
 }
 
 
-export function SettingsPage({ tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
+export function SettingsPage({ updates, tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
     return (
         <div className="settings-page min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-8">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
                 <header className="flex flex-col gap-2">
                     <h1 className="text-3xl font-semibold tracking-[-0.035em]">Settings</h1>
-                    <p className="text-sm text-muted-foreground">Manage your library, downloads, and navigation.</p>
+                    <p className="text-sm text-muted-foreground">Library, downloads, navigation, and app updates.</p>
                 </header>
                 {error && <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
@@ -40,7 +43,7 @@ export function SettingsPage({ tab, onTabChange, folders, busy, songCount, notic
                 <Tabs
                     value={tab}
                     onValueChange={(value) => {
-                        if (value === "library" || value === "downloads" || value === "sidebar") onTabChange(value);
+                        if (value === "library" || value === "downloads" || value === "sidebar" || value === "about") onTabChange(value);
                     }}
                     className="gap-6"
                 >
@@ -52,6 +55,7 @@ export function SettingsPage({ tab, onTabChange, folders, busy, songCount, notic
                         <TabsTrigger value="library">Library</TabsTrigger>
                         <TabsTrigger value="downloads">Downloads</TabsTrigger>
                         <TabsTrigger value="sidebar">Sidebar</TabsTrigger>
+                        <TabsTrigger value="about">About</TabsTrigger>
                     </TabsList>
                     <TabsContent
                         value="library"
@@ -79,6 +83,9 @@ export function SettingsPage({ tab, onTabChange, folders, busy, songCount, notic
                             playlists={playlists}
                             layout={sidebarLayout}
                         />
+                    </TabsContent>
+                    <TabsContent value="about" keepMounted>
+                        <AppUpdates updates={updates}/>
                     </TabsContent>
                 </Tabs>
             </div>

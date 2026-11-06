@@ -1,3 +1,6 @@
+import {version as applicationVersion} from "../../package.json";
+import electronUpdater from "electron-updater";
+import {AppUpdateService} from "./services/app-updates";
 import {downloadRoutes} from "./rpc/downloads";
 import {DownloadRepository} from "./repositories/downloads";
 import {DownloaderService} from "./services/downloads";
@@ -48,6 +51,8 @@ protocol.registerSchemesAsPrivileged([{
 
 
 let quitting = false;
+let installingUpdate = false;
+let updates: AppUpdateService;
 let service: LibraryService;
 let devices: DeviceSyncService;
 let downloads: DownloaderService;
@@ -81,7 +86,37 @@ void app.whenReady().then(async () => {
     devices = new DeviceSyncService(repo, new MtpClient());
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"), () => tools.ffmpeg());
 
+    const updatesEnabled = app.isPackaged && process.platform === "linux" && process.arch === "x64" && Boolean(process.env.APPIMAGE);
+    updates = new AppUpdateService({
+        adapter: updatesEnabled ? electronUpdater.autoUpdater : undefined,
+        version: app.isPackaged ? app.getVersion() : applicationVersion,
+        enabled: updatesEnabled,
+        stateFile: join(app.getPath("userData"), "app-updates.json"),
+        beforeInstall: async () => {
+            await Promise.allSettled(pendingWrites);
+            await downloads.close();
+            await devices.close();
+        },
+    });
+
     const routes = {
+        "updates.get": { schema: rpcSchemas["updates.get"], run: () => updates.get() },
+        "updates.check": { schema: rpcSchemas["updates.check"], run: () => updates.check() },
+        "updates.download": { schema: rpcSchemas["updates.download"], run: () => updates.download() },
+        "updates.dismiss": { schema: rpcSchemas["updates.dismiss"], run: () => updates.dismiss() },
+        "updates.install": {
+            schema: rpcSchemas["updates.install"],
+            run: async () => {
+                installingUpdate = true;
+                try {
+                    await updates.install();
+                }
+                catch (error) {
+                    installingUpdate = false;
+                    throw error;
+                }
+            },
+        },
         ...downloadRoutes(downloads, downloadRepo, service, tools, artwork),
         "devices.list": { schema: rpcSchemas["devices.list"], run: () => devices.transport.devices() },
         "devices.browse": {
@@ -213,7 +248,7 @@ void app.whenReady().then(async () => {
     });
 
     ipcMain.handle("rpc", async (ev, method: unknown, input: unknown) => {
-        if (quitting) throw new Error("The application is shutting down.");
+        if (quitting || installingUpdate) throw new Error("The application is shutting down.");
         if (ev.sender !== win.webContents || ev.senderFrame !== win.webContents.mainFrame) {
             throw new Error("Access denied");
 
@@ -270,6 +305,8 @@ void app.whenReady().then(async () => {
     else {
         await win.loadFile(join(__dirname, "../renderer/index.html"));
     }
+
+    updates.start();
 }).catch((error: unknown) => {
     console.error("BTunes startup failed:", error);
     dialog.showErrorBox("BTunes could not start", error instanceof Error ? error.message : String(error));
@@ -285,6 +322,7 @@ app.on("before-quit", (ev) => {
         ev.preventDefault();
 
         quitting = true;
+        updates?.close();
         void Promise.allSettled(pendingWrites)
             .then(() => downloads.close())
             .then(() => devices.close())

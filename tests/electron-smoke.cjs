@@ -62,6 +62,14 @@ app.on("browser-window-created", (_, win) => {
             const result = await win.webContents.executeJavaScript(`(async()=>{
     if(document.title!=='BTunes') throw new Error('Incorrect application title');
     if(document.querySelector('.brand span')?.textContent!=='BTunes') throw new Error('Incorrect application branding');
+    const updates=await window.btunes.rpc('updates.get',undefined);
+    if(updates.enabled || !updates.version || updates.showPrompt) throw new Error('Development builds must not enable automatic app updates');
+    try {
+        await window.btunes.rpc('updates.install',{version:'99.0.0'});
+        throw new Error('Updater accepted renderer-supplied installation data');
+    } catch(error) {
+        if(error.message.includes('Updater accepted')) throw error;
+    }
     const library=await window.btunes.rpc('library.get',undefined);
     if(library.tracks.length!==0) throw new Error('Unexpected tracks');
     const imported=await window.btunes.rpc('library.import',undefined);

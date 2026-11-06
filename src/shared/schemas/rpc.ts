@@ -18,6 +18,11 @@ const playlistDetails = {
 };
 
 export const rpcSchemas = {
+    "updates.get": z.undefined(),
+    "updates.check": z.undefined(),
+    "updates.download": z.undefined(),
+    "updates.install": z.undefined(),
+    "updates.dismiss": z.undefined(),
     "downloads.enter": z.undefined(),
     "downloads.get": downloadRevisionSchema,
     "downloads.start": downloadIdsSchema,

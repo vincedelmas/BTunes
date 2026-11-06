@@ -1,3 +1,5 @@
+import {useAppUpdates} from "@/hooks/use-app-updates";
+import {UpdateNotification} from "@/components/update-notification";
 import {DownloadsPage} from "@/components/downloads/downloads-page";
 import {DevicesPage} from "@/components/devices/devices-page";
 import {SongDropZone} from "@/components/library/song-drop-zone";
@@ -32,6 +34,7 @@ import type {SettingsTab} from "@/types/settings";
 
 export function App() {
     const library = useLibrary();
+    const updates = useAppUpdates();
     const locator = useItemReveal();
     const player = usePlayer(library.setError);
     const [editing, setEditing] = useState<Track[]>();
@@ -185,6 +188,7 @@ export function App() {
                 )}
                 {view === "settings" ?
                     <SettingsPage
+                        updates={updates}
                         tab={settingsTab}
                         onTabChange={setSettingsTab}
                         busy={library.busy}
@@ -313,6 +317,10 @@ export function App() {
                     onClose={() => setEditing(undefined)}
                 />
             }
+            <UpdateNotification
+                updates={updates}
+                blocked={Boolean(editing || openedCollectionTracks.length)}
+            />
             <audio
                 ref={audioRef}
                 onTimeUpdate={player.updateTime}

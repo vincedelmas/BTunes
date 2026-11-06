@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check Linux app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.4'
+
+      - name: Install Linux build and test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ffmpeg libasound2t64 libatk-bridge2.0-0 libgbm1 libgtk-3-0 libnss3 libxss1
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run knip
+      - run: bun run test
+      - run: bun run test:electron
+      - run: bun run package:appimage:built
+      - run: bun run test:appimage

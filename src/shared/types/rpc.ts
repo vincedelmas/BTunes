@@ -1,3 +1,4 @@
+import type {UpdateState} from "./updates";
 import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
 import type {FileImportResult} from "./file-import";
@@ -9,6 +10,11 @@ import type {TagPreview, TagSaveResult} from "./tags";
 import type {ArtworkCandidate} from "./artwork";
 
 type RpcOutputs = {
+    "updates.get": UpdateState;
+    "updates.check": void;
+    "updates.download": void;
+    "updates.install": void;
+    "updates.dismiss": void;
     "downloads.enter": void;
     "downloads.get": DownloadSnapshot | null;
     "downloads.start": void;

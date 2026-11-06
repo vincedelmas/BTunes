@@ -1,1 +1,1 @@
-export type SettingsTab = "library" | "downloads" | "sidebar";
+export type SettingsTab = "library" | "downloads" | "sidebar" | "about";

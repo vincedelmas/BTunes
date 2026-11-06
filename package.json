@@ -16,7 +16,10 @@
         "package": "bun run build && electron-builder --linux dir",
         "test": "node --experimental-strip-types --test tests/*.test.ts",
         "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/downloader-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/dev-startup.cjs",
-        "desktop:install": "node scripts/install-desktop.cjs"
+        "desktop:install": "node scripts/install-desktop.cjs",
+        "package:appimage": "bun run build && bun run package:appimage:built",
+        "package:appimage:built": "electron-builder --linux AppImage --x64 --publish never",
+        "test:appimage": "node tests/appimage-smoke.cjs"
     },
     "dependencies": {
         "@base-ui/react": "^1.9.0",
@@ -27,6 +30,7 @@
         "class-variance-authority": "0.7.1",
         "cn": "^0.5.2",
         "drizzle-orm": "1.0.0-rc.5",
+        "electron-updater": "^6.8.11",
         "lucide-react": "1.70.0",
         "music-metadata": "12.3.5",
         "react": "19.3.1",
@@ -76,7 +80,8 @@
                 "entry": {
                     "StartupWMClass": "btunes"
                 }
-            }
+            },
+            "executableName": "btunes"
         },
         "extraResources": [
             {
@@ -90,7 +95,22 @@
                 "from": "resources/icon.png",
                 "to": "icon.png"
             }
-        ]
+        ],
+        "artifactName": "BTunes-${version}-${arch}.${ext}",
+        "publish": {
+            "provider": "github",
+            "owner": "vincedelmas",
+            "repo": "BTunes"
+        }
     },
-    "desktopName": "btunes.desktop"
+    "desktopName": "btunes.desktop",
+    "homepage": "https://github.com/vincedelmas/BTunes",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/vincedelmas/BTunes.git"
+    },
+    "author": {
+        "name": "Vince Delmas",
+        "url": "https://github.com/vincedelmas"
+    }
 }

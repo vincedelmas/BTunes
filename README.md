@@ -4,6 +4,31 @@ A local music library and player for Linux, inspired by Spotify and MusicBee.
 Built with Electron, React, TypeScript, Tailwind, shadcn/ui (Nova + Base UI), and SQLite through Drizzle.
 Managed with Bun.
 
+## Install on Linux
+
+Download the **x64 AppImage** from [GitHub Releases](https://github.com/vincedelmas/BTunes/releases).
+Keep it in a writable folder such as `~/Applications`, make it executable, and launch it:
+
+```sh
+mkdir -p ~/Applications
+mv BTunes-1.0.0-x86_64.AppImage ~/Applications/BTunes.AppImage
+chmod +x ~/Applications/BTunes.AppImage
+~/Applications/BTunes.AppImage
+```
+
+The AppImage includes Electron and the application; Bun is only needed for development.
+If launch reports a missing `libfuse.so.2`, install FUSE 2 (`sudo pacman -S fuse2` on CachyOS).
+Tag editing uses system FFmpeg until the managed download tools are installed. YouTube downloads require a system Node.js runtime;
+USB sync requires the KDE components listed below.
+
+## Updates
+
+Release AppImages check for stable GitHub releases at most once per day. Settings shows the installed version and provides a manual update check.
+An available update can be dismissed or downloaded. After download and checksum verification, choose **Restart and install** to apply it.
+Updates are never downloaded or installed automatically. Keep the AppImage writable so it can replace itself.
+Using the stable filename `BTunes.AppImage` also keeps launcher paths unchanged after updates.
+Development and unpacked builds do not check for updates.
+
 ## Run locally
 
 Requires **Bun**, **Node.js 22.18+**, and **FFmpeg** for tag and artwork editing.
@@ -30,7 +55,7 @@ bun run dev
 ## Using your library
 
 - **Songs:** click headings to sort, drag headings to reorder, drag dividers to resize, and right-click headings to show or hide columns.
-- **Albums:** click a card to open its songs in the shared table; use the green play button to play the album. Ctrl/Shift-click or drag
+- **Albums:** click a card to open its songs in the shared table; use the play button to play the album. Ctrl/Shift-click or drag
   across empty space to select albums for batch editing.
 - **Now playing:** use the locator button beside Stop in the player to reveal it in Songs, Albums, or Artists.
 - **Artists:** click an album-artist card to browse its songs in the same table dialog as albums.
@@ -38,7 +63,7 @@ bun run dev
 - **Selection:** Ctrl-click toggles songs, Shift-click selects a range, and Ctrl+A selects all filtered songs.
 - **Context menus:** right-click songs or albums for playback, queue, playlist, tag, and file actions, or to go to their album or album artist.
 - **Playlists:** use **+** to create one; right-click a playlist to edit or delete it.
-- **Settings:** use the Library, Downloads, and Sidebar tabs to manage folders, downloading, and navigation order. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
+- **Settings:** use the Library, Downloads, Sidebar, and About tabs to manage folders, downloading, navigation order, and app updates. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
 
 To edit tags, select up to **100 songs**, right-click → **Edit tags**, change fields, then **Save**.
 Batch edits apply only checked fields. Genre suggestions reuse existing spellings, ignoring case, while still allowing new genres. **Choose image** embeds a local cover in every selected file on Save. Online tag and cover discovery lives in Downloads.
@@ -84,6 +109,8 @@ bun run knip             # unused code and dependencies
 bun run test             # validation, persistence, and file-write tests
 bun run build            # type checking and production bundles
 bun run package          # unpacked Linux app in dist/
+bun run package:appimage # build a Linux x64 AppImage in dist/
+bun run test:appimage    # smoke-test the AppImage already in dist/
 bun run db:generate      # generate a migration after schema changes
 bun run test:electron    # builds, then runs isolated Electron integration tests
 bun run desktop:install  # install the development launcher and icon
@@ -91,13 +118,26 @@ bun run desktop:install  # install the development launcher and icon
 
 Electron tests use temporary profiles and audio fixtures, including a 2,300-song library; they do not modify your collection.
 Screenshots are saved to `/tmp/btunes-ui-review/`. The smoke test intentionally logs a Zod error for an invalid track ID.
-Packaging is configured but has not been validated.
 
 The renderer talks to main-process services through one typed, Zod-validated RPC channel; repositories handle database access.
 Drizzle manages the database schema in `drizzle/`; schema updates run at startup.
 
 Application data lives in `~/.config/BTunes/`, including `library.sqlite`, `covers/`, `tag-backups/`, `download-tools/`, and `download-staging/`.
 
+## Releases
+
+Push conventional commits to `main`. Release Please maintains a release PR with the version bump and changelog;
+the first release is **1.0.0**. Merge that PR to create the `vX.Y.Z` tag and GitHub release.
+The same workflow checks and packages the tagged source, then uploads the Linux x64 AppImage, `SHA256SUMS`, and `latest-linux.yml`.
+Update metadata is published after the AppImage is uploaded. `feat:` bumps the minor version, `fix:` bumps the patch version,
+and breaking changes bump the major version after 1.0.0.
+
+GitHub Actions must be allowed to create pull requests in the repository settings. Release publishing uses the workflow's
+`GITHUB_TOKEN`; installed apps read public releases without credentials.
+
+CI runs lint, Knip, unit tests, Electron integration tests, and an AppImage smoke test. `bun run test:electron` includes the application build;
+`bun run package:appimage:built` packages those existing bundles without rebuilding them.
+
 ## Planned
 
-KDE Connect sync, phone playlist exports, richer smart-playlist rules, and validated AppImage packaging.
+KDE Connect sync, phone playlist exports, and richer smart-playlist rules.
