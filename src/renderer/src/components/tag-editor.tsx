@@ -135,13 +135,6 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     </div>
                 </DialogHeader>
                 <div className="tag-editor-body">
-                    <p className="tag-editor-hint">
-                        {preview
-                            ? "Review the changes before saving them to your audio files."
-                            : batch && "Checked fields are applied to every selected song."
-                        }
-                    </p>
-
                     {!preview ?
                         <TagForm
                             busy={busy}

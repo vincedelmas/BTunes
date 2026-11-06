@@ -1217,7 +1217,7 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
 .tag-editor-body {
     min-height: 0;
     overflow: auto;
-    padding: 0 28px 28px;
+    padding: 18px 28px 28px;
 }
 
 .tag-editor-hint {
