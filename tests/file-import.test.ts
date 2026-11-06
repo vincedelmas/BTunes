@@ -24,7 +24,7 @@ void test("dropped music copies or moves without overwriting files, and appears 
         await library.scan(music);
         const importer = new FileImportService(library);
         const copied = await importer.import([source, source], { folder: music, operation: "copy" });
-        assert.deepEqual(copied, { imported: 1, skipped: 0, errors: [] });
+        assert.deepEqual(copied, { imported: 1, paths: [join(music, "Song (2).mp3")], skipped: 0, errors: [] });
         assert.deepEqual(await readFile(source), original);
         assert.deepEqual(await readFile(join(music, "Song.mp3")), original);
         assert.deepEqual(await readFile(join(music, "Song (2).mp3")), original);

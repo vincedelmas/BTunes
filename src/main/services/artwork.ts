@@ -35,8 +35,8 @@ const approvedImageUrl = (value: string) => {
 };
 
 
-export const normalizeArtwork = (data: Buffer): Promise<Buffer> => new Promise((resolve, reject) => {
-    const child = execFile("ffmpeg", [
+export const normalizeArtwork = (data: Buffer, ffmpeg = "ffmpeg"): Promise<Buffer> => new Promise((resolve, reject) => {
+    const child = execFile(ffmpeg, [
             "-nostdin", "-v", "error", "-i", "pipe:0", "-frames:v", "1",
             "-vf", "scale=w='min(1500,iw)':h='min(1500,ih)':force_original_aspect_ratio=decrease",
             "-c:v", "mjpeg", "-q:v", "2", "-f", "image2pipe", "pipe:1",
@@ -59,11 +59,13 @@ export const normalizeArtwork = (data: Buffer): Promise<Buffer> => new Promise((
 export class ArtworkService {
     private lastSearchAt = 0;
     private readonly request: typeof fetch;
+    private readonly ffmpeg: () => string;
     private candidates = new Map<string, CachedArtwork>();
     private searches = new Map<string, CachedArtworkSearch>();
 
-    constructor(request: typeof fetch = fetch) {
+    constructor(request: typeof fetch = fetch, ffmpeg: () => string = () => "ffmpeg") {
         this.request = request;
+        this.ffmpeg = ffmpeg;
     }
 
     async search(query: string): Promise<ArtworkCandidate[]> {
@@ -178,6 +180,18 @@ export class ArtworkService {
         return { id, album, artist, thumbnail: "btunes://artwork/" + id };
     }
 
+    async local(data: Buffer): Promise<ArtworkCandidate> {
+        if (data.length > maxImageBytes) throw new Error("Choose an image smaller than 10 MB.");
+        const normalized = await normalizeArtwork(data, this.ffmpeg());
+        const id = randomUUID();
+        this.candidates.set(id, {
+            url: "", previewUrl: "", preview: { data: normalized, contentType: "image/jpeg" },
+            artwork: { data: normalized, hash: createHash("sha256").update(normalized).digest("hex") },
+            expiresAt: Date.now() + 30 * 60 * 1000,
+        });
+        return { id, album: "Local cover", artist: "", thumbnail: "btunes://artwork/" + id };
+    }
+
     private candidate(id: string) {
         const candidate = this.candidates.get(id);
         if (!candidate || candidate.expiresAt < Date.now()) {
@@ -212,7 +226,7 @@ export class ArtworkService {
         if (!candidate.loading) {
             candidate.loading = this.downloadImage(candidate.url)
                 .then(async (image) => {
-                    const data = await normalizeArtwork(image.data);
+                    const data = await normalizeArtwork(image.data, this.ffmpeg());
                     const artwork = { data, hash: createHash("sha256").update(data).digest("hex") };
                     candidate.artwork = artwork;
                     return artwork;

@@ -41,3 +41,14 @@ export const playlistTracks = sqliteTable("playlist_tracks", {
 }, (table) => [
     primaryKey({ columns: [table.playlistId, table.trackId] }),
 ]);
+
+export const appSettings = sqliteTable("app_settings", {
+    key: text().primaryKey(),
+    value: text().notNull(),
+});
+
+export const downloadHistory = sqliteTable("download_history", {
+    videoId: text("video_id").primaryKey(),
+    path: text().notNull(),
+    completedAt: integer("completed_at").notNull(),
+});

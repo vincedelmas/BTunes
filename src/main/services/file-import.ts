@@ -24,7 +24,7 @@ export class FileImportService {
             throw new Error("The music folder is unavailable.");
         }
 
-        const result: FileImportResult = { imported: 0, skipped: 0, errors: [] };
+        const result: FileImportResult = { imported: 0, paths: [], skipped: 0, errors: [] };
         for (const path of new Set(paths)) {
             let destination: string | undefined;
             let sourceRemoved = false;
@@ -70,6 +70,7 @@ export class FileImportService {
                     sourceRemoved = true;
                 }
                 result.imported++;
+                result.paths.push(destination);
                 if (sourceRemoved) await this.library.remove(source);
             }
             catch (error) {

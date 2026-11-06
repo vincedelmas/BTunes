@@ -1,3 +1,4 @@
+import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
 import type {FileImportResult} from "./file-import";
 import type {z} from "zod";
@@ -8,6 +9,18 @@ import type {TagPreview, TagSaveResult} from "./tags";
 import type {ArtworkCandidate} from "./artwork";
 
 type RpcOutputs = {
+    "downloads.enter": void;
+    "downloads.get": DownloadSnapshot | null;
+    "downloads.start": void;
+    "downloads.cancel": void;
+    "downloads.publish": void;
+    "downloads.tools": void;
+    "downloads.settings.get": DownloaderSettings;
+    "downloads.settings.save": DownloaderSettings;
+    "downloads.settings.import": DownloaderSettings | null;
+    "downloads.bookmarks.choose": string | null;
+    "downloads.bookmarks.folders": BookmarkFolder[];
+    "artwork.local": ArtworkCandidate | null;
     "devices.list": MusicDevice[];
     "devices.browse": DeviceFile[];
     "devices.mkdir": void;

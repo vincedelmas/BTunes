@@ -1,3 +1,4 @@
+import {DownloadSettings} from "@/components/downloads/download-settings";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import type {SidebarLayout} from "@/types/sidebar";
@@ -138,6 +139,7 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     </Button>
                 </CardFooter>
             </Card>
+            <DownloadSettings musicFolders={folders}/>
             <SidebarOrderSettings
                 playlists={playlists}
                 layout={sidebarLayout}

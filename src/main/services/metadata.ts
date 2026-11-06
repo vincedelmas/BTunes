@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import type {IAudioMetadata} from "music-metadata";
 
 
@@ -21,4 +22,8 @@ export function readTags(metadata: IAudioMetadata) {
         genre: metadata.common.genre?.[0] ?? "",
         albumArtist: metadata.common.albumartist ?? "",
     };
+}
+
+export function pictureHashes(pictures: IAudioMetadata["common"]["picture"]) {
+    return (pictures ?? []).map((picture) => createHash("sha256").update(picture.data).digest("hex")).sort();
 }

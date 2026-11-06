@@ -16,6 +16,7 @@ const viewTitles: Record<string, string> = {
     history: "Recently played",
     duplicates: "Possible duplicates",
     android: "Devices",
+    downloads: "Downloads",
 };
 
 export function useCollection(data: Snapshot, onError: (error: unknown) => void) {

@@ -23,7 +23,10 @@ export function Cover({ track, large = false, source }: CoverProps) {
                     src={source ?? "btunes://cover/" + track?.cover}
                 />
                 :
-                <Disc3 aria-hidden="true" className={cn(large && "size-[44%] stroke-[0.8]")}/>
+                <Disc3
+                    aria-hidden="true"
+                    className={cn(large && "size-[44%] stroke-[0.8]")}
+                />
             }
         </div>
     );

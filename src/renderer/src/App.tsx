@@ -1,3 +1,4 @@
+import {DownloadsPage} from "@/components/downloads/downloads-page";
 import {DevicesPage} from "@/components/devices/devices-page";
 import {SongDropZone} from "@/components/library/song-drop-zone";
 import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
@@ -73,7 +74,7 @@ export function App() {
         if (!current) return;
 
         const cardView = view === "albums" || view === "artists";
-        const outsideLibrary = view === "settings" || view === "android";
+        const outsideLibrary = view === "settings" || view === "android" || view === "downloads";
         if (outsideLibrary || (!cardView && !tracks.some((track) => track.id === current.id))) navigate("tracks");
 
         clearFilters();
@@ -199,9 +200,9 @@ export function App() {
                             <h1 className="mb-1.5 text-[clamp(28px,3vw,36px)] leading-tight font-[850] tracking-tight">
                                 {title}
                             </h1>
-                            {view === "android" ?
+                            {view === "android" || view === "downloads" ?
                                 <p className="text-xs text-muted-foreground">
-                                    USB music sync
+                                    {view === "downloads" ? "From bookmarks to your library" : "USB music sync"}
                                 </p>
                                 :
                                 <LibraryStats
@@ -232,7 +233,14 @@ export function App() {
                                     {library.notice}
                                 </p>
                             }
-                            {view === "android" ?
+                            {view === "downloads" ? (
+                                <DownloadsPage
+                                    query={search}
+                                    genres={genres}
+                                    onSettings={() => navigate("settings")}
+                                    onSaved={library.refresh}
+                                />
+                            ) : view === "android" ?
                                 <DevicesPage/>
                                 :
                                 <>

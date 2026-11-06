@@ -1,3 +1,7 @@
+import {downloadRoutes} from "./rpc/downloads";
+import {DownloadRepository} from "./repositories/downloads";
+import {DownloaderService} from "./services/downloads";
+import {DownloadTools} from "./services/download-tools";
 import {MtpClient} from "./services/mtp";
 import {DeviceSyncService} from "./services/device-sync";
 import {fileDropMenu} from "./services/file-drop-menu";
@@ -46,6 +50,7 @@ protocol.registerSchemesAsPrivileged([{
 let quitting = false;
 let service: LibraryService;
 let devices: DeviceSyncService;
+let downloads: DownloaderService;
 const pendingWrites = new Set<Promise<unknown>>();
 
 async function trackWrite<T>(write: Promise<T>) {
@@ -68,12 +73,16 @@ void app.whenReady().then(async () => {
     );
 
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
-    const artwork = new ArtworkService();
+    const downloadRepo = new DownloadRepository(repo.db);
+    const tools = new DownloadTools(join(app.getPath("userData"), "download-tools"), () => downloads.changed());
+    const artwork = new ArtworkService(fetch, () => tools.ffmpeg());
+    downloads = new DownloaderService(downloadRepo, service, artwork, tools, join(app.getPath("userData"), "download-staging"));
     const fileImport = new FileImportService(service);
     devices = new DeviceSyncService(repo, new MtpClient());
-    const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
+    const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"), () => tools.ffmpeg());
 
     const routes = {
+        ...downloadRoutes(downloads, downloadRepo, service, tools, artwork),
         "devices.list": { schema: rpcSchemas["devices.list"], run: () => devices.transport.devices() },
         "devices.browse": {
             schema: rpcSchemas["devices.browse"],
@@ -216,6 +225,12 @@ void app.whenReady().then(async () => {
     protocol.handle("btunes", (request) => {
         const url = new URL(request.url);
 
+        if (url.hostname === "download-cover" && /^[\w-]{11}$/.test(url.pathname.slice(1))) {
+            return downloads.cover(url.pathname.slice(1))
+                .then((data) => new Response(new Uint8Array(data), { headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=600" } }))
+                .catch(() => new Response("Cover not found", { status: 404 }));
+        }
+
         if (url.hostname === "artwork") {
             return artwork.preview(url.pathname.slice(1))
                 .then((image) => new Response(new Uint8Array(image.data), { headers: { "Content-Type": image.contentType, "Cache-Control": "private, max-age=600" } }))
@@ -256,6 +271,7 @@ app.on("before-quit", (ev) => {
 
         quitting = true;
         void Promise.allSettled(pendingWrites)
+            .then(() => downloads.close())
             .then(() => devices.close())
             .then(() => service.close())
             .finally(() => app.quit());

@@ -6,7 +6,8 @@
     "entry": [
         "tests/*.test.ts",
         "tests/electron-smoke.cjs",
-        "tests/library-ui.cjs"
+        "tests/library-ui.cjs",
+        "tests/downloader-ui.cjs"
     ],
     "project": [
         "src/**/*.{ts,tsx,css}",

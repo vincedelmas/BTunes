@@ -1,3 +1,4 @@
+import {downloaderSettingsSchema, downloadIdsSchema, downloadRevisionSchema, publishDownloadSchema} from "./downloads.ts";
 import {deviceFolderSchema} from "./devices.ts";
 import {fileDropSchema} from "./file-import.ts";
 import {z} from "zod";
@@ -17,6 +18,18 @@ const playlistDetails = {
 };
 
 export const rpcSchemas = {
+    "downloads.enter": z.undefined(),
+    "downloads.get": downloadRevisionSchema,
+    "downloads.start": downloadIdsSchema,
+    "downloads.cancel": z.undefined(),
+    "downloads.publish": publishDownloadSchema,
+    "downloads.tools": z.undefined(),
+    "downloads.settings.get": z.undefined(),
+    "downloads.settings.save": downloaderSettingsSchema,
+    "downloads.settings.import": z.undefined(),
+    "downloads.bookmarks.choose": z.undefined(),
+    "downloads.bookmarks.folders": z.object({ path: z.string().min(1).max(4096) }),
+    "artwork.local": z.undefined(),
     "devices.list": z.undefined(),
     "devices.browse": deviceFolderSchema,
     "devices.mkdir": deviceFolderSchema,

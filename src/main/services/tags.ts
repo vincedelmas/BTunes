@@ -1,12 +1,13 @@
+import {tagArguments} from "./tag-arguments.ts";
 import {fileHash} from "./file-hash.ts";
 import {genreChoices, resolveGenre} from "../../shared/genres.ts";
 import {promisify} from "node:util";
-import {readTags} from "./metadata.ts";
+import {pictureHashes, readTags} from "./metadata.ts";
 import {parseFile} from "music-metadata";
 import {execFile} from "node:child_process";
 import type {LibraryService} from "./library";
 import {tagFields} from "../../shared/tags.ts";
-import {createHash, randomUUID} from "node:crypto";
+import {randomUUID} from "node:crypto";
 import type {EmbeddedArtwork} from "../types/artwork.ts";
 import type {PlannedFile, SavePlan} from "../types/tags";
 import {basename, dirname, extname, join} from "node:path";
@@ -17,7 +18,6 @@ import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/prom
 
 const run = promisify(execFile);
 const previewLifetime = 10 * 60 * 1000;
-const metadataNames: Record<string, string> = { year: "date", albumArtist: "album_artist" };
 
 
 const formats: Record<string, string> = {
@@ -38,20 +38,15 @@ async function fingerprint(path: string) {
 }
 
 
-function pictureHashes(pictures: Awaited<ReturnType<typeof parseFile>>["common"]["picture"]) {
-    return (pictures ?? [])
-        .map((picture) => createHash("sha256").update(picture.data).digest("hex"))
-        .sort();
-}
-
-
 export class TagService {
     private saving = false;
+    private readonly ffmpeg: () => string;
     private readonly backupRoot: string;
     private plans = new Map<string, SavePlan>();
     private library: Pick<LibraryService, "repo" | "index">;
 
-    constructor(library: Pick<LibraryService, "repo" | "index">, backupRoot: string) {
+    constructor(library: Pick<LibraryService, "repo" | "index">, backupRoot: string, ffmpeg: () => string = () => "ffmpeg") {
+        this.ffmpeg = ffmpeg;
         this.library = library;
         this.backupRoot = backupRoot;
     }
@@ -136,7 +131,7 @@ export class TagService {
             }
 
             try {
-                await run("ffmpeg", ["-version"], { timeout: 10000 });
+                await run(this.ffmpeg(), ["-version"], { timeout: 10000 });
             }
             catch {
                 throw new Error("FFmpeg is required to save tags. Install it with: sudo pacman -S ffmpeg");
@@ -176,13 +171,9 @@ export class TagService {
                     ? ["-i", imagePath, "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic"]
                     : ["-map", "0"];
 
-                const metadataArguments = Object.entries(patch)
-                    .flatMap(([key, value]) => [
-                        "-metadata",
-                        (metadataNames[key] ?? key) + "=" + (value === 0 ? "" : String(value))
-                    ]);
+                const metadataArguments = tagArguments(patch);
 
-                await run("ffmpeg", [
+                await run(this.ffmpeg(), [
                     "-nostdin", "-v", "error", "-n", "-i", track.path, ...imageArguments,
                     "-map_metadata", "0", "-c", "copy", ...metadataArguments, "-f",
                     formats[extname(track.path).toLowerCase()], temporary,

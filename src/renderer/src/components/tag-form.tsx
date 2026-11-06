@@ -45,7 +45,10 @@ export function TagForm({ genres, values, enabled, batch, busy, onChange, onTogg
                     >
                         <div
                             className="tag-field-label flex h-[22px] items-center justify-between">
-                            <FieldLabel className="flex items-center gap-2 text-xs text-[#bcbcbc]" htmlFor={"tag-" + field}>
+                            <FieldLabel
+                                className="flex items-center gap-2 text-xs text-[#bcbcbc]"
+                                htmlFor={"tag-" + field}
+                            >
                                 <Icon className="size-[14px] text-[#888]"/>
                                 {tagLabels[field]}
                             </FieldLabel>
