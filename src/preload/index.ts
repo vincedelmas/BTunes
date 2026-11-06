@@ -1,4 +1,4 @@
-import type {Rpc} from "../shared/contracts";
+import type {Rpc} from "../shared/types/rpc";
 import {contextBridge, ipcRenderer} from "electron";
 
 

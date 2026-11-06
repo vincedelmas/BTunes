@@ -1,6 +1,6 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
-import type {Snapshot} from "../../../shared/contracts";
+import type {Snapshot} from "../../../shared/types/library";
 import {useCallback, useEffect, useRef, useState} from "react";
 
 

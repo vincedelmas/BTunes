@@ -1,5 +1,6 @@
 import {ArrowRight} from "lucide-react";
-import {tagLabels, type TagPreview} from "../../../shared/tags";
+import {tagLabels} from "../../../shared/tags";
+import type {TagPreview} from "../../../shared/types/tags";
 
 export function TagPreviewList({ preview }: { preview: TagPreview }) {
     return (

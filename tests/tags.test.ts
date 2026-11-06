@@ -8,7 +8,7 @@ import {tmpdir} from "node:os";
 import {parseFile} from "music-metadata";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
 import {TagService} from "../src/main/services/tags.ts";
-import {tagPatchSchema} from "../src/shared/tags.ts";
+import {tagPatchSchema} from "../src/shared/schemas/tags.ts";
 
 const run = promisify(execFile);
 
@@ -130,7 +130,7 @@ async function fixture() {
     };
 }
 
-test("tag edits round-trip MP3, FLAC, and M4A without changing audio or artwork", async () => {
+void test("tag edits round-trip MP3, FLAC, and M4A without changing audio or artwork", async () => {
     const f = await fixture();
 
     try {
@@ -182,7 +182,7 @@ test("tag edits round-trip MP3, FLAC, and M4A without changing audio or artwork"
     }
 });
 
-test("batch edits, unchanged previews, and clearing the year", async () => {
+void test("batch edits, unchanged previews, and clearing the year", async () => {
     const f = await fixture();
 
     try {
@@ -209,7 +209,7 @@ test("batch edits, unchanged previews, and clearing the year", async () => {
     }
 });
 
-test("stale previews and unsupported files cannot modify originals", async () => {
+void test("stale previews and unsupported files cannot modify originals", async () => {
     const f = await fixture();
 
     try {
@@ -240,7 +240,7 @@ test("stale previews and unsupported files cannot modify originals", async () =>
     }
 });
 
-test("a failure after replacement restores every source in a batch", async () => {
+void test("a failure after replacement restores every source in a batch", async () => {
     const f = await fixture();
 
     try {

@@ -1,20 +1,10 @@
 import {useMemo, useState} from "react";
 import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
-import type {Track} from "../../../shared/contracts";
-import {
-    tagFields,
-    tagPatchSchema,
-    type TagPatch,
-    type TagPreview,
-} from "../../../shared/tags";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import type {Track} from "../../../shared/types/library";
+import {tagFields} from "../../../shared/tags";
+import {tagPatchSchema} from "../../../shared/schemas/tags";
+import type {TagPatch, TagPreview} from "../../../shared/types/tags";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {TagForm} from "@/components/tag-form";
 import {TagPreviewList} from "@/components/tag-preview";
 import {Cover} from "@/components/cover";

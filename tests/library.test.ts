@@ -13,7 +13,7 @@ const track = {
     cover: null,
     size: 100,
 };
-test("indexing preserves favorites and play history on rescan", () => {
+void test("indexing preserves favorites and play history on rescan", () => {
     const repo = new LibraryRepository(":memory:");
     try {
         repo.upsert(track);
@@ -31,7 +31,7 @@ test("indexing preserves favorites and play history on rescan", () => {
         repo.db.close();
     }
 });
-test("classic and automatic playlists, parameterized input, deletion cleanup", () => {
+void test("classic and automatic playlists, parameterized input, deletion cleanup", () => {
     const repo = new LibraryRepository(":memory:");
     try {
         repo.upsert(track);
@@ -53,7 +53,7 @@ test("classic and automatic playlists, parameterized input, deletion cleanup", (
     }
 });
 
-test("library revisions change on writes and classic playlist removal preserves the song", () => {
+void test("library revisions change on writes and classic playlist removal preserves the song", () => {
     const repo = new LibraryRepository(":memory:");
 
     try {
@@ -79,7 +79,7 @@ test("library revisions change on writes and classic playlist removal preserves 
     }
 });
 
-test("bulk playlist edits are atomic and do not duplicate memberships", () => {
+void test("bulk playlist edits are atomic and do not duplicate memberships", () => {
     const repo = new LibraryRepository(":memory:");
 
     try {

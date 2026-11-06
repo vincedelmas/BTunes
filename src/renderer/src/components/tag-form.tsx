@@ -1,5 +1,6 @@
 import {CalendarDays, Disc3, Music2, RotateCcw, Tag, UserRound} from "lucide-react";
-import {tagFields, tagLabels, type TagPatch} from "../../../shared/tags";
+import {tagFields, tagLabels} from "../../../shared/tags";
+import type {TagPatch} from "../../../shared/types/tags";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";

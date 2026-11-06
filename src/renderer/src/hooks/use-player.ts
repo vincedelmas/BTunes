@@ -1,13 +1,13 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
-import type {Track} from "../../../shared/contracts";
+import type {Track} from "../../../shared/types/library";
 import {useCallback, useEffect, useRef, useState} from "react";
 
 
 export function usePlayer(onError: (message: string) => void) {
     const cursor = useRef(0);
     const counted = useRef(false);
-    const [current, setCurrent] = useState<Track>();
+    const [currentTrack, setCurrentTrack] = useState<Track>();
     const [queue, setQueue] = useState<Track[]>([]);
     const [volume, setVolume] = useState(0.7);
     const [repeat, setRepeat] = useState(false);
@@ -34,18 +34,20 @@ export function usePlayer(onError: (message: string) => void) {
         setQueue([...tracks]);
         counted.current = false;
 
-        if (current?.id === track.id) {
+        if (currentTrack?.id === track.id) {
             seek(0);
             play();
             return;
         }
 
-        setCurrent(track);
-    }, [current?.id, seek, play]);
+        setCurrentTrack(track);
+    }, [currentTrack?.id, seek, play]);
+
+    const currentTrackId = currentTrack?.id;
 
     useEffect(() => {
-        if (current) play();
-    }, [current?.id, play]);
+        if (currentTrackId) play();
+    }, [currentTrackId, play]);
 
     useEffect(() => {
         if (audio.current) audio.current.volume = volume;
@@ -57,7 +59,7 @@ export function usePlayer(onError: (message: string) => void) {
     }
 
     function next(direction = 1) {
-        if (!current || !queue.length) return;
+        if (!currentTrack || !queue.length) return;
 
         const currentIndex = cursor.current;
         let index = currentIndex + direction;
@@ -81,7 +83,7 @@ export function usePlayer(onError: (message: string) => void) {
     const enqueue = useCallback((tracks: Track[], playNext = false) => {
         if (!tracks.length) return;
 
-        if (!current) {
+        if (!currentTrack) {
             start(tracks[0], tracks);
             return;
         }
@@ -92,15 +94,15 @@ export function usePlayer(onError: (message: string) => void) {
             const index = cursor.current;
             return [...previous.slice(0, index + 1), ...tracks, ...previous.slice(index + 1)];
         });
-    }, [current, start]);
+    }, [currentTrack, start]);
 
     function updateTime() {
         const seconds = audio.current?.currentTime ?? 0;
 
         // Progress belongs to the timeline, never to the library's React tree.
-        if (current && !counted.current && seconds >= Math.min(30, current.duration * 0.5)) {
+        if (currentTrack && !counted.current && seconds >= Math.min(30, currentTrack.duration * 0.5)) {
             counted.current = true;
-            void rpc("track.played", { id: current.id }).catch(report);
+            void rpc("track.played", { id: currentTrack.id }).catch(report);
         }
     }
 
@@ -110,11 +112,23 @@ export function usePlayer(onError: (message: string) => void) {
     }
 
     return {
-        audio, current, queue, playing, shuffle, repeat, volume,
-        setPlaying, setShuffle, setRepeat, setVolume,
-        start, next, stop, seek, toggle, updateTime, enqueue,
+        next,
+        stop,
+        seek,
+        audio,
+        queue,
+        start,
+        toggle,
+        repeat,
+        volume,
+        currentTrack,
+        shuffle,
+        playing,
+        enqueue,
+        setRepeat,
+        setVolume,
+        setPlaying,
+        setShuffle,
+        updateTime,
     };
 }
-
-
-export type PlayerState = ReturnType<typeof usePlayer>;

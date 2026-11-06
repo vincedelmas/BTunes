@@ -3,11 +3,8 @@ import {DatabaseSync} from "node:sqlite";
 import {drizzle} from "drizzle-orm/node-sqlite";
 import {and, eq, inArray, sql} from "drizzle-orm";
 import {migrate} from "drizzle-orm/node-sqlite/migrator";
-import type {Snapshot, Track} from "../../shared/contracts";
+import type {IndexedTrack, Snapshot} from "../../shared/types/library";
 import {folders, playlists, playlistTracks, tracks} from "../database/schema.ts";
-
-
-type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed">;
 
 
 export class LibraryRepository {

@@ -1,5 +1,5 @@
 import {useMemo} from "react";
-import type {Track} from "../../../../shared/contracts";
+import type {Track} from "../../../../shared/types/library";
 import {Cover} from "@/components/cover";
 import {VirtualGrid} from "@/components/virtual-grid";
 

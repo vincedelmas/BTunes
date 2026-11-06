@@ -59,13 +59,16 @@ src/
     services/library.ts      Indexing and file watching
     services/tags.ts         Tag previews, writes, backups, and rollback
     services/audio.ts        Streaming audio with HTTP byte-range seeking
+    types/                   Filesystem tag-write planning types
   preload/index.ts           Isolated bridge exposing one rpc() method
   shared/
-    contracts.ts             Typed RPC contracts
-    tags.ts                  Shared tag fields, validation, and preview types
+    types/                   Library models, schema-inferred RPC inputs, tags, and sorting types
+    schemas/                 Zod RPC input and tag-edit validation
+    tags.ts                  Shared tag field names and labels
   renderer/src/
     App.tsx                  Application composition and view selection
     hooks/                   Library and playback behavior
+    types/                   Reusable player and track-action contracts
     lib/                     Shared music utilities, RPC client, class names
     components/
       ui/                    Reusable shadcn/ui primitives
@@ -91,6 +94,8 @@ Application data is stored under `app.getPath('userData')`, usually `~/.config/B
 Read [AGENTS.md](./AGENTS.md) for English-language, readability, component reuse, and utility reuse conventions.
 
 ```sh
+bun run lint            # Oxlint, including type-aware deprecated API checks
+bun run lint:fix        # apply available lint fixes (does not format)
 bun run knip            # find unused files, exports, and dependencies
 bun run db:generate     # generate a versioned migration after changing schema.ts
 bun run test            # repository and filesystem tag-writing tests
@@ -176,3 +181,17 @@ playback and tag-saving checks pass on the current development machine despite
 that startup diagnostic. These messages alone do not indicate a tag-writing
 failure. BTunes keeps Electron's graphics defaults rather than suppressing logs
 or forcing a different rendering backend.
+
+## Linting and shared contracts
+
+Oxlint runs with type-aware analysis through `oxlint-tsgolint`. Deprecated APIs
+(`typescript/no-deprecated`) are errors, and `bun run lint` fails on warnings.
+Build output and dependencies are excluded. One documented, local exemption for
+TanStack Virtual covers React Compiler compatibility; deprecated API checks remain
+enabled everywhere. WebStorm remains the formatter.
+
+Reusable domain and RPC types live in `src/shared/types/`. Renderer contracts live
+in `src/renderer/src/types/`, and main-process workflow types in `src/main/types/`.
+Component-specific props remain beside their component. All Zod validation lives
+in `src/shared/schemas/`; RPC input types and `TagPatch` are inferred from these
+schemas instead of duplicating their shapes.

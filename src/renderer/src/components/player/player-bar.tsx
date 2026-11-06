@@ -2,10 +2,10 @@ import {cn} from "@/lib/utils";
 import {PlaybackTimeline} from "@/components/player/playback-timeline";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
-import type {PlayerState} from "@/hooks/use-player";
-import type {Track} from "../../../../shared/contracts";
+import type {PlayerState} from "@/types/player";
+import type {Track} from "../../../../shared/types/library";
 
-import {ListMusic, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Square, Volume2,} from "lucide-react";
+import {ListMusic, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Square, Volume2} from "lucide-react";
 
 
 interface PlayerBarProps {

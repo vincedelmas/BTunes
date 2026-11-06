@@ -1,18 +1,19 @@
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
 import {ArrowLeft, Headphones, Pencil, Play, Search, Smartphone} from "lucide-react";
-import type {Track} from "../../shared/contracts";
+import type {Track} from "../../shared/types/library";
 import {Sidebar} from "@/components/library/sidebar";
 import {AlbumGrid} from "@/components/library/album-grid";
 import {ArtistGrid} from "@/components/library/artist-grid";
 import {TrackTable} from "@/components/library/track-table";
-import type {TrackActions} from "@/components/library/track-context-menu";
+import type {TrackActions} from "@/types/track-actions";
 import {CollectionEmptyState} from "@/components/library/collection-empty-state";
 import {PlayerBar} from "@/components/player/player-bar";
 import {QueuePanel} from "@/components/player/queue-panel";
 import {TagEditor} from "@/components/tag-editor";
 import {SettingsPage} from "@/components/settings-page";
 import {FilterBar} from "@/components/library/filter-bar";
-import {compareTracks, type TrackSort} from "../../shared/track-sorting";
+import {compareTracks} from "../../shared/track-sorting";
+import type {TrackSort} from "../../shared/types/track-sorting";
 import {EmptyState} from "@/components/empty-state";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -35,6 +36,7 @@ const viewTitles: Record<string, string> = {
 export function App() {
     const library = useLibrary();
     const player = usePlayer(library.setError);
+    const { audio: audioRef } = player;
     const [view, setView] = useState("tracks");
     const [search, setSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
@@ -96,7 +98,7 @@ export function App() {
         return tracks.filter((track) => ids.has(track.id));
     }, [tracks, selected]);
     const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
-    const current = library.data.tracks.find((track) => track.id === player.current?.id) ?? player.current;
+    const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
 
     function clearFilters() {
         setSearch("");
@@ -220,11 +222,11 @@ export function App() {
             {showQueue && <QueuePanel player={player} onClose={() => setShowQueue(false)}/>}
             <PlayerBar player={player} current={current} onQueue={() => setShowQueue(!showQueue)}/>
             {editing && <TagEditor tracks={editing} onClose={() => setEditing(undefined)} onSaved={tagsSaved}/>}
-            <audio ref={player.audio} src={player.current ? "btunes://audio/" + player.current.id : undefined}
+            <audio ref={audioRef} src={player.currentTrack ? "btunes://audio/" + player.currentTrack.id : undefined}
                    onPlay={() => player.setPlaying(true)} onPause={() => player.setPlaying(false)}
                    onTimeUpdate={player.updateTime} onEnded={() => player.next()}
                    onError={() => {
-                       if (player.current) library.setError("Unable to play this file. It may be missing or use an unsupported codec.");
+                       if (player.currentTrack) library.setError("Unable to play this file. It may be missing or use an unsupported codec.");
                    }}
             />
         </div>

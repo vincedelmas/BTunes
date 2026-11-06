@@ -13,7 +13,9 @@
         "test": "node --experimental-strip-types --test tests/*.test.ts",
         "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs",
         "knip": "knip",
-        "db:generate": "drizzle-kit generate"
+        "db:generate": "drizzle-kit generate",
+        "lint": "oxlint --max-warnings=0",
+        "lint:fix": "oxlint --fix --max-warnings=0"
     },
     "dependencies": {
         "@base-ui/react": "^1.9.0",
@@ -44,6 +46,8 @@
         "electron-builder": "26.18.0",
         "electron-vite": "6.0.0",
         "knip": "^6.44.1",
+        "oxlint": "^1.92.0",
+        "oxlint-tsgolint": "^7.0.2006",
         "tailwindcss": "4.3.4",
         "typescript": "7.0.2",
         "vite": "8.3.6"

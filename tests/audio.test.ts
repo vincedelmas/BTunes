@@ -5,7 +5,7 @@ import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {serveAudio} from "../src/main/services/audio.ts";
 
-test("audio streaming serves exact byte ranges, suffixes, HEAD, and invalid-range responses", async () => {
+void test("audio streaming serves exact byte ranges, suffixes, HEAD, and invalid-range responses", async () => {
     const directory = await mkdtemp(join(tmpdir(), "btunes-audio-"));
     const path = join(directory, "song.mp3");
     const bytes = Buffer.from(Array.from({ length: 200 }, (_, index) => index));

@@ -1,7 +1,6 @@
-import type {Track} from "./contracts";
+import type {Track} from "./types/library";
 
-export type TrackSortField = "title" | "artist" | "album" | "genre" | "duration" | "year" | "plays" | "lastPlayed";
-export type TrackSort = { field: TrackSortField; descending: boolean };
+import type {TrackSort, TrackSortField} from "./types/track-sorting";
 
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 const missingText: Partial<Record<TrackSortField, string>> = {

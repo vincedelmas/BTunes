@@ -1,4 +1,3 @@
-import {z} from "zod";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
 import {TagService} from "./services/tags";
@@ -6,7 +5,8 @@ import {serveAudio} from "./services/audio";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
 import {migrateLegacyUserData} from "./services/user-data";
-import {type TagPatch, tagPatchSchema} from "../shared/tags";
+import {rpcSchemas} from "../shared/schemas/rpc";
+import type {RpcInput} from "../shared/types/rpc";
 import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
 
 
@@ -39,7 +39,7 @@ let service: LibraryService;
 const pendingWrites = new Set<Promise<unknown>>();
 
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
     if (app.getPath("userData") === defaultUserData) {
         for (const legacyName of ["sillage", "Sillage"]) {
             await migrateLegacyUserData(join(applicationData, legacyName), defaultUserData);
@@ -52,30 +52,18 @@ app.whenReady().then(async () => {
         app.isPackaged ? join(process.resourcesPath, "drizzle") : join(__dirname, "../../drizzle"),
     );
 
-    const id = z.object({ id: z.number().int().positive() });
-
-    const playlistMutation = z.union([
-        z.object({ playlistId: z.number().int().positive(), trackId: z.number().int().positive() }).strict(),
-        z.object({ playlistId: z.number().int().positive(), trackIds: z.array(z.number().int().positive()).min(1).max(10000) }).strict(),
-    ]);
-
-    type PlaylistMutation = z.infer<typeof playlistMutation>;
-
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 
     const routes = {
         "tags.preview": {
-            schema: z.object({
-                patch: tagPatchSchema,
-                ids: z.array(z.number().int().positive()).min(1).max(100),
-            }),
-            run: (input: { ids: number[]; patch: TagPatch }) => tags.preview(input.ids, input.patch),
+            schema: rpcSchemas["tags.preview"],
+            run: (input: RpcInput<"tags.preview">) => tags.preview(input.ids, input.patch),
         },
 
         "tags.save": {
-            schema: z.object({ token: z.string().uuid() }),
-            run: async (input: { token: string }) => {
+            schema: rpcSchemas["tags.save"],
+            run: async (input: RpcInput<"tags.save">) => {
                 const write = tags.save(input.token);
                 pendingWrites.add(write);
 
@@ -89,24 +77,24 @@ app.whenReady().then(async () => {
         },
 
         "library.get": {
-            schema: z.object({ revision: z.number().int().nonnegative() }).optional(),
-            run: (input: { revision: number } | undefined) => input?.revision === repo.revision ? null : repo.snapshot(),
+            schema: rpcSchemas["library.get"],
+            run: (input: RpcInput<"library.get">) => input?.revision === repo.revision ? null : repo.snapshot(),
         },
         "track.reveal": {
-            schema: id,
-            run: (input: { id: number }) => {
+            schema: rpcSchemas["track.reveal"],
+            run: (input: RpcInput<"track.reveal">) => {
                 const track = repo.get(input.id);
                 if (!track) throw new Error("Track not found.");
                 shell.showItemInFolder(track.path);
             },
         },
         "playlist.remove": {
-            schema: playlistMutation,
-            run: (input: PlaylistMutation) => repo.removeFromPlaylist(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
+            schema: rpcSchemas["playlist.remove"],
+            run: (input: RpcInput<"playlist.remove">) => repo.removeFromPlaylist(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
         },
 
         "library.import": {
-            schema: z.undefined(),
+            schema: rpcSchemas["library.import"],
             run: async () => {
                 const result = await dialog.showOpenDialog({
                     properties: ["openDirectory"],
@@ -117,31 +105,28 @@ app.whenReady().then(async () => {
         },
 
         "track.favorite": {
-            schema: id,
-            run: (input: { id: number }) => repo.favorite(input.id),
+            schema: rpcSchemas["track.favorite"],
+            run: (input: RpcInput<"track.favorite">) => repo.favorite(input.id),
         },
 
         "track.played": {
-            schema: id,
-            run: (input: { id: number }) => repo.played(input.id),
+            schema: rpcSchemas["track.played"],
+            run: (input: RpcInput<"track.played">) => repo.played(input.id),
         },
 
         "playlist.create": {
-            schema: z.object({
-                name: z.string().trim().min(1).max(100),
-                rule: z.string().trim().min(1).max(100).optional(),
-            }),
-            run: (input: { name: string; rule?: string }) => repo.create(input.name, input.rule),
+            schema: rpcSchemas["playlist.create"],
+            run: (input: RpcInput<"playlist.create">) => repo.create(input.name, input.rule),
         },
 
         "playlist.add": {
-            schema: playlistMutation,
-            run: (input: PlaylistMutation) => repo.add(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
+            schema: rpcSchemas["playlist.add"],
+            run: (input: RpcInput<"playlist.add">) => repo.add(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
         },
 
         "playlist.tracks": {
-            schema: id,
-            run: (input: { id: number }) => repo.playlist(input.id),
+            schema: rpcSchemas["playlist.tracks"],
+            run: (input: RpcInput<"playlist.tracks">) => repo.playlist(input.id),
         },
     };
 

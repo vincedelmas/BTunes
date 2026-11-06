@@ -21,3 +21,23 @@
 - Use Drizzle's schema and query builder for database access. Generate versioned migrations for schema changes; preserve existing libraries.
 - Run `bun run knip` after changing imports, exports, dependencies, or entry points. Do not silence application findings with broad ignore
   rules.
+- After creating the feature, fix, refactor, etc. give me the name of the commit using a conventional commit message.
+
+
+- Group reusable types in the relevant `types/` folder and Zod validators in `src/shared/schemas/`. Infer validated input types from
+  schemas.
+- Run `bun run lint` after changes. Keep Oxlint's type-aware `typescript/no-deprecated` rule enabled; replace deprecated APIs instead of
+  suppressing them.
+- please do that for the types of the components with the interface above it:
+
+```typescript
+interface CoverProps {
+    track?: Track;
+    large?: boolean;
+}
+
+
+export function Cover({ track, large = false }: CoverProps) {
+    //...
+}
+```

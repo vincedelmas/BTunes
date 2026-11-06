@@ -1,26 +1,15 @@
+import type {PlannedFile, SavePlan} from "../types/tags";
 import {promisify} from "node:util";
 import {parseFile} from "music-metadata";
 import {createReadStream} from "node:fs";
 import {execFile} from "node:child_process";
 import type {LibraryService} from "./library";
-import type {Track} from "../../shared/contracts";
 import {createHash, randomUUID} from "node:crypto";
 import {basename, dirname, extname, join} from "node:path";
-import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile,} from "node:fs/promises";
-import {tagFields, type TagPatch, tagPatchSchema, type TagPreview, type TagSaveResult,} from "../../shared/tags.ts";
-
-
-type SavePlan = {
-    expiresAt: number;
-    files: PlannedFile[];
-};
-
-
-type PlannedFile = {
-    track: Track;
-    patch: TagPatch;
-    fingerprint: string;
-};
+import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/promises";
+import {tagFields} from "../../shared/tags.ts";
+import type {TagPatch, TagPreview, TagSaveResult} from "../../shared/types/tags.ts";
+import {tagPatchSchema} from "../../shared/schemas/tags.ts";
 
 
 const run = promisify(execFile);

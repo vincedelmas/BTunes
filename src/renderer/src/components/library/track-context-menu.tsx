@@ -1,22 +1,21 @@
+import type {TrackActions} from "@/types/track-actions";
 import type {ReactElement} from "react";
 import {Clipboard, FolderOpen, ListEnd, ListPlus, Pencil, Play, UserRound, X} from "lucide-react";
-import type {Playlist, Track} from "../../../../shared/contracts";
+import type {Playlist, Track} from "../../../../shared/types/library";
 import {
-    ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuLabel,
-    ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger,
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuLabel,
+    ContextMenuSeparator,
+    ContextMenuSub,
+    ContextMenuSubContent,
+    ContextMenuSubTrigger,
+    ContextMenuTrigger
 } from "@/components/ui/context-menu";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
-
-export interface TrackActions {
-    onPlay: (track: Track, tracks?: Track[]) => void;
-    onEdit: (tracks: Track[]) => void;
-    onEnqueue: (tracks: Track[], playNext?: boolean) => void;
-    onAdd: (playlistId: number, trackIds: number[]) => void;
-    onArtist: (artist: string) => void;
-    onError: (message: string) => void;
-    onRemove?: (trackIds: number[]) => void;
-}
 
 export function TrackContextMenu({ tracks, playlists, actions, children }: {
     tracks: Track[];

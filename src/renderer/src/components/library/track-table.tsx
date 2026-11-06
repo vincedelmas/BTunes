@@ -1,13 +1,15 @@
 import {memo, useCallback, useEffect, useMemo, useRef} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
-import {useTable, tableFeatures, columnSizingFeature, columnResizingFeature, type ColumnSizingState} from "@tanstack/react-table";
+import {useTable, tableFeatures, columnSizingFeature, columnResizingFeature} from "@tanstack/react-table";
+import type {ColumnSizingState} from "@tanstack/react-table";
 import {ArrowDown, ArrowUp, ArrowUpDown, Pencil, Play, Volume2} from "lucide-react";
-import type {Playlist, Track} from "../../../../shared/contracts";
-import type {TrackSort, TrackSortField} from "../../../../shared/track-sorting";
+import type {Playlist, Track} from "../../../../shared/types/library";
+import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {TrackContextMenu, type TrackActions} from "@/components/library/track-context-menu";
+import {TrackContextMenu} from "@/components/library/track-context-menu";
+import type {TrackActions} from "@/types/track-actions";
 import {cn} from "@/lib/utils";
 import {formatTime} from "@/lib/music";
 

@@ -1,4 +1,5 @@
-import {useCallback, useEffect, useRef, useState, type ReactNode} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
+import type {ReactNode} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
 
 export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label }: {
@@ -27,6 +28,8 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
         return () => observer.disconnect();
     }, []);
 
+    // TanStack Virtual maintains mutable measurements. Keep this hook outside compiler memoization.
+    // oxlint-disable-next-line react/incompatible-library
     const virtualizer = useVirtualizer({
         count: Math.ceil(items.length / columns),
         getScrollElement: () => container.current,

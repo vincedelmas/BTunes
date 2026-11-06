@@ -1,6 +1,7 @@
 import {createHash} from "node:crypto";
 import {parseFile} from "music-metadata";
-import {type FSWatcher, watch} from "chokidar";
+import type {FSWatcher} from "chokidar";
+import {watch} from "chokidar";
 import {basename, extname, join} from "node:path";
 import {LibraryRepository} from "../repositories/library";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";

@@ -1,5 +1,5 @@
 import {ArrowDownUp, ArrowLeft, X} from "lucide-react";
-import type {TrackSort, TrackSortField} from "../../../../shared/track-sorting";
+import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import {FilterSelect} from "@/components/filter-select";
 import {Button} from "@/components/ui/button";
 

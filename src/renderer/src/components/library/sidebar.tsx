@@ -3,9 +3,9 @@ import {useState} from "react";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {FilterSelect} from "@/components/filter-select";
-import type {Snapshot} from "../../../../shared/contracts";
+import type {Snapshot} from "../../../../shared/types/library";
 import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
-import {Copy, Disc3, Settings, History, Library, ListMusic, Music2, Plus, Smartphone,} from "lucide-react";
+import {Copy, Disc3, Settings, History, Library, ListMusic, Music2, Plus, Smartphone} from "lucide-react";
 
 
 const navigation = [

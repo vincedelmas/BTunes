@@ -1,10 +1,11 @@
 import {memo} from "react";
 import {Pencil, Play} from "lucide-react";
-import type {Playlist, Track} from "../../../../shared/contracts";
+import type {Playlist, Track} from "../../../../shared/types/library";
 import {Cover} from "@/components/cover";
 import {VirtualGrid} from "@/components/virtual-grid";
 import {Button} from "@/components/ui/button";
-import {TrackContextMenu, type TrackActions} from "@/components/library/track-context-menu";
+import {TrackContextMenu} from "@/components/library/track-context-menu";
+import type {TrackActions} from "@/types/track-actions";
 
 export const AlbumGrid = memo(function AlbumGrid({ albums, playlists, actions }: {
     albums: Track[][];

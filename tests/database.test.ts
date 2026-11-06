@@ -6,7 +6,7 @@ import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
 
-test("Drizzle adopts a legacy database without losing its library or playlists", () => {
+void test("Drizzle adopts a legacy database without losing its library or playlists", () => {
     const root = mkdtempSync(join(tmpdir(), "btunes-migration-"));
     const file = join(root, "library.sqlite");
     const legacy = new DatabaseSync(file);

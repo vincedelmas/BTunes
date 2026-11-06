@@ -6,7 +6,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {migrateLegacyUserData} from "../src/main/services/user-data.ts";
 
-test("renamed app preserves WAL data, artwork, and backups without overwriting a new library", async () => {
+void test("renamed app preserves WAL data, artwork, and backups without overwriting a new library", async () => {
     const root = await mkdtemp(join(tmpdir(), "btunes-user-data-"));
     const legacy = join(root, "legacy");
     const target = join(root, "BTunes");
@@ -43,7 +43,7 @@ test("renamed app preserves WAL data, artwork, and backups without overwriting a
     }
 });
 
-test("failed data migration leaves the legacy library and target artwork intact", async () => {
+void test("failed data migration leaves the legacy library and target artwork intact", async () => {
     const root = await mkdtemp(join(tmpdir(), "btunes-user-data-"));
     const legacy = join(root, "legacy");
     const target = join(root, "BTunes");
