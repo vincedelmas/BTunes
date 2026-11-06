@@ -24,7 +24,9 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
     return (
         <div className="settings-page overflow-auto min-h-0 flex-1 pt-4 px-6 pb-8">
             <div
-                className="settings-heading max-w-220 mb-8 [&_.eyebrow]:text-primary [&_.eyebrow]:text-[10px] [&_.eyebrow]:tracking-[2px] [&_h1]:text-[34px] [&_h1]:font-[750] [&_h1]:tracking-[-1.5px] [&_h1]:mt-2 [&_h1]:mx-0 [&_h1]:mb-3">
+                className="settings-heading max-w-220 mb-8 [&_.eyebrow]:text-primary [&_.eyebrow]:text-[10px] [&_.eyebrow]:tracking-[2px]
+                [&_h1]:text-[34px] [&_h1]:font-[750] [&_h1]:tracking-[-1.5px] [&_h1]:mt-2 [&_h1]:mx-0 [&_h1]:mb-3"
+            >
                 <p className="eyebrow text-xs font-bold m-0">
                     BTUNES
                 </p>
@@ -34,18 +36,12 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                 </p>
             </div>
             {notice &&
-                <p
-                    role="status"
-                    className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto"
-                >
+                <p role="status" className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto">
                     {notice}
                 </p>
             }
             {error &&
-                <p
-                    role="alert"
-                    className="text-destructive"
-                >
+                <p role="alert" className="text-destructive">
                     {error}
                 </p>
             }
@@ -65,16 +61,23 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                 </CardHeader>
                 <CardContent>
                     {folders.length ?
-                        <ul className="folder-list flex flex-col gap-[10px] [&_li]:flex [&_li]:items-center [&_li]:gap-[14px] [&_li]:p-4 [&_li]:bg-[#ffffff04] [&_li]:border [&_li]:border-[#ffffff09] [&_li]:rounded-[10px] [&_li_>_div:nth-child(2)]:flex-1 [&_li_>_div:nth-child(2)]:min-w-0 [&_strong]:block [&_strong]:text-[13px] [&_strong]:mb-[5px] [&_span]:block [&_span]:text-muted-foreground [&_span]:text-[11px] [&_span]:[overflow-wrap:anywhere]">
+                        <ul
+                            className="folder-list flex flex-col gap-[10px] [&_li]:flex [&_li]:items-center [&_li]:gap-[14px]
+                            [&_li]:p-4 [&_li]:bg-[#ffffff04] [&_li]:border [&_li]:border-[#ffffff09] [&_li]:rounded-[10px]
+                            [&_li_>_div:nth-child(2)]:flex-1 [&_li_>_div:nth-child(2)]:min-w-0 [&_strong]:block [&_strong]:text-[13px]
+                            [&_strong]:mb-[5px] [&_span]:block [&_span]:text-muted-foreground [&_span]:text-[11px]
+                            [&_span]:[overflow-wrap:anywhere]"
+                        >
                             {folders.map((folder) =>
                                 <li key={folder}>
-                                    <div className="folder-icon grid place-items-center w-[42px] h-[42px] text-primary bg-[#1ed7600c] rounded-[9px] shrink-0 [&_svg]:w-5">
+                                    <div
+                                        className="folder-icon grid place-items-center w-[42px] h-[42px] text-primary bg-[#1ed7600c]
+                                        rounded-[9px] shrink-0 [&_svg]:w-5"
+                                    >
                                         <Folder/>
                                     </div>
                                     <div>
-                                        <strong>
-                                            {folder.split("/").filter(Boolean).at(-1) ?? folder}
-                                        </strong>
+                                        <strong>{folder.split("/").filter(Boolean).at(-1) ?? folder}</strong>
                                         <span>{folder}</span>
                                     </div>
                                     <Badge variant="outline">
@@ -84,18 +87,17 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                             )}
                         </ul>
                         :
-                        <div className="settings-no-folders flex items-center gap-[14px] p-4 bg-[#ffffff04] border
-                        border-[#ffffff09] rounded-[10px]">
+                        <div
+                            className="settings-no-folders flex items-center gap-[14px] p-4 bg-[#ffffff04] border
+                            border-[#ffffff09] rounded-[10px]"
+                        >
                             <Folder/>
                             <p>No folders yet. Add one to start your collection.</p>
                         </div>
                     }
                 </CardContent>
                 <CardFooter>
-                    <Button
-                        disabled={busy}
-                        onClick={onImport}
-                    >
+                    <Button disabled={busy} onClick={onImport}>
                         <FolderPlus/>
                         {busy ? "Indexing…" : "Add music folder"}
                     </Button>
@@ -120,11 +122,7 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button
-                        variant="outline"
-                        aria-label="Refresh library"
-                        onClick={onRefresh}
-                    >
+                    <Button variant="outline" aria-label="Refresh library" onClick={onRefresh}>
                         <RefreshCw/>Refresh library
                     </Button>
                 </CardFooter>
