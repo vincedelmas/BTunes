@@ -28,7 +28,7 @@ function OrderList({ title, group, items, onChange }: OrderListProps) {
                 {items.map((item) => (
                     <li
                         key={item.id}
-                        className={cn("flex items-center justify-between gap-4 rounded-lg bg-muted/30 px-4 py-3", ordering.dragging === item.id && "opacity-40")}
+                        className={cn("flex items-center justify-between gap-4 rounded-lg border border-border bg-control px-4 py-3", ordering.dragging === item.id && "opacity-40")}
                         onDragOver={ordering.over}
                         onDrop={(ev) => ordering.drop(ev, item.id)}
                     >

@@ -167,7 +167,7 @@ export function App() {
                 onSettings={() => showSettings()}
             />
 
-            <main className="isolate overflow-hidden min-w-0 rounded-xl border border-border/50 bg-background flex flex-col">
+            <main className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col">
                 {view !== "settings" && (
                     <header
                         className="topbar h-[72px] flex items-center gap-5 py-0 px-6 sticky top-0 bg-background

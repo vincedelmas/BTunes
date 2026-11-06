@@ -81,7 +81,6 @@ export function TagForm({ genres, values, enabled, batch, busy, onChange, onTogg
                             onChange={(value) => onChange("genre", value)}
                         /> : (
                             <Input
-                                className="border-border bg-background"
                                 id={"tag-" + field}
                                 type={field === "year" ? "number" : "text"}
                                 min={field === "year" ? 0 : undefined}

@@ -15,7 +15,7 @@ export function ReorderHandle({ label, onDragStart, onDragEnd, onKeyDown }: Reor
             type="button"
             variant="ghost"
             size="icon-xs"
-            className="reorder-handle w-5 text-muted-foreground cursor-grab opacity-[0.55] active:cursor-grabbing hover:opacity-[1] hover:text-primary focus-visible:opacity-[1] focus-visible:text-primary"
+            className="reorder-handle w-5 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-primary focus-visible:text-primary"
             draggable
             aria-label={label}
             title="Drag to reorder, or hold Alt and use the arrow keys"

@@ -44,7 +44,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
 
     return (
         <TableHead
-            className="relative h-9 min-w-0 overflow-hidden border-b px-2 py-0 text-xs font-normal text-muted-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground data-[dragging=true]:bg-secondary data-[dragging=true]:opacity-60"
+            className="relative h-9 min-w-0 overflow-hidden border-b px-2 py-0 text-xs font-medium text-muted-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground data-[dragging=true]:bg-secondary data-[dragging=true]:opacity-60"
             data-column={column.id}
             onDragOver={reordering.over}
             onDrop={(ev) => reordering.drop(ev, column.id)}
@@ -62,7 +62,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
                 onClick={() => onSort({ field, descending: active ? !sort.descending : false })}
             >
                 <span className="truncate">{label}</span>
-                <SortIcon className={cn("size-[13px] shrink-0 opacity-35", active && "text-primary opacity-100")}/>
+                <SortIcon className={cn("size-[13px] shrink-0", active && "text-primary")}/>
             </button>
             <div
                 role="separator"
@@ -73,7 +73,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
                 aria-valuemax={column.columnDef.maxSize}
                 aria-valuenow={column.getSize()}
                 title="Drag to resize. Double-click to reset."
-                className={cn("column-resizer absolute right-[-4px] top-[9px] bottom-[9px] w-2 cursor-col-resize touch-none z-[2] after:content-[''] after:absolute after:left-[3px] after:w-[2px] after:h-full after:bg-[#ffffff25] after:rounded-[2px] [&:hover::after]:bg-primary [&:focus-visible::after]:bg-primary [&.is-resizing::after]:bg-primary", column.getIsResizing() && "is-resizing")}
+                className={cn("column-resizer absolute right-[-4px] top-[9px] bottom-[9px] w-2 cursor-col-resize touch-none z-[2] after:content-[''] after:absolute after:left-[3px] after:w-[2px] after:h-full after:bg-input after:rounded-[2px] [&:hover::after]:bg-primary [&:focus-visible::after]:bg-primary [&.is-resizing::after]:bg-primary", column.getIsResizing() && "is-resizing")}
                 onMouseDown={header.getResizeHandler()}
                 onTouchStart={header.getResizeHandler()}
                 onDoubleClick={() => column.resetSize()}

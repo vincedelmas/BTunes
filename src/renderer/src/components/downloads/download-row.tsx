@@ -47,7 +47,7 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
                     onSelect(ev);
                 }
             }}
-            className={cn("download-row flex h-[72px] min-w-0 items-center gap-4 rounded-lg border border-transparent px-3 outline-none hover:bg-card focus-visible:border-primary", selected && "border-primary/30 bg-primary/5")}
+            className={cn("download-row flex h-[72px] min-w-0 items-center gap-4 rounded-lg border border-transparent px-3 outline-none hover:bg-accent focus-visible:border-primary", selected && "border-primary bg-selection")}
         >
             <Cover source={item.artwork?.thumbnail}/>
             <div className="min-w-0 flex-1">

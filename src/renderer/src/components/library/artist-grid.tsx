@@ -43,7 +43,7 @@ export function ArtistGrid({ currentTrack, reveal, onRevealed, tracks, onArtist 
                 <button
                     data-artist={artist.name}
                     aria-current={currentTrack && getAlbumArtist(currentTrack) === artist.name ? true : undefined}
-                    className="artist w-full min-w-0 rounded-xl border border-transparent bg-transparent p-3 text-left transition-colors hover:bg-card focus-visible:border-primary focus-visible:outline-none aria-current:border-primary/60 aria-current:bg-primary/5"
+                    className="artist w-full min-w-0 rounded-xl border border-transparent bg-transparent p-3 text-left transition-colors hover:bg-accent focus-visible:border-primary focus-visible:outline-none aria-current:border-primary aria-current:bg-selection"
                     onClick={() => onArtist(artist.name)}
                 >
                     <div className="relative mb-4 [&_.cover]:rounded-full">

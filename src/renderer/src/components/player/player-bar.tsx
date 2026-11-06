@@ -20,7 +20,7 @@ interface PlayerBarProps {
 
 export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: PlayerBarProps) {
     return (
-        <footer className="player-bar col-span-full flex items-center justify-between border-t border-border/60 bg-background py-3 px-4 gap-5">
+        <footer className="player-bar col-span-full flex items-center justify-between rounded-t-xl border border-b-0 border-border bg-card py-3 px-4 gap-5">
             <div
                 className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-14 [&_.cover]:rounded-lg">
                 <Cover
@@ -34,14 +34,14 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
 
             <div className="transport w-[42%] max-w-[590px]">
                 <div
-                    className="transport-buttons flex justify-center items-center gap-2 mb-2 text-muted-foreground">
+                    className="transport-buttons flex justify-center items-center gap-2 mb-2 text-content">
                     <Button
                         size="icon"
                         variant="ghost"
                         aria-label="Shuffle"
                         title="Shuffle"
                         aria-pressed={player.shuffle}
-                        className={cn(player.shuffle && "enabled text-primary")}
+                        className={cn(player.shuffle && "enabled bg-selection text-primary ring-1 ring-primary/60")}
                         onClick={() => player.setShuffle(!player.shuffle)}
                     >
                         <Shuffle/>
@@ -87,7 +87,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                         title={"Repeat: " + player.repeat}
                         data-repeat={player.repeat}
                         aria-pressed={player.repeat !== "off"}
-                        className={cn(player.repeat !== "off" && "enabled text-primary")}
+                        className={cn(player.repeat !== "off" && "enabled bg-selection text-primary ring-1 ring-primary/60")}
                         onClick={player.cycleRepeat}
                     >
                         {player.repeat === "one" ? <Repeat1/> : <Repeat/>}
@@ -115,13 +115,13 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                 />
             </div>
 
-            <div className="volume flex items-center gap-3 text-muted-foreground">
+            <div className="volume flex items-center gap-3 text-content">
                 <Button
                     size="icon"
                     variant="ghost"
                     aria-label="Show queue"
                     aria-pressed={queueOpen}
-                    className={cn(queueOpen && "text-primary bg-primary/10")}
+                    className={cn(queueOpen && "text-primary bg-selection ring-1 ring-primary/60")}
                     title="Show queue"
                     onClick={onQueue}
                 >

@@ -184,7 +184,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                     onChange={(id, visible) => table.getColumn(id)?.toggleVisibility(visible)}
                 >
                     <TableHeader
-                        className="sticky top-0 z-10 bg-background"
+                        className="sticky top-0 z-10 bg-card"
                         tabIndex={0}
                         aria-label="Song columns"
                     >
@@ -229,7 +229,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     data-track-id={track.id}
                                     aria-rowindex={row.index + 2}
                                     aria-selected={selectedIds.has(track.id)}
-                                    className={cn("group h-9 border-border/30 hover:bg-secondary/60 aria-selected:bg-primary/10", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
+                                    className={cn("group h-9 border-border/60 hover:bg-accent aria-selected:bg-selection aria-selected:shadow-[inset_3px_0_0_var(--primary)]", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
                                     tabIndex={0}
                                     onClick={(ev) => {
                                         if (!(ev.target as HTMLElement).closest("button")) selection.select(track.id, ev);
@@ -245,7 +245,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     {visibleColumns.map((column) => (
                                         <TableCell
                                             key={column.id}
-                                            className="min-w-0 truncate px-2 py-1 text-sm text-muted-foreground tabular-nums"
+                                            className="min-w-0 truncate px-2 py-1 text-sm text-content tabular-nums"
                                             data-column={column.id}
                                         >
                                             {renderCell(track, column.id)}

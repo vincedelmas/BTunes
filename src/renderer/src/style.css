@@ -24,11 +24,16 @@
     --radius-sm: 4px;
     --radius-xl: 12px;
     --radius-2xl: 16px;
+    --color-canvas: var(--canvas);
+    --color-control: var(--control);
+    --color-content: var(--content);
+    --color-selection: var(--selection);
+    --color-selection-foreground: var(--selection-foreground);
     --color-background: var(--background);
     --color-foreground: var(--foreground);
     --color-card: var(--card);
     --color-card-foreground: var(--foreground);
-    --color-popover: var(--card);
+    --color-popover: var(--popover);
     --color-popover-foreground: var(--foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
@@ -36,12 +41,12 @@
     --color-secondary-foreground: var(--foreground);
     --color-muted: var(--secondary);
     --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--secondary);
+    --color-accent: var(--accent);
     --color-accent-foreground: var(--foreground);
     --color-destructive: #f49b9b;
     --color-warning: #e4be79;
     --color-border: var(--border);
-    --color-input: var(--border);
+    --color-input: var(--input);
     --color-ring: var(--primary);
     --radius-md: 6px;
     --radius-lg: 8px;
@@ -50,18 +55,28 @@
 :root {
     --radius: 8px;
     color-scheme: dark;
-    --background: #0b0c0e;
-    --foreground: #f1f0ed;
-    --card: #121315;
-    --primary: #e8d9b8;
+    /* Near-black foundations; raised surfaces carry the visual hierarchy. */
+    --canvas: #060708;
+    --background: #0c0e11;
+    --card: #15171b;
+    --popover: #1e2127;
+    --control: #101216;
+    --foreground: #f3f4f6;
+    --content: #c7cdd8;
+    --primary: #f0d5a3;
     --primary-foreground: #211d15;
-    --secondary: #1c1d20;
-    --muted-foreground: #a5a5ad;
-    --border: #292a2e;
+    --secondary: #252a33;
+    --accent: #2d333e;
+    --selection: #342b20;
+    --selection-foreground: #f8e8cd;
+    --muted-foreground: #a3aab8;
+    /* Structural separators stay quiet; control outlines remain identifiable. */
+    --border: #343a46;
+    --input: #707988;
     font-family: "Inter Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     color: var(--foreground);
-    background: #060708;
+    background: var(--canvas);
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
 }
@@ -111,7 +126,7 @@ button:disabled {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: var(--input);
     border: 2px solid var(--background);
     border-radius: 10px;
 }

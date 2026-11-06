@@ -48,7 +48,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
     }
 
     return (
-        <aside className="sidebar bg-background/40 rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
+        <aside className="sidebar bg-canvas rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
             <div
                 className="brand flex items-center gap-3 mt-0 mx-3 mb-6 shrink-0">
                 <img
@@ -68,7 +68,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                     return (
                         <Button
                             key={id}
-                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
+                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
                             onClick={() => onNavigate(id)}
                             variant={view === id ? "secondary" : "ghost"}
                             aria-current={view === id ? "page" : undefined}
@@ -175,7 +175,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 <Button
                     variant={view === "settings" ? "secondary" : "ghost"}
                     aria-current={view === "settings" ? "page" : undefined}
-                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
+                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
                     onClick={onSettings}
                 >
                     <Settings data-icon="inline-start"/>

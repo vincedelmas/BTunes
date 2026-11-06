@@ -17,7 +17,7 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
     return (
         <aside
             aria-label="Playback queue"
-            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_.virtual-grid-scroll]:flex-1"
+            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] border border-border bg-popover p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_.virtual-grid-scroll]:flex-1"
         >
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Queue</h2>

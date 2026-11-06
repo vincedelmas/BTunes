@@ -19,7 +19,7 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
             <ContextMenuTrigger
                 render={
                     <Button
-                        className="nav-item w-full justify-start gap-3 h-10 aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
+                        className="nav-item w-full justify-start gap-3 h-10 aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                         onClick={onNavigate}
                         variant={active ? "secondary" : "ghost"}
                         aria-current={active ? "page" : undefined}

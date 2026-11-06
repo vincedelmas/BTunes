@@ -206,7 +206,7 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                                                 aria-label={"Use cover: " + candidate.album + " by " + candidate.artist}
                                                 className={cn("group min-w-0 rounded-xl border border-transparent p-2 text-left " +
                                                     "hover:bg-secondary focus-visible:border-primary focus-visible:outline-none",
-                                                    pending?.id === candidate.id && "border-primary bg-primary/5")}
+                                                    pending?.id === candidate.id && "border-primary bg-selection")}
                                             >
                                                 <div className="relative overflow-hidden rounded-lg">
                                                     <img

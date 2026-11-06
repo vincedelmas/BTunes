@@ -108,9 +108,67 @@ app.on("browser-window-created", (_, win) => {
                     const container=viewport.getBoundingClientRect();
                     return bounds.top>=container.top-1 && bounds.bottom<=container.bottom+1;
                 };
-                window.uiReview = { waitFor, frame, button, visible };
+                const colorCanvas = document.createElement('canvas');
+                colorCanvas.width = colorCanvas.height = 1;
+                const colorContext = colorCanvas.getContext('2d', {willReadFrequently:true});
+                const color = value => {
+                    colorContext.clearRect(0, 0, 1, 1);
+                    colorContext.fillStyle = value;
+                    colorContext.fillRect(0, 0, 1, 1);
+                    const channels = [...colorContext.getImageData(0, 0, 1, 1).data];
+                    return [...channels.slice(0, 3), channels[3] / 255];
+                };
+                const composite = (foreground, background) => foreground.slice(0, 3).map((channel, index) =>
+                    channel * foreground[3] + background[index] * (1 - foreground[3])
+                ).concat(1);
+                const background = element => {
+                    const ancestors = [];
+                    for (let current = element; current; current = current.parentElement) ancestors.unshift(current);
+                    return ancestors.reduce((result, current) => composite(color(getComputedStyle(current).backgroundColor), result), [255,255,255,1]);
+                };
+                const luminance = channels => channels.slice(0, 3).reduce((result, channel, index) => {
+                    const value = channel / 255;
+                    const linear = value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+                    return result + linear * [0.2126,0.7152,0.0722][index];
+                }, 0);
+                const contrast = (foreground, surface) => {
+                    const values = [luminance(composite(foreground, surface)), luminance(surface)].sort((a,b) => a-b);
+                    return (values[1] + 0.05) / (values[0] + 0.05);
+                };
+                const assertContrast = (element, minimum, label) => {
+                    if (!element) throw new Error('Missing contrast target: ' + label);
+                    const foreground = color(getComputedStyle(element).color);
+                    for (let current = element; current; current = current.parentElement) foreground[3] *= Number(getComputedStyle(current).opacity);
+                    const ratio = contrast(foreground, background(element));
+                    if (ratio < minimum) throw new Error(label + ' contrast is ' + ratio.toFixed(2) + ':1; expected ' + minimum + ':1');
+                };
+                const assertControlContrast = (element, label) => {
+                    const style = getComputedStyle(element);
+                    if (parseFloat(style.borderTopWidth) === 0) throw new Error(label + ' has no visible boundary');
+                    const border = color(style.borderTopColor);
+                    const ratio = Math.min(contrast(border, background(element)), contrast(border, background(element.parentElement)));
+                    if (ratio < 3) throw new Error(label + ' boundary contrast is ' + ratio.toFixed(2) + ':1; expected 3:1');
+                };
+                const assertSelectionContrast = (element, label) => {
+                    const shadow = getComputedStyle(element).boxShadow;
+                    const markers = shadow.split(/,(?![^(]*\\))/)
+                        .filter(part => part.includes('inset'))
+                        .map(part => part.match(/(?:rgba?|color|oklch|oklab|lab|lch)\\([^)]*\\)/)?.[0])
+                        .filter(Boolean);
+                    if (!markers.length) throw new Error(label + ' has no inset selection marker');
+                    const ratio = Math.max(...markers.map(marker => contrast(color(marker), background(element))));
+                    if (ratio < 3) throw new Error(label + ' marker contrast is ' + ratio.toFixed(2) + ':1; expected 3:1');
+                };
+                window.uiReview = { waitFor, frame, button, visible, assertContrast, assertControlContrast, assertSelectionContrast };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
+                await frame();
+                for (const selector of ['h1', '.library-stats', '[data-track-id="1"] strong', '[data-track-id="1"] [data-column="artist"]', 'nav button']) {
+                    assertContrast(document.querySelector(selector), 4.5, selector);
+                }
+                assertControlContrast(document.querySelector('[aria-label="Search your library"]').closest('[data-slot="input-group"]'), 'Library search');
+                assertContrast(document.querySelector('[aria-label="Sort by Artist"] svg'), 3, 'Enabled sort icon');
+                assertSelectionContrast(document.querySelector('nav [aria-current="page"]'), 'Active navigation');
                 button('Albums').click();
                 await waitFor(() => document.querySelectorAll('.album').length);
                 const albumNodes = document.querySelectorAll('.album').length;
@@ -191,6 +249,8 @@ app.on("browser-window-created", (_, win) => {
                 rowById(1).dispatchEvent(new MouseEvent('click',{bubbles:true}));
                 rowById(3).dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
                 await waitFor(()=>rowById(1).getAttribute('aria-selected')==='true' && rowById(3).getAttribute('aria-selected')==='true');
+                await frame();
+                assertSelectionContrast(rowById(1), 'Selected song');
                 rowById(5).dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));
                 await waitFor(()=>[3,4,5].every(id=>rowById(id)?.getAttribute('aria-selected')==='true'));
                 if(rowById(1).getAttribute('aria-selected')==='true') throw new Error('Shift selection should replace the previous set');
@@ -372,6 +432,7 @@ app.on("browser-window-created", (_, win) => {
                 await frame();
                 const openTagEditorMs=Math.round(performance.now()-start);
                 const input=document.getElementById('tag-title');
+                window.uiReview.assertControlContrast(input, 'Tag title input');
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Responsive while playing');
                 input.dispatchEvent(new Event('input',{bubbles:true}));
                 await frame();
@@ -508,6 +569,19 @@ app.on("browser-window-created", (_, win) => {
             })()`, true);
             await capture("settings");
             await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,frame,button,assertContrast}=window.uiReview;
+                button('Sidebar').click();
+                await waitFor(()=>document.querySelector('[aria-label="Navigation"]'));
+                await frame();
+                const list=document.querySelector('[aria-label="Navigation"]');
+                if(list.children.length!==document.querySelectorAll('nav[aria-label="Library navigation"] button').length) throw new Error('Sidebar settings must show every navigation item');
+                if(list.scrollHeight>list.clientHeight+1) throw new Error('Sidebar navigation list should expand instead of scrolling');
+                assertContrast(list.querySelector('li span'),4.5,'Sidebar order label');
+                assertContrast(list.querySelector('button svg'),3,'Sidebar drag handle');
+            })()`, true);
+            await capture("settings-sidebar");
+            await win.webContents.executeJavaScript(`(async () => {
+                window.uiReview.button('Library').click();
                 window.uiReview.button('Songs').click();
                 await window.uiReview.waitFor(()=>document.querySelector('.track-table'));
             })()`, true);
