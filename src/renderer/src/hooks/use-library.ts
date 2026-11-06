@@ -5,6 +5,7 @@ import {useEffect, useEffectEvent, useRef, useState} from "react";
 
 
 export function useLibrary() {
+    const [ready, setReady] = useState(false);
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState("");
@@ -29,6 +30,7 @@ export function useLibrary() {
             })
             .finally(() => {
                 refreshing.current = undefined;
+                setReady(true);
             });
 
         refreshing.current = request;
@@ -96,6 +98,7 @@ export function useLibrary() {
     }
 
     return {
+        ready,
         data,
         busy,
         error,

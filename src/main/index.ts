@@ -2,15 +2,20 @@ import {join} from "node:path";
 import {pathToFileURL} from "node:url";
 import {TagService} from "./services/tags";
 import {serveAudio} from "./services/audio";
+import {rpcSchemas} from "../shared/schemas/rpc";
+import type {RpcInput} from "../shared/types/rpc";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
 import {migrateLegacyUserData} from "./services/user-data";
-import {rpcSchemas} from "../shared/schemas/rpc";
-import type {RpcInput} from "../shared/types/rpc";
 import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
 
 
 app.setName("BTunes");
+
+
+if (process.platform === "linux") {
+    app.setDesktopName("btunes.desktop");
+}
 
 
 const applicationData = app.getPath("appData");
@@ -45,7 +50,6 @@ void app.whenReady().then(async () => {
             await migrateLegacyUserData(join(applicationData, legacyName), defaultUserData);
         }
     }
-
 
     const repo = new LibraryRepository(
         join(app.getPath("userData"), "library.sqlite"),
@@ -146,6 +150,7 @@ void app.whenReady().then(async () => {
         minWidth: 1000,
         minHeight: 700,
         title: "BTunes",
+        icon: join(app.isPackaged ? process.resourcesPath : join(__dirname, "../../resources"), "icon.png"),
         backgroundColor: "#000000",
         webPreferences: {
             sandbox: true,

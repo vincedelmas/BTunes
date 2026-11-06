@@ -119,7 +119,7 @@ small {
     flex-shrink: 0;
 }
 
-.brand > svg {
+.brand > img {
     width: 34px;
     height: 34px;
 }
@@ -194,7 +194,7 @@ main {
 }
 
 .topbar {
-    height: 76px;
+    height: 56px;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -224,7 +224,7 @@ main {
     border-radius: 999px;
     background: #242424;
     padding: 0 16px;
-    height: 46px;
+    height: 36px;
     color: var(--muted-foreground);
     border: 1px solid transparent;
 }
@@ -247,16 +247,16 @@ main {
 }
 
 .library-hero {
-    padding: 24px 32px;
+    padding: 14px 24px;
     background: linear-gradient(145deg, #293c32, #1e2b25 42%, #191c1a);
 }
 
 .library-hero h1 {
-    font-size: clamp(36px, 4vw, 56px);
+    font-size: clamp(28px, 3vw, 36px);
     font-weight: 850;
-    letter-spacing: -3px;
+    letter-spacing: -1.4px;
     line-height: 1.1;
-    margin: 0 0 14px;
+    margin: 0 0 6px;
 }
 
 .library-hero > p:last-child {
@@ -270,43 +270,12 @@ main {
 }
 
 .content {
-    padding: 20px 24px 16px;
+    padding: 12px 20px;
     display: flex;
     flex-direction: column;
     min-height: 0;
     flex: 1;
     overflow: hidden;
-}
-
-.collection-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 18px;
-}
-
-.collection-toolbar > span {
-    font-size: 12px;
-}
-
-.collection-toolbar > [data-variant="outline"] {
-    margin-left: 0;
-}
-
-.collection-play {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    transition: transform 0.15s;
-}
-
-.collection-play:hover {
-    transform: scale(1.04);
-}
-
-.collection-play svg {
-    width: 23px;
-    height: 23px;
 }
 
 select {
@@ -500,11 +469,11 @@ select {
     padding: 0 8px;
     border-bottom: 1px solid var(--border);
     position: relative;
-    height: 44px;
+    height: 36px;
 }
 
 .track-table td {
-    padding: 8px;
+    padding: 4px 8px;
     color: var(--muted-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -712,7 +681,7 @@ input[type="range"] {
 
 .tag-preview h3 {
     font-weight: 700;
-    margin: 0 0 14px;
+    margin: 0 0 6px;
 }
 
 .preview-file {
@@ -774,7 +743,7 @@ input[type="range"] {
 
 /* Keep collection scrolling local so only visible rows need React elements. */
 
-.topbar, .library-hero, .collection-toolbar {
+.topbar, .library-hero {
     flex-shrink: 0;
 }
 
@@ -805,7 +774,7 @@ input[type="range"] {
 }
 
 .track-table tbody tr:not(.virtual-spacer) {
-    height: 44px;
+    height: 36px;
 }
 
 .track-table tr[aria-selected="true"] {
@@ -970,7 +939,7 @@ input[type="range"] {
     align-items: center;
     gap: 8px;
     width: 100%;
-    height: 44px;
+    height: 36px;
     text-align: left;
     background: transparent;
     border: 0;
@@ -1042,7 +1011,7 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
     overflow: auto;
     min-height: 0;
     flex: 1;
-    padding: 24px 36px 48px;
+    padding: 16px 24px 32px;
 }
 
 .settings-heading, .settings-card {
@@ -1060,7 +1029,7 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
 }
 
 .settings-heading h1 {
-    font-size: 42px;
+    font-size: 34px;
     font-weight: 750;
     letter-spacing: -1.5px;
     margin: 8px 0 12px;
@@ -1339,4 +1308,42 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
     padding: 10px 12px 10px 32px;
     border-radius: 6px;
     font-size: 13px;
+}
+
+.sidebar-order-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22px;
+    align-items: center;
+    min-width: 0;
+}
+
+.reorder-handle {
+    width: 20px;
+    color: #777;
+    cursor: grab;
+    opacity: 0.55;
+}
+
+.reorder-handle:active {
+    cursor: grabbing;
+}
+
+.reorder-handle:hover, .reorder-handle:focus-visible {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.track-table th > .reorder-handle {
+    position: absolute;
+    left: 0;
+    top: 6px;
+}
+
+.track-table .column-sort {
+    padding-left: 17px;
+}
+
+.track-table th[data-dragging="true"] {
+    background: var(--secondary);
+    opacity: 0.6;
 }

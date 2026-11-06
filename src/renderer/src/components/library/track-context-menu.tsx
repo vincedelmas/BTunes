@@ -36,24 +36,38 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: Track
                 <ContextMenuGroup>
                     <ContextMenuLabel>{tracks.length === 1 ? first.title : tracks.length + " songs"}</ContextMenuLabel>
                     <ContextMenuItem onClick={() => actions.onPlay(first, tracks)}>
-                        <Play/>Play now</ContextMenuItem>
+                        <Play/>
+                        Play now
+                    </ContextMenuItem>
                     <ContextMenuItem onClick={() => actions.onEnqueue(tracks, true)}>
-                        <ListPlus/>Play next</ContextMenuItem>
+                        <ListPlus/>
+                        Play next
+                    </ContextMenuItem>
                     <ContextMenuItem onClick={() => actions.onEnqueue(tracks)}>
-                        <ListEnd/>Add to queue</ContextMenuItem>
+                        <ListEnd/>
+                        Add to queue
+                    </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator/>
                 <ContextMenuGroup>
                     <ContextMenuItem onClick={() => actions.onEdit(tracks)}>
-                        <Pencil/>Edit tags{tracks.length > 1 ? " (" + tracks.length + ")" : ""}</ContextMenuItem>
+                        <Pencil/>
+                        Edit tags
+                        {tracks.length > 1 ? " (" + tracks.length + ")" : ""}
+                    </ContextMenuItem>
                     {!!classicPlaylists.length && (
                         <ContextMenuSub>
                             <ContextMenuSubTrigger>
-                                <ListPlus/>Add to playlist</ContextMenuSubTrigger>
+                                <ListPlus/>
+                                Add to playlist
+                            </ContextMenuSubTrigger>
                             <ContextMenuSubContent className="track-menu">
                                 <ContextMenuGroup>
                                     {classicPlaylists.map((playlist) => (
-                                        <ContextMenuItem key={playlist.id} onClick={() => actions.onAdd(playlist.id, tracks.map((track) => track.id))}>
+                                        <ContextMenuItem
+                                            key={playlist.id}
+                                            onClick={() => actions.onAdd(playlist.id, tracks.map((track) => track.id))}
+                                        >
                                             {playlist.name}
                                         </ContextMenuItem>
                                     ))}
@@ -63,18 +77,27 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: Track
                     )}
                     {actions.onRemove && (
                         <ContextMenuItem onClick={() => actions.onRemove?.(tracks.map((track) => track.id))}>
-                            <X/>Remove from playlist</ContextMenuItem>
+                            <X/>
+                            Remove from playlist
+                        </ContextMenuItem>
                     )}
                 </ContextMenuGroup>
                 <ContextMenuSeparator/>
                 <ContextMenuGroup>
                     <ContextMenuItem onClick={() => actions.onArtist(first.artist)}>
-                        <UserRound/>Go to artist</ContextMenuItem>
+                        <UserRound/>
+                        Go to artist
+                    </ContextMenuItem>
                     <ContextMenuItem onClick={() => void rpc("track.reveal", { id: first.id }).catch((error) => actions.onError(getErrorMessage(error)))}>
-                        <FolderOpen/>Show in folder</ContextMenuItem>
+                        <FolderOpen/>
+                        Show in folder
+                    </ContextMenuItem>
                     <ContextMenuItem
                         onClick={() => void navigator.clipboard.writeText(tracks.map((track) => track.path).join("\n")).catch((error) => actions.onError(getErrorMessage(error)))}>
-                        <Clipboard/>Copy file path{tracks.length > 1 ? "s" : ""}</ContextMenuItem>
+                        <Clipboard/>
+                        Copy file path
+                        {tracks.length > 1 ? "s" : ""}
+                    </ContextMenuItem>
                 </ContextMenuGroup>
             </ContextMenuContent>
         </ContextMenu>

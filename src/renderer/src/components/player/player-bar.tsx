@@ -23,13 +23,10 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                 <Cover
                     track={current}
                 />
-
                 <div className="truncate">
                     <strong>{current?.title ?? "Find your next favorite"}</strong>
                     <small>{current?.artist ?? "Play something from your library"}</small>
                 </div>
-
-
             </div>
 
             <div className="transport">
@@ -96,14 +93,26 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                     </Button>
                 </div>
 
-                <PlaybackTimeline audio={player.audio} trackId={current?.id} onSeek={player.seek}/>
+                <PlaybackTimeline
+                    audio={player.audio}
+                    trackId={current?.id}
+                    onSeek={player.seek}
+                />
             </div>
 
             <div className="volume">
-                <Button size="icon" variant="ghost" aria-label="Show queue" onClick={onQueue}>
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Show queue"
+                    onClick={onQueue}
+                >
                     <ListMusic/>
                 </Button>
-                <Volume2 size={18} aria-hidden="true"/>
+                <Volume2
+                    size={18}
+                    aria-hidden="true"
+                />
                 <input
                     min="0"
                     max="1"

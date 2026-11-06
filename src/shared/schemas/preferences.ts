@@ -1,0 +1,8 @@
+import {z} from "zod";
+import type {TrackSort} from "../types/track-sorting";
+
+export const itemOrderSchema = z.array(z.string()).max(10000);
+export const trackSortSchema = z.strictObject({
+    field: z.enum(["title", "artist", "album", "genre", "duration", "year", "plays", "lastPlayed"]),
+    descending: z.boolean(),
+}) satisfies z.ZodType<TrackSort>;

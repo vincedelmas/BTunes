@@ -1,4 +1,4 @@
-const {app} = require("electron");
+const {app, ipcMain} = require("electron");
 const {DatabaseSync} = require("node:sqlite");
 const {readMigrationFiles} = require("drizzle-orm/migrator");
 const {mkdtempSync, mkdirSync, rmSync, writeFileSync} = require("node:fs");
@@ -62,8 +62,22 @@ app.on("browser-window-created", (_, win) => {
         writeFileSync(join(artifacts, name + ".png"), screenshot.toPNG());
     };
 
+    const startupCapture = new Promise((resolve, reject) => {
+        win.webContents.once("dom-ready", async () => {
+            try {
+                const visible = await win.webContents.executeJavaScript("Boolean(document.getElementById('startup'))");
+                if (!visible) throw new Error("Startup screen should be visible while the first snapshot loads");
+                await capture("startup");
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+
     win.webContents.once("did-finish-load", async () => {
         try {
+            await startupCapture;
             const results = await win.webContents.executeJavaScript(`(async () => {
                 const waitFor = async (predicate) => {
                     const deadline = performance.now() + 5000;
@@ -100,7 +114,7 @@ app.on("browser-window-created", (_, win) => {
                 main.style.width='';
                 await frame();
                 if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
-                if(document.querySelector('[data-track-id]').getBoundingClientRect().height>44.5) throw new Error('Song rows are not compact');
+                if(document.querySelector('[data-track-id]').getBoundingClientRect().height>36.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
                 if (songNodes > 60) throw new Error("Song table is not virtualized");
                 for (const name of ['Title','Artist','Album','Genre','Duration','Year','Plays']) {
@@ -277,7 +291,7 @@ app.on("browser-window-created", (_, win) => {
                 button('Cancel').click();
                 await waitFor(()=>!document.querySelector('[role="dialog"]'));
                 button('Possible duplicates').click();
-                await waitFor(()=>document.querySelector('[data-slot="empty-title"]')?.textContent==='No possible duplicates');
+                await waitFor(()=>document.querySelector('[data-slot="empty-title"]')?.textContent==='No duplicates');
                 const empty=document.querySelector('[data-slot="empty"]').textContent;
                 if(empty.includes('playlist') || empty.includes('Add music folder')) throw new Error("Incorrect duplicates empty state");
             })()`, true);
@@ -336,6 +350,57 @@ app.on("browser-window-created", (_, win) => {
                 if(snapshot.tracks.length!==2300 || snapshot.playlists.length) throw new Error('Playlist deletion damaged library state');
             })()`, true);
 
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,frame}=window.uiReview;
+                const drag=(handle,target)=>{
+                    const transfer=new DataTransfer();
+                    handle.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:transfer}));
+                    target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+                    target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer}));
+                    handle.dispatchEvent(new DragEvent('dragend',{bubbles:true,dataTransfer:transfer}));
+                };
+                if(document.querySelector('[aria-label="Play visible songs"]')) throw new Error('Large collection play button remains');
+                if(document.querySelector('.topbar').getBoundingClientRect().height>56.5 || document.querySelector('.library-hero').getBoundingClientRect().height>100) throw new Error('Headers are not compact');
+                if(document.getElementById('startup')) throw new Error('Startup overlay did not dismiss');
+                drag(document.querySelector('[aria-label="Move Genre column"]'),document.querySelector('th[data-column="artist"]'));
+                await waitFor(()=>document.querySelectorAll('th')[1]?.dataset.column==='genre');
+                if(document.querySelectorAll('[data-track-id] td')[1]?.dataset.column!=='genre') throw new Error('Row cells did not follow column order');
+                drag(document.querySelector('[aria-label="Move Albums navigation item"]'),document.querySelector('nav .sidebar-order-item'));
+                await waitFor(()=>document.querySelector('nav .nav-item').textContent.trim()==='Albums');
+                document.querySelector('[aria-label="Sort by Genre"]').click();
+                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='ascending');
+                document.querySelector('[aria-label="Sort by Genre"]').click();
+                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='descending');
+                await window.btunes.rpc('playlist.create',{name:'Alpha'});
+                await window.btunes.rpc('playlist.create',{name:'Beta'});
+                window.uiReview.button('Settings').click();
+                await waitFor(()=>document.querySelector('[aria-label="Refresh library"]'));
+                document.querySelector('[aria-label="Refresh library"]').click();
+                await waitFor(()=>window.uiReview.button('Beta'));
+                window.uiReview.button('Back to music').click();
+                await waitFor(()=>document.querySelector('[aria-label="Move Beta playlist"]'));
+                drag(document.querySelector('[aria-label="Move Beta playlist"]'),document.querySelector('.playlists .sidebar-order-item'));
+                await waitFor(()=>document.querySelector('.playlists .nav-item').textContent.trim()==='Beta');
+                await frame();
+            })()`, true);
+            win.webContents.session.flushStorageData();
+            await new Promise(resolve => {
+                win.webContents.once('did-finish-load', resolve);
+                win.webContents.reload();
+            });
+            await win.webContents.executeJavaScript(`(async () => {
+                const deadline=performance.now()+5000;
+                while(!document.querySelector('[data-track-id]')) {
+                    if(performance.now()>deadline) throw new Error('Reload did not restore library');
+                    await new Promise(resolve=>setTimeout(resolve,20));
+                }
+                if(document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')!=='descending') throw new Error('Sort did not persist after reload');
+                if(document.querySelectorAll('th')[1].dataset.column!=='genre') throw new Error('Column order did not persist after reload');
+                if(document.querySelector('nav .nav-item').textContent.trim()!=='Albums') throw new Error('Sidebar order did not persist after reload');
+                if(document.querySelector('.playlists .nav-item')?.textContent.trim()!=='Beta') throw new Error('Playlist order did not persist after reload');
+            })()`, true);
+            await capture('compact-songs');
+
             const report = {...results, ...interactions, screenshots: artifacts};
             writeFileSync(join(artifacts, "report.json"), JSON.stringify(report, null, 4));
             console.log("Large-library UI passed", JSON.stringify(report));
@@ -346,6 +411,17 @@ app.on("browser-window-created", (_, win) => {
             finish(1);
         }
     });
+});
+
+// Give the real startup UI time to paint without slowing normal application startup.
+const originalHandle = ipcMain.handle.bind(ipcMain);
+let firstSnapshot = true;
+ipcMain.handle = (channel, handler) => originalHandle(channel, async (ev, method, input) => {
+    if (channel === "rpc" && method === "library.get" && firstSnapshot) {
+        firstSnapshot = false;
+        await new Promise(resolve => setTimeout(resolve, 600));
+    }
+    return handler(ev, method, input);
 });
 
 require("../out/main/index.js");

@@ -36,23 +36,45 @@ export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onRe
                 const changed = enabled.has(field);
 
                 return (
-                    <Field key={field} className={cn("tag-field", changed && "tag-field-changed")}>
+                    <Field
+                        key={field}
+                        className={cn("tag-field", changed && "tag-field-changed")}
+                    >
                         <div className="tag-field-label">
                             <FieldLabel htmlFor={"tag-" + field}>
-                                <Icon/> {tagLabels[field]}
+                                <Icon/>
+                                {tagLabels[field]}
                             </FieldLabel>
                             {batch ?
-                                <Checkbox aria-label={"Apply " + tagLabels[field]} checked={changed} disabled={busy}
-                                          onCheckedChange={(checked) => onToggle(field, Boolean(checked))}/>
+                                <Checkbox
+                                    aria-label={"Apply " + tagLabels[field]}
+                                    checked={changed}
+                                    disabled={busy}
+                                    onCheckedChange={(checked) => onToggle(field, Boolean(checked))}
+                                />
                                 :
                                 changed &&
-                                <Button variant="ghost" size="icon-xs" aria-label={"Reset " + tagLabels[field]} disabled={busy} onClick={() => onReset(field)}><RotateCcw/></Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={"Reset " + tagLabels[field]}
+                                    disabled={busy}
+                                    onClick={() => onReset(field)}
+                                >
+                                    <RotateCcw/>
+                                </Button>
                             }
                         </div>
-                        <Input id={"tag-" + field} type={field === "year" ? "number" : "text"}
-                               min={field === "year" ? 0 : undefined} max={field === "year" ? 9999 : undefined}
-                               value={values[field]} placeholder={batch ? "Mixed values" : "Not set"}
-                               disabled={busy} onChange={(ev) => onChange(field, ev.target.value)}/>
+                        <Input
+                            id={"tag-" + field}
+                            type={field === "year" ? "number" : "text"}
+                            min={field === "year" ? 0 : undefined}
+                            max={field === "year" ? 9999 : undefined}
+                            value={values[field]}
+                            placeholder={batch ? "Mixed values" : "Not set"}
+                            disabled={busy}
+                            onChange={(ev) => onChange(field, ev.target.value)}
+                        />
                     </Field>
                 );
             })}

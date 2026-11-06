@@ -203,7 +203,7 @@ The renderer uses the stable React Compiler Babel plugin through Vite's
 memoizes compatible components, derived values, and callbacks. Prefer ordinary
 React code over adding `useMemo`, `useCallback`, or `memo` by default.
 
-`TrackTable` and `VirtualGrid` explicitly use `"use no memo"` because TanStack
+`TrackTable`, its column header, and `VirtualGrid` explicitly use `"use no memo"` because TanStack
 Virtual exposes mutable measurements that must be read on virtualizer updates.
 These boundaries retain a few manual memoizations for selection and key callbacks;
 the rest of the application relies on the compiler. Column sizes use a lazy state
@@ -224,3 +224,24 @@ Song rows use a compact layout without cover art or row edit buttons.
 
 Right-click a playlist in the sidebar to edit its name/genre rule or delete it.
 Playlist deletion removes its memberships and preserves every indexed song and file.
+
+## Layout preferences and startup
+
+Song rows use a 36px layout. Page headers are compact throughout the app, and
+collection play buttons are removed; play a song from its row, a context menu,
+or an album card.
+
+Drag a column's grip to reorder it. Sidebar navigation and playlists each have
+matching grips. Focus a grip and hold **Alt** with the arrow keys to reorder by
+keyboard. Column order, column widths/visibility, sidebar order, playlist order,
+and the last collection sort are stored locally. Recently played keeps its own
+sort without replacing the saved collection sort. New items are appended to saved
+orders, and invalid preferences fall back to defaults.
+
+The app uses `resources/icon.svg` and its 512px PNG export for the taskbar and
+packaged Linux desktop entry. The HTML startup screen displays the same icon and
+an animated equalizer while the first library snapshot loads, with reduced-motion
+support and no forced startup delay.
+
+Run `bun run desktop:install` after moving this development checkout to reinstall
+the user-level BTunes launcher and icon. Packaged builds carry their own icon.

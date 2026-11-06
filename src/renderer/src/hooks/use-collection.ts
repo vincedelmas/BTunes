@@ -4,6 +4,8 @@ import type {TrackSort} from "../../../shared/types/track-sorting";
 import {compareTracks} from "../../../shared/track-sorting";
 import {duplicateKey, groupAlbums, uniqueValues} from "@/lib/music";
 import {rpc} from "@/lib/rpc";
+import {usePreference} from "@/hooks/use-preference";
+import {trackSortSchema} from "../../../shared/schemas/preferences";
 
 const viewTitles: Record<string, string> = {
     albums: "Albums",
@@ -20,7 +22,15 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const deferredSearch = useDeferredValue(search);
     const [genre, setGenre] = useState("");
     const [artist, setArtist] = useState("");
-    const [sort, setSort] = useState<TrackSort>({ field: "title", descending: false });
+    const [savedSort, setSavedSort] = usePreference<TrackSort>("btunes.song-sort.v1", trackSortSchema, { field: "title", descending: false });
+    const [historySort, setHistorySort] = useState<TrackSort>({ field: "lastPlayed", descending: true });
+    const sort = view === "history" ? historySort : savedSort;
+
+    function setSort(next: TrackSort) {
+        if (view === "history") setHistorySort(next);
+        else setSavedSort(next);
+    }
+
     const [playlistIds, setPlaylistIds] = useState<number[]>([]);
     const [returnView, setReturnView] = useState("tracks");
     const [selected, setSelected] = useState<number[]>([]);
@@ -88,9 +98,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
             setView(nextView);
             return;
         }
-
-        if (nextView === "history") setSort({ field: "lastPlayed", descending: true });
-        else if (sort.field === "lastPlayed") setSort({ field: "title", descending: false });
 
         setView(nextView);
         setSelected([]);

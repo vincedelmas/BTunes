@@ -29,13 +29,19 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
             </div>
 
             {notice &&
-                <p role="status" className="notice">
+                <p
+                    role="status"
+                    className="notice"
+                >
                     {notice}
                 </p>
             }
 
             {error &&
-                <p role="alert" className="text-destructive">
+                <p
+                    role="alert"
+                    className="text-destructive"
+                >
                     {error}
                 </p>
             }
@@ -82,7 +88,10 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     }
                 </CardContent>
                 <CardFooter>
-                    <Button disabled={busy} onClick={onImport}>
+                    <Button
+                        disabled={busy}
+                        onClick={onImport}
+                    >
                         <FolderPlus/>
                         {busy
                             ? "Indexing…"
@@ -107,7 +116,11 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button variant="outline" aria-label="Refresh library" onClick={onRefresh}>
+                    <Button
+                        variant="outline"
+                        aria-label="Refresh library"
+                        onClick={onRefresh}
+                    >
                         <RefreshCw/>Refresh library
                     </Button>
                 </CardFooter>

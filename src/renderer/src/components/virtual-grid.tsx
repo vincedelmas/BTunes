@@ -46,21 +46,33 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
     useEffect(() => virtualizer.measure(), [rowHeight, columns, virtualizer]);
 
     return (
-        <div ref={container} className="virtual-grid-scroll" aria-label={label} tabIndex={0}>
+        <div
+            ref={container}
+            className="virtual-grid-scroll"
+            aria-label={label}
+            tabIndex={0}
+        >
             <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
                 {virtualizer.getVirtualItems().map((row) => (
-                    <div key={row.key} className="virtual-grid-row" style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        display: "grid",
-                        gridTemplateColumns: "repeat(" + columns + ", minmax(0, 1fr))",
-                        height: rowHeight,
-                        transform: "translateY(" + row.start + "px)",
-                    }}>
+                    <div
+                        key={row.key}
+                        className="virtual-grid-row"
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(" + columns + ", minmax(0, 1fr))",
+                            height: rowHeight,
+                            transform: "translateY(" + row.start + "px)",
+                        }}
+                    >
                         {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (
-                            <div key={getKey(item)} className="virtual-grid-cell">{renderItem(item)}</div>
+                            <div
+                                key={getKey(item)}
+                                className="virtual-grid-cell"
+                            >{renderItem(item)}</div>
                         ))}
                     </div>
                 ))}

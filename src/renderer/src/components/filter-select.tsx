@@ -25,8 +25,9 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
                 value={selected}
                 disabled={disabled}
                 openOnInputClick={true}
+                itemToStringLabel={(item) => item.label}
+                itemToStringValue={(item) => item.value}
                 onValueChange={(item) => onChange(item?.value ?? "")}
-                itemToStringLabel={(item) => item.label} itemToStringValue={(item) => item.value}
             >
                 <ComboboxInput
                     id={id}
@@ -52,7 +53,12 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
     }
 
     return (
-        <Select items={items} value={value} disabled={disabled} onValueChange={(next) => onChange(next ?? "")}>
+        <Select
+            items={items}
+            value={value}
+            disabled={disabled}
+            onValueChange={(next) => onChange(next ?? "")}
+        >
             <SelectTrigger id={id} aria-label={label} className="filter-trigger">
                 <SelectValue/>
             </SelectTrigger>

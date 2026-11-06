@@ -102,10 +102,16 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
     const batch = tracks.length > 1;
 
     return (
-        <Dialog open onOpenChange={(open) => {
-            if (!open && !busy) onClose();
-        }}>
-            <DialogContent showCloseButton={!busy} className="tag-editor">
+        <Dialog
+            open
+            onOpenChange={(open) => {
+                if (!open && !busy) onClose();
+            }}
+        >
+            <DialogContent
+                showCloseButton={!busy}
+                className="tag-editor"
+            >
                 <DialogHeader className="tag-editor-header">
                     <div className="tag-summary">
                         <Cover track={first}/>
@@ -127,7 +133,10 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                             }
                         </Badge>
                     </div>
-                    <ol className="tag-steps" aria-label="Editing progress">
+                    <ol
+                        className="tag-steps"
+                        aria-label="Editing progress"
+                    >
                         <li aria-current={!preview ? "step" : undefined}>
                             <span>1</span>Details
                         </li>
@@ -171,25 +180,41 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     }
                 </div>
                 <DialogFooter className="tag-editor-footer">
-                    <span className="tag-recovery">
+<span className="tag-recovery">
                         <ShieldCheck/> Originals kept for recovery
                     </span>
                     {preview ?
-                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}>
+                        <Button
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => setPreview(undefined)}
+                        >
                             <ArrowLeft/> Details
                         </Button>
                         :
-                        <Button variant="ghost" disabled={busy} onClick={onClose}>
+                        <Button
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={onClose}
+                        >
                             Cancel
                         </Button>
                     }
                     {preview ?
-                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}>
-                            <Check/> {busy ? "Saving…" : "Save to files"}
+                        <Button
+                            disabled={busy || !preview.files.length}
+                            onClick={() => void save()}
+                        >
+                            <Check/>
+                            {busy ? "Saving…" : "Save to files"}
                         </Button>
                         :
-                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>
-                            {busy ? "Preparing…" : "Preview changes"} <ArrowRight/>
+                        <Button
+                            disabled={busy || !enabled.size}
+                            onClick={() => void prepare()}
+                        >
+                            {busy ? "Preparing…" : "Preview changes"}
+                            <ArrowRight/>
                         </Button>
                     }
                 </DialogFooter>

@@ -7,9 +7,23 @@
         http-equiv="Content-Security-Policy"
         content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' btunes: data:; media-src btunes:; font-src 'self'; connect-src 'self' ws://localhost:*"
     />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml"/>
+    <link rel="stylesheet" href="/startup.css"/>
+    <style>body {
+        margin: 0;
+        background: #0c100e;
+    }</style>
     <title>BTunes</title>
 </head>
 <body>
+<div id="startup" role="status" aria-label="Opening BTunes">
+    <div class="startup-content">
+        <img src="/icon.svg" alt=""/>
+        <strong>BTunes</strong>
+        <p>Opening your library</p>
+        <div class="startup-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+</div>
 <div id="root"></div>
 <script type="module" src="/src/main.tsx"></script>
 </body>

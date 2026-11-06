@@ -1,31 +1,27 @@
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
-import {useTable, tableFeatures, columnSizingFeature, columnResizingFeature, columnVisibilityFeature} from "@tanstack/react-table";
+import {useTable} from "@tanstack/react-table";
 import type {ColumnSizingState, ColumnVisibilityState} from "@tanstack/react-table";
-import {ArrowDown, ArrowUp, ArrowUpDown, Play, Volume2} from "lucide-react";
+import {Play, Volume2} from "lucide-react";
 import type {Playlist, Track} from "../../../../shared/types/library";
 import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import {Button} from "@/components/ui/button";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Table, TableBody, TableCell, TableHeader, TableRow} from "@/components/ui/table";
 import {TrackContextMenu} from "@/components/library/track-context-menu";
 import type {TrackActions} from "@/types/track-actions";
 import {cn} from "@/lib/utils";
 import {formatTime} from "@/lib/music";
+import {usePreference} from "@/hooks/use-preference";
+import {useDragOrder} from "@/hooks/use-drag-order";
+import {normalizeOrder} from "@/lib/preferences";
+import {itemOrderSchema} from "../../../../shared/schemas/preferences";
+import {songColumns as columns, songTableFeatures as features} from "@/lib/song-columns";
+import {SongColumnHeader} from "@/components/library/song-column-header";
 import {ColumnVisibilityMenu} from "@/components/library/column-visibility-menu";
 import type {Dispatch, MouseEvent, SetStateAction} from "react";
 
-const features = tableFeatures({ columnSizingFeature, columnResizingFeature, columnVisibilityFeature });
 const sizingKey = "btunes.song-columns.v1";
 const visibilityKey = "btunes.song-column-visibility.v1";
-const columns = [
-    { id: "title", enableHiding: false, header: "Title", size: 270, minSize: 180, maxSize: 700 },
-    { id: "artist", header: "Artist", size: 160, minSize: 100, maxSize: 500 },
-    { id: "album", header: "Album", size: 180, minSize: 110, maxSize: 600 },
-    { id: "genre", header: "Genre", size: 130, minSize: 90, maxSize: 400 },
-    { id: "duration", header: "Duration", size: 100, minSize: 85, maxSize: 200 },
-    { id: "year", header: "Year", size: 85, minSize: 70, maxSize: 180 },
-    { id: "plays", header: "Plays", size: 85, minSize: 70, maxSize: 180 },
-];
 
 function readColumnSizes(): ColumnSizingState {
     try {
@@ -74,13 +70,16 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     const selectedTracks = useMemo(() => tracks.filter((track) => selectedIds.has(track.id)), [tracks, selectedIds]);
     const anchorId = useRef<number | undefined>(undefined);
     const getItemKey = useCallback((index: number) => tracks[index].id, [tracks]);
+    const [savedOrder, setOrder] = usePreference("btunes.song-column-order.v1", itemOrderSchema, columns.map((column) => column.id));
+    const order = useMemo(() => normalizeOrder(savedOrder, columns.map((column) => column.id)), [savedOrder]);
+    const reordering = useDragOrder(order, setOrder, "columns");
     const [initialSizing] = useState(readColumnSizes);
     const [initialVisibility] = useState(readColumnVisibility);
 
     const table = useTable({
         features, data: tracks, columns, columnResizeMode: "onEnd",
         initialState: { columnSizing: initialSizing, columnVisibility: initialVisibility },
-    }, (state) => ({ columnSizing: state.columnSizing, columnResizing: state.columnResizing, columnVisibility: state.columnVisibility }));
+    }, (state) => ({ columnSizing: state.columnSizing, columnResizing: state.columnResizing, columnVisibility: state.columnVisibility, columnOrder: state.columnOrder }));
 
     useEffect(() => {
         try {
@@ -99,14 +98,16 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     const virtualizer = useVirtualizer({
         count: tracks.length,
         getScrollElement: () => container.current,
-        estimateSize: () => 44,
+        estimateSize: () => 36,
         getItemKey,
         overscan: 8,
-        scrollPaddingStart: 44,
+        scrollPaddingStart: 36,
     });
     const rows = virtualizer.getVirtualItems();
     const paddingTop = rows[0]?.start ?? 0;
     const paddingBottom = rows.length ? virtualizer.getTotalSize() - rows[rows.length - 1].end : 0;
+
+    useEffect(() => table.setColumnOrder(order), [table, order]);
 
     const visibleColumns = table.getVisibleLeafColumns();
 
@@ -138,10 +139,19 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
         if (columnId === "title") {
             return (
                 <div className="track-cell">
-                    <Button size="icon-xs" variant="ghost" className="track-row-play" aria-label={"Play " + track.title} onClick={() => actions.onPlay(track)}>
+                    <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        className="track-row-play"
+                        aria-label={"Play " + track.title}
+                        onClick={() => actions.onPlay(track)}
+                    >
                         {currentId === track.id && playing ? <Volume2/> : <Play fill="currentColor"/>}
                     </Button>
-                    <strong className="truncate" title={track.title}>{track.title}</strong>
+                    <strong
+                        className="truncate"
+                        title={track.title}
+                    >{track.title}</strong>
                 </div>
             );
         }
@@ -153,93 +163,101 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     }
 
     return (
-        <div ref={container} className="track-scroll" aria-label="Songs" tabIndex={0}>
-            <Table onKeyDown={(ev) => {
-                if ((ev.target as HTMLElement).closest("button,input,[role=separator]")) return;
-                if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") {
-                    ev.preventDefault();
-                    onSelect(tracks.map((track) => track.id));
-                }
-                if (ev.key === "Escape") onSelect([]);
-            }} className="track-table" aria-rowcount={tracks.length + 1} aria-multiselectable="true" style={{ width: table.getTotalSize(), minWidth: "100%" }}>
-                <colgroup>{visibleColumns.map((column) => <col key={column.id} style={{ width: column.getSize() }}/>)}</colgroup>
-                <ColumnVisibilityMenu columns={table.getAllLeafColumns().map((column) => ({
-                    id: column.id, label: String(column.columnDef.header), visible: column.getIsVisible(), canHide: column.getCanHide(),
-                }))} onChange={(id, visible) => table.getColumn(id)?.toggleVisibility(visible)}>
-                    <TableHeader tabIndex={0} aria-label="Song columns">
+        <div
+            ref={container}
+            className="track-scroll"
+            aria-label="Songs"
+            tabIndex={0}
+        >
+            <Table
+                onKeyDown={(ev) => {
+                    if ((ev.target as HTMLElement).closest("button,input,[role=separator]")) return;
+                    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") {
+                        ev.preventDefault();
+                        onSelect(tracks.map((track) => track.id));
+                    }
+                    if (ev.key === "Escape") onSelect([]);
+                }}
+                className="track-table"
+                aria-rowcount={tracks.length + 1}
+                aria-multiselectable="true"
+                style={{ width: table.getTotalSize(), minWidth: "100%" }}
+            >
+                <colgroup>{visibleColumns.map((column) => <col
+                    key={column.id}
+                    style={{ width: column.getSize() }}
+                />)}</colgroup>
+                <ColumnVisibilityMenu
+                    columns={table.getAllLeafColumns().map((column) => ({
+                        id: column.id, label: String(column.columnDef.header), visible: column.getIsVisible(), canHide: column.getCanHide(),
+                    }))}
+                    onChange={(id, visible) => table.getColumn(id)?.toggleVisibility(visible)}
+                >
+                    <TableHeader
+                        tabIndex={0}
+                        aria-label="Song columns"
+                    >
                         {table.getHeaderGroups().map((group) => <TableRow key={group.id}>
-                            {group.headers.map((header) => {
-                                const column = header.column;
-                                const field = column.id as TrackSortField;
-                                const active = sort.field === field;
-                                const resizable = column.getCanResize();
-                                const direction = sort.descending ? "descending" : "ascending";
-                                const SortIcon = sort.descending ? ArrowDown : ArrowUp;
-
-                                return (
-                                    <TableHead key={header.id} data-column={column.id} aria-sort={resizable && active ? direction : undefined}>
-                                        {resizable && <>
-                                            <button className={cn("column-sort", active && "is-sorted")} aria-label={"Sort by " + String(column.columnDef.header)}
-                                                    onClick={() => onSort({ field, descending: active ? !sort.descending : false })}>
-                                                <span>{String(column.columnDef.header)}</span>
-                                                {active ? <SortIcon/> : <ArrowUpDown/>}
-                                            </button>
-                                            <div role="separator" tabIndex={0} aria-orientation="vertical" aria-label={"Resize " + String(column.columnDef.header) + " column"}
-                                                 aria-valuemin={column.columnDef.minSize} aria-valuemax={column.columnDef.maxSize} aria-valuenow={column.getSize()}
-                                                 title="Drag to resize. Double-click to reset."
-                                                 className={cn("column-resizer", column.getIsResizing() && "is-resizing")}
-                                                 onMouseDown={header.getResizeHandler()} onTouchStart={header.getResizeHandler()}
-                                                 onDoubleClick={() => column.resetSize()}
-                                                 onKeyDown={(ev) => {
-                                                     if (ev.key === "Home") {
-                                                         ev.preventDefault();
-                                                         column.resetSize();
-                                                         return;
-                                                     }
-                                                     if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
-                                                     ev.preventDefault();
-                                                     const delta = ev.key === "ArrowRight" ? 16 : -16;
-                                                     table.setColumnSizing((previous) => ({
-                                                         ...previous,
-                                                         [column.id]: Math.max(column.columnDef.minSize ?? 50, Math.min(column.columnDef.maxSize ?? 700, column.getSize() + delta))
-                                                     }));
-                                                 }}
-                                                 style={{ transform: column.getIsResizing() ? "translateX(" + (table.state.columnResizing.deltaOffset ?? 0) + "px)" : undefined }}
-                                            />
-                                        </>}
-                                    </TableHead>
-                                );
-                            })}
+                            {group.headers.map((header) => (
+                                <SongColumnHeader
+                                    key={header.id}
+                                    header={header}
+                                    sort={sort}
+                                    onSort={onSort}
+                                    reordering={reordering}
+                                    resizeOffset={table.state.columnResizing.deltaOffset ?? 0}
+                                />
+                            ))}
                         </TableRow>)}
                     </TableHeader>
                 </ColumnVisibilityMenu>
                 <TableBody>
                     {paddingTop > 0 &&
-                        <TableRow aria-hidden="true" className="virtual-spacer"><TableCell colSpan={visibleColumns.length} style={{ height: paddingTop }}/></TableRow>}
+                        <TableRow
+                            aria-hidden="true"
+                            className="virtual-spacer"
+                        >
+                            <TableCell
+                                colSpan={visibleColumns.length}
+                                style={{ height: paddingTop }}
+                            />
+                        </TableRow>}
                     {rows.map((row) => {
                         const track = tracks[row.index];
                         const contextTracks = selectedIds.has(track.id) ? selectedTracks : [track];
 
                         return (
-                            <TrackContextMenu key={track.id} tracks={contextTracks} playlists={playlists} actions={actions}>
-                                <TableRow data-track-id={track.id} aria-rowindex={row.index + 2} aria-selected={selectedIds.has(track.id)}
-                                          className={cn(currentId === track.id && "is-current")}
-                                          tabIndex={0}
-                                          onClick={(ev) => selectRow(row.index, ev)}
-                                          onContextMenu={() => {
-                                              if (!selectedIds.has(track.id)) {
-                                                  anchorId.current = track.id;
-                                                  onSelect([track.id]);
-                                              }
-                                          }}
-                                          onDoubleClick={(ev) => {
-                                              if (!(ev.target as HTMLElement).closest("button,input")) actions.onPlay(track);
-                                          }}
-                                          onKeyDown={(ev) => {
-                                              if (ev.key === "Enter" && ev.target === ev.currentTarget) actions.onPlay(track);
-                                          }}>
+                            <TrackContextMenu
+                                key={track.id}
+                                tracks={contextTracks}
+                                playlists={playlists}
+                                actions={actions}
+                            >
+                                <TableRow
+                                    data-track-id={track.id}
+                                    aria-rowindex={row.index + 2}
+                                    aria-selected={selectedIds.has(track.id)}
+                                    className={cn(currentId === track.id && "is-current")}
+                                    tabIndex={0}
+                                    onClick={(ev) => selectRow(row.index, ev)}
+                                    onContextMenu={() => {
+                                        if (!selectedIds.has(track.id)) {
+                                            anchorId.current = track.id;
+                                            onSelect([track.id]);
+                                        }
+                                    }}
+                                    onDoubleClick={(ev) => {
+                                        if (!(ev.target as HTMLElement).closest("button,input")) actions.onPlay(track);
+                                    }}
+                                    onKeyDown={(ev) => {
+                                        if (ev.key === "Enter" && ev.target === ev.currentTarget) actions.onPlay(track);
+                                    }}
+                                >
                                     {visibleColumns.map((column) => (
-                                        <TableCell key={column.id} data-column={column.id}>
+                                        <TableCell
+                                            key={column.id}
+                                            data-column={column.id}
+                                        >
                                             {renderCell(track, column.id)}
                                         </TableCell>
                                     ))}
@@ -248,7 +266,15 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                         );
                     })}
                     {paddingBottom > 0 &&
-                        <TableRow aria-hidden="true" className="virtual-spacer"><TableCell colSpan={visibleColumns.length} style={{ height: paddingBottom }}/></TableRow>}
+                        <TableRow
+                            aria-hidden="true"
+                            className="virtual-spacer"
+                        >
+                            <TableCell
+                                colSpan={visibleColumns.length}
+                                style={{ height: paddingBottom }}
+                            />
+                        </TableRow>}
                 </TableBody>
             </Table>
         </div>
