@@ -1,0 +1,59 @@
+{
+  "name": "sillage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Votre musique, \u00e0 votre fa\u00e7on.",
+  "main": "out/main/index.js",
+  "packageManager": "bun@1.4.4",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
+    "build": "bun run typecheck && electron-vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "package": "bun run build && electron-builder --linux dir",
+    "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs"
+  },
+  "dependencies": {
+    "chokidar": "6.0.0",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.70.0",
+    "music-metadata": "12.3.5",
+    "radix-ui": "1.8.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tailwind-merge": "3.7.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "@tailwindcss/vite": "4.3.4",
+    "tailwindcss": "4.3.4",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "electron": "45.2.3",
+    "electron-vite": "6.0.0",
+    "electron-builder": "26.18.0"
+  },
+  "trustedDependencies": [
+    "electron",
+    "esbuild"
+  ],
+  "build": {
+    "appId": "dev.sillage.music",
+    "productName": "Sillage",
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "category": "AudioVideo",
+      "target": [
+        "AppImage"
+      ]
+    }
+  }
+}
