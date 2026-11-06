@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {ArrowLeft, Headphones, Pencil, Play, Search, Smartphone} from "lucide-react";
+import {ArrowLeft, Headphones, Play, Search, Smartphone} from "lucide-react";
 import type {Track} from "../../shared/types/library";
 import {Sidebar} from "@/components/library/sidebar";
 import {AlbumGrid} from "@/components/library/album-grid";
@@ -30,13 +30,12 @@ export function App() {
     const collection = useCollection(library.data, library.reportError);
     const {
         view, search, genre, artist, sort, selected, tracks, albums, genres, artists,
-        activePlaylist, selectedTracks, title,
+        activePlaylist, title,
         setSearch, setGenre, setArtist, setSort, setSelected,
         navigate, showArtist, clearFilters, returnToMusic,
     } = collection;
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
     const showCollectionPlay = view !== "tracks" && tracks.length > 0;
-    const showToolbar = showCollectionPlay || selectedTracks.length > 0;
 
     const actions: TrackActions = {
         onPlay: (track, list = tracks) => player.start(track, list),
@@ -124,13 +123,11 @@ export function App() {
                             </EmptyState>
                         ) : (
                             <>
-                                {showToolbar && <div className="collection-toolbar">
-                                    {showCollectionPlay && <Button size="icon" className="collection-play" aria-label="Play visible songs"
-                                                                   onClick={() => player.start(tracks[0], tracks)}>
+                                {showCollectionPlay && <div className="collection-toolbar">
+                                    <Button size="icon" className="collection-play" aria-label="Play visible songs"
+                                            onClick={() => player.start(tracks[0], tracks)}>
                                         <Play fill="currentColor"/>
-                                    </Button>}
-                                    {!!selectedTracks.length && <Button variant="outline" onClick={() => setEditing(selectedTracks)}>
-                                        <Pencil/>Edit tags ({selectedTracks.length})</Button>}
+                                    </Button>
                                 </div>}
                                 <FilterBar genre={genre} artist={artist} search={search} genres={genres} artists={artists} sort={sort}
                                            showControls={view !== "tracks"} showSort={view === "albums" || view === "artists"} onGenre={setGenre} onArtist={setArtist}

@@ -515,17 +515,6 @@ select {
     background: #ffffff10;
 }
 
-.track-table td:first-child {
-    width: 24px;
-}
-
-.track-table input[type="checkbox"] {
-    accent-color: var(--primary);
-    width: 15px;
-    height: 15px;
-    cursor: pointer;
-}
-
 .track-cell {
     display: flex;
     align-items: center;
@@ -816,7 +805,7 @@ input[type="range"] {
 }
 
 .track-table tbody tr:not(.virtual-spacer) {
-    height: 64px;
+    height: 44px;
 }
 
 .track-table tr[aria-selected="true"] {
@@ -1029,30 +1018,20 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
     background: var(--primary);
 }
 
-.track-artwork {
-    position: relative;
+.track-row-play {
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-}
-
-.track-artwork-play {
-    position: absolute;
-    inset: 0;
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    border-radius: 4px;
-    background: #0009;
     opacity: 0;
 }
 
-.track-table tr:hover .track-artwork-play, .track-artwork-play:focus-visible, .is-current .track-artwork-play {
+.track-table tr:hover .track-row-play, .track-row-play:focus-visible, .is-current .track-row-play {
     opacity: 1;
 }
 
-.track-artwork-play svg {
-    width: 18px;
-    height: 18px;
+.track-row-play svg {
+    width: 14px;
+    height: 14px;
 }
 
 .missing-tag {
@@ -1349,4 +1328,15 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
     gap: 12px;
     font-size: 11px;
     color: var(--muted-foreground);
+}
+
+.track-table tbody tr {
+    user-select: none;
+}
+
+.track-menu [role="menuitemcheckbox"] {
+    min-height: 38px;
+    padding: 10px 12px 10px 32px;
+    border-radius: 6px;
+    font-size: 13px;
 }

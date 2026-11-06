@@ -20,3 +20,10 @@ void test("RPC schemas validate preview tokens, optional revisions, and trimmed 
     assert.deepEqual(rpcSchemas["playlist.create"].parse({ name: " Road trip " }), { name: "Road trip" });
     assert.equal(rpcSchemas["playlist.create"].safeParse({ name: " " }).success, false);
 });
+
+void test("playlist edit and delete schemas reject invalid identifiers and blank names", () => {
+    assert.equal(rpcSchemas["playlist.update"].safeParse({ id: 0, name: "Valid" }).success, false);
+    assert.equal(rpcSchemas["playlist.update"].safeParse({ id: 1, name: " " }).success, false);
+    assert.equal(rpcSchemas["playlist.delete"].safeParse({ id: -1 }).success, false);
+    assert.deepEqual(rpcSchemas["playlist.update"].parse({ id: 1, name: " Updated ", rule: " Jazz " }), { id: 1, name: "Updated", rule: "Jazz" });
+});

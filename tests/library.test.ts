@@ -100,3 +100,36 @@ void test("bulk playlist edits are atomic and do not duplicate memberships", () 
         repo.db.close();
     }
 });
+
+void test("playlist edits persist names and rules; deletion removes memberships while preserving songs", () => {
+    const repo = new LibraryRepository(":memory:");
+
+    try {
+        repo.upsert(track);
+        const song = repo.snapshot().tracks[0];
+        const id = repo.create("Original");
+        repo.add(id, song.id);
+        const revision = repo.revision;
+
+        repo.updatePlaylist(id, "Renamed");
+        assert.equal(repo.snapshot().playlists[0].name, "Renamed");
+        assert.deepEqual(repo.playlist(id), [song.id]);
+        assert.ok(repo.revision > revision);
+
+        repo.updatePlaylist(id, "Automatic", "Ambient");
+        assert.equal(repo.snapshot().playlists[0].rule, "Ambient");
+        repo.updatePlaylist(id, "Classic again");
+        assert.equal(repo.snapshot().playlists[0].rule, null);
+        assert.deepEqual(repo.playlist(id), [song.id]);
+
+        repo.deletePlaylist(id);
+        assert.deepEqual(repo.snapshot().playlists, []);
+        assert.equal(repo.snapshot().tracks.length, 1);
+        assert.equal(repo.db.prepare("SELECT count(*) AS count FROM playlist_tracks").get()?.count, 0);
+        assert.throws(() => repo.updatePlaylist(id, "Missing"), /Playlist not found/);
+        assert.throws(() => repo.deletePlaylist(id), /Playlist not found/);
+    }
+    finally {
+        repo.db.close();
+    }
+});

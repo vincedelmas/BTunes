@@ -67,8 +67,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }).sort((first, second) => compareTracks(first, second, sort));
 
     const albums = groupAlbums(tracks);
-    const selectedIds = new Set(selected);
-    const selectedTracks = tracks.filter((track) => selectedIds.has(track.id));
     const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
 
     function clearFilters() {
@@ -78,7 +76,8 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     function returnToMusic() {
-        setView(returnView);
+        const missingPlaylist = returnView.startsWith("playlist:") && !data.playlists.some((playlist) => "playlist:" + playlist.id === returnView);
+        setView(missingPlaylist ? "tracks" : returnView);
     }
 
     function navigate(nextView: string) {
@@ -108,7 +107,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     return {
         view, search, genre, artist, sort, selected, tracks, albums, genres, artists,
-        activePlaylist, selectedTracks, title,
+        activePlaylist, title,
         setSearch, setGenre, setArtist, setSort, setSelected,
         navigate, showArtist, clearFilters, returnToMusic,
     };

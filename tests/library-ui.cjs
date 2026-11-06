@@ -99,6 +99,8 @@ app.on("browser-window-created", (_, win) => {
                 if(tableWidth < viewportWidth - 1) throw new Error('Songs table does not fill a wide viewport');
                 main.style.width='';
                 await frame();
+                if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
+                if(document.querySelector('[data-track-id]').getBoundingClientRect().height>44.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
                 if (songNodes > 60) throw new Error("Song table is not virtualized");
                 for (const name of ['Title','Artist','Album','Genre','Duration','Year','Plays']) {
@@ -130,6 +132,41 @@ app.on("browser-window-created", (_, win) => {
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('[aria-label="Resize Title column"]'));
                 if(Number(document.querySelector('[aria-label="Resize Title column"]').getAttribute('aria-valuenow'))!==width+16) throw new Error('Column width did not persist');
+                if(document.querySelector('.track-table input[type="checkbox"]') || document.querySelector('[aria-label="Edit tags for Silence"]')) throw new Error('Row checkboxes or edit actions remain');
+                if(document.querySelector('nav button').textContent.trim()!=='Songs') throw new Error('Songs should be first in navigation');
+                const header=document.querySelector('.track-table thead');
+                const headerRect=header.getBoundingClientRect();
+                header.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:headerRect.x+80,clientY:headerRect.y+20}));
+                await waitFor(()=>document.querySelector('[role="menuitemcheckbox"]'));
+                const genreToggle=[...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Genre');
+                genreToggle.click();
+                await waitFor(()=>!document.querySelector('th[data-column="genre"]'));
+                if(document.querySelector('td[data-column="genre"]')) throw new Error('Hidden column cells remain');
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                button('Artists').click();
+                await waitFor(()=>document.querySelector('.artist'));
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('.track-table'));
+                if(document.querySelector('th[data-column="genre"]')) throw new Error('Column visibility did not persist');
+                const restoredHeader=document.querySelector('.track-table thead');
+                restoredHeader.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:300,clientY:250}));
+                await waitFor(()=>document.querySelector('[role="menuitemcheckbox"]'));
+                [...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Genre').click();
+                await waitFor(()=>document.querySelector('th[data-column="genre"]'));
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                const rowById=id=>document.querySelector('[data-track-id="'+id+'"]');
+                rowById(1).dispatchEvent(new MouseEvent('click',{bubbles:true}));
+                rowById(3).dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                await waitFor(()=>rowById(1).getAttribute('aria-selected')==='true' && rowById(3).getAttribute('aria-selected')==='true');
+                rowById(5).dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));
+                await waitFor(()=>[3,4,5].every(id=>rowById(id)?.getAttribute('aria-selected')==='true'));
+                if(rowById(1).getAttribute('aria-selected')==='true') throw new Error('Shift selection should replace the previous set');
+                rowById(1).dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                await waitFor(()=>document.querySelectorAll('[data-track-id][aria-selected="true"]').length===4);
+                rowById(1).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:450,clientY:300}));
+                await waitFor(()=>document.querySelector('[role="menu"]')?.textContent.includes('Edit tags (4)'));
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                rowById(1).dispatchEvent(new MouseEvent('click',{bubbles:true}));
                 const scroll = document.querySelector('.track-scroll');
                 scroll.scrollTop = scroll.scrollHeight;
                 await waitFor(() => document.querySelector('[data-track-id="2300"]'));
@@ -217,7 +254,11 @@ app.on("browser-window-created", (_, win) => {
                 if (libraryMutations) throw new Error("Playback progress rerendered the song collection");
 
                 const start=performance.now();
-                document.querySelector('[aria-label="Edit tags for Silence"]').click();
+                const playingRow=document.querySelector('[data-track-id="1"]');
+                const playingRect=playingRow.getBoundingClientRect();
+                playingRow.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:playingRect.x+150,clientY:playingRect.y+20}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit tags').click();
                 await waitFor(() => document.getElementById('tag-title'));
                 await frame();
                 const openTagEditorMs=Math.round(performance.now()-start);
@@ -267,6 +308,32 @@ app.on("browser-window-created", (_, win) => {
                 if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2') throw new Error('Artist filter did not apply');
                 document.querySelector('[aria-label="Show all songs"]').click();
                 await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2301');
+            })()`, true);
+
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button}=window.uiReview;
+                const menuFor=async target=>{
+                    const rect=target.getBoundingClientRect();
+                    target.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+80,clientY:rect.y+15}));
+                    await waitFor(()=>document.querySelector('[role="menu"]'));
+                };
+                await menuFor(button('Road trip'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit playlist').click();
+                await waitFor(()=>document.getElementById('playlist-name'));
+                const input=document.getElementById('playlist-name');
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Weekend mix');
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                button('Save playlist').click();
+                await waitFor(()=>button('Weekend mix') && !document.querySelector('[role="dialog"]'));
+                button('Weekend mix').click();
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Weekend mix');
+                await menuFor(button('Weekend mix'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Delete playlist').click();
+                await waitFor(()=>document.querySelector('[role="dialog"]'));
+                [...document.querySelectorAll('[role="dialog"] button')].find(item=>item.textContent.trim()==='Delete playlist').click();
+                await waitFor(()=>!button('Weekend mix') && document.querySelector('h1')?.textContent==='Songs');
+                const snapshot=await window.btunes.rpc('library.get',undefined);
+                if(snapshot.tracks.length!==2300 || snapshot.playlists.length) throw new Error('Playlist deletion damaged library state');
             })()`, true);
 
             const report = {...results, ...interactions, screenshots: artifacts};

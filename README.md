@@ -29,13 +29,13 @@ Click a song-table heading to sort by title, artist, album, genre, duration, yea
 
 After **Go to artist**, use **All songs** above the table to clear filters. Settings is a dedicated page; **Back to music** returns to your previous view and filters. Use **Refresh library** in Settings to refresh the index.
 
-Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Select multiple songs before right-clicking to act on the selection. Classic playlist menus also offer **Remove from playlist**.
+Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Click a row to select it, Ctrl-click to toggle additional songs, and Shift-click to select a range in the current sort order. Ctrl+Shift-click adds a range; Ctrl+A selects all filtered songs. Right-click the selection to act on it. Classic playlist menus also offer **Remove from playlist**.
 
 ## Editing tags
 
 Supported write formats: **MP3, FLAC, and M4A**. Other formats remain readable and playable.
 
-1. Use a song's pencil button, an album's pencil button, or select songs and choose **Edit tags**.
+1. Right-click a song or a selection and choose **Edit tags**, or use an album's pencil button.
 2. Edit title, artist, album, genre, or year. Batch edits apply only checked fields; mixed values are initially blank. Single-song edits offer a reset button for each changed field.
 3. Choose **Preview changes** to review the exact before/after values for each file.
 4. Choose **Save to files** to apply the preview.
@@ -109,7 +109,7 @@ The Electron test intentionally submits an invalid track ID; its Zod error outpu
 ## Still to build
 
 - Embedded artwork replacement, additional tag fields and formats, MusicBrainz lookup, and previewed automatic renaming.
-- Combined smart-playlist rules, relative M3U phone exports, playlist editing/deletion/manual ordering, complete play-event history, and persistent queue/settings.
+- Combined smart-playlist rules, relative M3U phone exports, manual playlist ordering, complete play-event history, and persistent queue/settings.
 - Android comparison and missing-song detection, mounted-folder transfers, then MTP/USB and KDE Connect.
 - Large-library pagination, indexed SQL search, background metadata extraction, progress, and cancellation.
 - MPRIS, media keys, desktop icon, and validated AppImage packaging.
@@ -217,3 +217,10 @@ playback progress does not rerender the large song collection.
 Class-name merging uses shadcn's `cn` package, re-exported from
 `src/renderer/src/lib/utils.ts`. It replaces the local `clsx` + `tailwind-merge`
 wrapper while keeping existing component imports unchanged.
+
+Right-click the song-table header to show or hide metadata columns. The Title
+column stays visible, and column visibility is remembered alongside saved widths.
+Song rows use a compact layout without cover art or row edit buttons.
+
+Right-click a playlist in the sidebar to edit its name/genre rule or delete it.
+Playlist deletion removes its memberships and preserves every indexed song and file.

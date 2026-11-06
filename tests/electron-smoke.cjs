@@ -83,7 +83,7 @@ app.on("browser-window-created", (_, win) => {
     document.querySelector('button[aria-label="Refresh library"]').click();
     await waitFor(()=>document.querySelector('.library-stat strong')?.textContent==='1');
     findButton('Back to music').click();
-    await waitFor(()=>document.querySelector('button[aria-label="Edit tags for Silence"]'));
+    await waitFor(()=>document.querySelector('[data-track-id="'+indexed.tracks[0].id+'"]'));
     document.querySelector('button[aria-label="Play Silence"]').click();
     await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
     const seekInput=document.querySelector('input[aria-label="Playback position"]');
@@ -93,7 +93,11 @@ app.on("browser-window-created", (_, win) => {
     await new Promise(resolve=>setTimeout(resolve,350));
     if(audio.currentTime<36.5 || audio.currentTime>40)throw new Error('Seeking jumped back or lost its position');
     audio.pause();
-        document.querySelector('button[aria-label="Edit tags for Silence"]').click();
+    const row=document.querySelector('[data-track-id="'+indexed.tracks[0].id+'"]');
+    const rect=row.getBoundingClientRect();
+    row.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+150,clientY:rect.y+20}));
+    await waitFor(()=>document.querySelector('[role="menu"]'));
+    [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit tags').click();
     await waitFor(()=>document.getElementById('tag-title'));
     const titleInput=document.getElementById('tag-title');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(titleInput,'Edited through UI');

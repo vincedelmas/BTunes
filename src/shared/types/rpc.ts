@@ -15,6 +15,8 @@ type RpcOutputs = {
     "playlist.add": void;
     "playlist.tracks": number[];
     "playlist.create": number;
+    "playlist.update": void;
+    "playlist.delete": void;
 };
 
 export type RpcInput<K extends keyof typeof rpcSchemas> = z.infer<(typeof rpcSchemas)[K]>;

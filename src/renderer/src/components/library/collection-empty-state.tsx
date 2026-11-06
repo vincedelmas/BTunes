@@ -20,8 +20,13 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
     }
 
     if (view === "duplicates") {
-        return <EmptyState icon={CopyCheck} title="No possible duplicates"
-                           description="No indexed songs share the same title, artist, and rounded duration. Your collection looks tidy."/>;
+        return (
+            <EmptyState
+                icon={CopyCheck}
+                title="No duplicates"
+                description="Your collection looks tidy."
+            />
+        );
     }
 
     if (view === "history") {

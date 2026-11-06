@@ -119,6 +119,16 @@ void app.whenReady().then(async () => {
             run: (input: RpcInput<"playlist.create">) => repo.create(input.name, input.rule),
         },
 
+        "playlist.update": {
+            schema: rpcSchemas["playlist.update"],
+            run: (input: RpcInput<"playlist.update">) => repo.updatePlaylist(input.id, input.name, input.rule),
+        },
+
+        "playlist.delete": {
+            schema: rpcSchemas["playlist.delete"],
+            run: (input: RpcInput<"playlist.delete">) => repo.deletePlaylist(input.id),
+        },
+
         "playlist.add": {
             schema: rpcSchemas["playlist.add"],
             run: (input: RpcInput<"playlist.add">) => repo.add(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),

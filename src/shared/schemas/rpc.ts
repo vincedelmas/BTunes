@@ -8,6 +8,11 @@ const playlistMutationSchema = z.union([
     z.strictObject({ playlistId: trackId, trackIds: z.array(trackId).min(1).max(10000) }),
 ]);
 
+const playlistDetails = {
+    name: z.string().trim().min(1).max(100),
+    rule: z.string().trim().min(1).max(100).optional(),
+};
+
 export const rpcSchemas = {
     "tags.preview": z.object({ patch: tagPatchSchema, ids: z.array(trackId).min(1).max(100) }),
     "tags.save": z.object({ token: z.uuid() }),
@@ -19,8 +24,7 @@ export const rpcSchemas = {
     "playlist.remove": playlistMutationSchema,
     "playlist.add": playlistMutationSchema,
     "playlist.tracks": idSchema,
-    "playlist.create": z.object({
-        name: z.string().trim().min(1).max(100),
-        rule: z.string().trim().min(1).max(100).optional(),
-    }),
+    "playlist.create": z.object(playlistDetails),
+    "playlist.update": z.object({ id: trackId, ...playlistDetails }),
+    "playlist.delete": idSchema,
 };

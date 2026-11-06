@@ -124,6 +124,25 @@ export class LibraryRepository {
         return result;
     }
 
+    updatePlaylist(id: number, name: string, rule?: string) {
+        const updated = this.queries.update(playlists)
+            .set({ name, rule: rule ?? null })
+            .where(eq(playlists.id, id))
+            .returning({ id: playlists.id }).get();
+
+        if (!updated) throw new Error("Playlist not found.");
+        this.revision++;
+    }
+
+    deletePlaylist(id: number) {
+        const deleted = this.queries.delete(playlists)
+            .where(eq(playlists.id, id))
+            .returning({ id: playlists.id }).get();
+
+        if (!deleted) throw new Error("Playlist not found.");
+        this.revision++;
+    }
+
     private requireClassicPlaylist(id: number) {
         const playlist = this.queries
             .select()
