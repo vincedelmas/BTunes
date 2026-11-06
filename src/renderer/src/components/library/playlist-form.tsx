@@ -88,7 +88,7 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
                         placeholder="Classic playlist"
                         options={rules.map((genre) => ({ value: genre, label: genre }))}
                     />
-                    <FieldDescription>{rule ? "Songs matching this genre appear here automatically." : "A classic playlist you fill with your own selection of songs."}</FieldDescription>
+                    <FieldDescription>{rule ? "Songs matching this genre appear here automatically." : "Add and remove songs manually."}</FieldDescription>
                 </Field>
             </FieldGroup>
             <DialogFooter className="m-0 rounded-none px-7 py-4">

@@ -18,7 +18,7 @@ export function LibrarySettings({ folders, busy, songCount, onImport, onRefresh 
         <div className="flex flex-col gap-6">
             <SettingsSection
                 title="Music folders"
-                description="New songs and file changes are picked up automatically."
+                description="New songs and file changes are indexed automatically."
                 action={
                     <Button
                         disabled={busy}
@@ -54,8 +54,8 @@ export function LibrarySettings({ folders, busy, songCount, onImport, onRefresh 
                 ) : (
                     <EmptyState
                         icon={Folder}
-                        title="Give your music a home"
-                        description="Add a folder to start building your library."
+                        title="No music folders"
+                        description="Add a folder to index its audio files."
                     />
                 )}
             </SettingsSection>

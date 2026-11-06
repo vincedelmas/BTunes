@@ -20,7 +20,7 @@ interface PlayerBarProps {
 
 export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: PlayerBarProps) {
     return (
-        <footer className="player-bar col-span-full flex items-center justify-between border-t border-border/60 bg-background/80 py-3 px-4 gap-5">
+        <footer className="player-bar col-span-full flex items-center justify-between border-t border-border/60 bg-background py-3 px-4 gap-5">
             <div
                 className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-14 [&_.cover]:rounded-lg">
                 <Cover
@@ -34,7 +34,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
 
             <div className="transport w-[42%] max-w-[590px]">
                 <div
-                    className="transport-buttons flex justify-center items-center gap-[9px] mb-2 text-muted-foreground">
+                    className="transport-buttons flex justify-center items-center gap-2 mb-2 text-muted-foreground">
                     <Button
                         size="icon"
                         variant="ghost"
@@ -60,7 +60,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                         size="icon"
                         variant="default"
                         disabled={!current}
-                        className="play-toggle size-10 rounded-full"
+                        className="play-toggle size-10 rounded-full shadow-sm"
                         onClick={player.toggle}
                         aria-label={player.playing ? "Pause" : "Play"}
                         title={player.playing ? "Pause" : "Play"}

@@ -75,7 +75,7 @@ export function AlbumGrid({ currentTrack, reveal, onRevealed, albums, playlists,
                                 if (ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey) onOpen(tracks);
                             }}
                         >
-                            <div className="album-artwork relative mb-3 overflow-hidden rounded-lg shadow-lg">
+                            <div className="album-artwork relative mb-3 overflow-hidden rounded-lg shadow-lg ring-1 ring-foreground/5">
                                 <Cover
                                     large
                                     track={track}
@@ -98,7 +98,7 @@ export function AlbumGrid({ currentTrack, reveal, onRevealed, albums, playlists,
                             <div className="album-info flex items-start justify-between gap-2">
                                 <div className="min-w-0">
                                     <strong
-                                        className="mb-1 block truncate text-sm font-semibold"
+                                        className="mb-1 block truncate text-sm font-medium"
                                         title={track.album}
                                     >{track.album}</strong>
                                     <span

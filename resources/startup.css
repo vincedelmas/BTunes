@@ -4,7 +4,7 @@
     z-index: 100;
     display: grid;
     place-items: center;
-    background: radial-gradient(ellipse at 50% 35%, #182a20, #0c100e 65%);
+    background: radial-gradient(ellipse at 50% 35%, #131416, #060708 65%);
     color: #fff;
     font-family: "Inter Variable", sans-serif;
 }
@@ -19,7 +19,7 @@
 #startup img {
     width: 100px;
     height: 100px;
-    filter: drop-shadow(0 16px 40px #1ed76015);
+    filter: grayscale(1) drop-shadow(0 16px 40px #e8d9b810);
 }
 
 #startup strong {
@@ -30,7 +30,7 @@
 
 #startup p {
     margin: 0;
-    color: #98b1a2;
+    color: #a5a5ad;
     font-size: 12px;
 }
 
@@ -46,7 +46,7 @@
     width: 4px;
     height: 16px;
     border-radius: 3px;
-    background: #40e885;
+    background: #e8d9b8;
     animation: startup-wave 900ms ease-in-out infinite alternate;
 }
 

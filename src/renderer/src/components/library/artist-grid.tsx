@@ -53,7 +53,7 @@ export function ArtistGrid({ currentTrack, reveal, onRevealed, tracks, onArtist 
                         />
                         {currentTrack && getAlbumArtist(currentTrack) === artist.name && <NowPlayingBadge/>}
                     </div>
-                    <h2 className="truncate text-base font-bold">{artist.name}</h2>
+                    <h2 className="truncate text-base font-semibold tracking-tight">{artist.name}</h2>
                     <p className="mt-1 text-xs text-muted-foreground">Artist · {artist.count} {artist.count === 1 ? "song" : "songs"}</p>
                 </button>
             )}

@@ -36,7 +36,7 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
             <EmptyState
                 icon={CopyCheck}
                 title="No duplicates"
-                description="Your collection looks tidy."
+                description="No songs have matching titles, artists, and durations."
             />
         );
     }
@@ -46,7 +46,7 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
             <EmptyState
                 icon={History}
                 title="No listening history yet"
-                description="Play a song to start building your listening history."
+                description="Played songs appear here."
             />
         );
     }
@@ -82,8 +82,8 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
     return (
         <EmptyState
             icon={Disc3}
-            title="All your music. One place."
-            description="Choose a music folder in Settings to start your collection."
+            title="No music folders"
+            description="Add a music folder in Settings to index its audio files."
         >
             <Button onClick={onSettings}>
                 <Settings/>

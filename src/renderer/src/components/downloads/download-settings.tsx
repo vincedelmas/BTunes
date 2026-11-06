@@ -33,7 +33,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
         <div className="flex flex-col gap-6">
             <SettingsSection
                 title="Bookmarks"
-                description="Choose where BTunes finds the songs you want to download."
+                description="Select the bookmarks file and folder used for downloads."
                 action={
                     <Button
                         variant="ghost"
@@ -94,7 +94,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
             </SettingsSection>
             <SettingsSection
                 title="Audio & library"
-                description="Finished songs arrive here after you review their tags and cover."
+                description="Set the output folder and audio quality."
             >
                 <FieldGroup>
                     <Field>

@@ -48,6 +48,13 @@ export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) 
                     aria-hidden="true"
                 />
             </InputGroupAddon>
+            {!value && (
+                <InputGroupAddon align="inline-end" className="p-0">
+                    <kbd className="rounded border border-border px-1.5 py-0.5 font-sans text-xs text-muted-foreground">
+                        Ctrl F
+                    </kbd>
+                </InputGroupAddon>
+            )}
             {value && (
                 <InputGroupAddon
                     align="inline-end"

@@ -50,18 +50,18 @@
 :root {
     --radius: 8px;
     color-scheme: dark;
-    --background: #151a19;
-    --foreground: #eef3f0;
-    --card: #1c2321;
-    --primary: #79dfb5;
-    --primary-foreground: #10251c;
-    --secondary: #28332e;
-    --muted-foreground: #a4b3ab;
-    --border: #303b35;
+    --background: #0b0c0e;
+    --foreground: #f1f0ed;
+    --card: #121315;
+    --primary: #e8d9b8;
+    --primary-foreground: #211d15;
+    --secondary: #1c1d20;
+    --muted-foreground: #a5a5ad;
+    --border: #292a2e;
     font-family: "Inter Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     color: var(--foreground);
-    background: #0c100e;
+    background: #060708;
     font-synthesis: none;
     -webkit-font-smoothing: antialiased;
 }
@@ -92,7 +92,7 @@ button:disabled {
 
 @layer base {
     :where(button, a, input, select, textarea, [tabindex]):focus-visible {
-        outline: 1px solid var(--primary);
+        outline: 2px solid var(--primary);
         outline-offset: 2px;
     }
 

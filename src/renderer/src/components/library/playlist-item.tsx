@@ -1,5 +1,5 @@
 import {Button} from "@/components/ui/button";
-import {ListMusic, Pencil, Trash2} from "lucide-react";
+import {ListMusic, Pencil, Sparkles, Trash2} from "lucide-react";
 import type {Playlist} from "../../../../shared/types/library";
 import {ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger} from "@/components/ui/context-menu";
 
@@ -19,7 +19,7 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
             <ContextMenuTrigger
                 render={
                     <Button
-                        className="nav-item w-full justify-start gap-3 h-10 aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
+                        className="nav-item w-full justify-start gap-3 h-10 aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                         onClick={onNavigate}
                         variant={active ? "secondary" : "ghost"}
                         aria-current={active ? "page" : undefined}
@@ -31,7 +31,11 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
                     {playlist.name}
                 </span>
                 {playlist.rule &&
-                    <span title="Automatic playlist">✦</span>
+                    <Sparkles
+                        data-icon="inline-end"
+                        aria-label="Automatic playlist"
+                        className="ml-auto"
+                    />
                 }
             </ContextMenuTrigger>
             <ContextMenuContent className="track-menu">

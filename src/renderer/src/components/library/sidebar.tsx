@@ -48,11 +48,11 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
     }
 
     return (
-        <aside className="sidebar bg-background/60 rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
+        <aside className="sidebar bg-background/40 rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
             <div
                 className="brand flex items-center gap-3 mt-0 mx-3 mb-6 shrink-0">
                 <img
-                    className="size-8"
+                    className="size-8 grayscale"
                     src="./icon.svg"
                     alt=""
                 />
@@ -68,7 +68,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                     return (
                         <Button
                             key={id}
-                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary"
+                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
                             onClick={() => onNavigate(id)}
                             variant={view === id ? "secondary" : "ghost"}
                             aria-current={view === id ? "page" : undefined}
@@ -81,7 +81,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
             </nav>
 
             <div className="playlist-heading flex items-center justify-between border-t border-border/60 pl-3 pt-4 mt-5 mx-0 mb-2 shrink-0">
-                <p className="eyebrow text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground m-0">Playlists</p>
+                <p className="eyebrow text-xs uppercase tracking-[0.12em] font-semibold text-muted-foreground m-0">Playlists</p>
                 <Button
                     size="icon"
                     variant="ghost"
@@ -123,7 +123,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                                 <ListMusic className="size-6"/>
                             </div>
                             <DialogTitle className="text-2xl font-bold">{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
-                            <DialogDescription>Give your collection a name. Add songs yourself or let a genre rule fill it for you.</DialogDescription>
+                            <DialogDescription>Set a name and choose whether to add songs manually or by genre.</DialogDescription>
                         </DialogHeader>
                         <PlaylistForm
                             key={editing?.id ?? "new"}
@@ -175,7 +175,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 <Button
                     variant={view === "settings" ? "secondary" : "ghost"}
                     aria-current={view === "settings" ? "page" : undefined}
-                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary"
+                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-secondary aria-[current=page]:text-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
                     onClick={onSettings}
                 >
                     <Settings data-icon="inline-start"/>

@@ -33,7 +33,7 @@ export function GenreInput({ id, value, genres, disabled, placeholder, onChange 
                 disabled={disabled}
                 id={id}
                 placeholder={placeholder}
-                className="h-[42px] w-full border-[#3a3a3a] bg-background"
+                className="h-[42px] w-full border-border bg-background"
                 onBlur={() => {
                     const resolved = resolveGenre(value, genres);
                     if (resolved !== value) onChange(resolved);

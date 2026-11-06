@@ -2,7 +2,7 @@
     "name": "btunes",
     "version": "0.1.0",
     "private": true,
-    "description": "Your music, on your terms.",
+    "description": "Local music library manager and player.",
     "main": "out/main/index.js",
     "packageManager": "bun@1.4.4",
     "scripts": {

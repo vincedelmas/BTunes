@@ -40,7 +40,7 @@ export function PlaybackTimeline({ audio, trackId, onSeek }: PlaybackTimelinePro
         <div className="timeline flex items-center gap-3 text-xs text-muted-foreground tabular-nums [&_input]:flex-1 [&_input]:min-w-0">
             <span className="w-9 shrink-0 text-right">{formatTime(position)}</span>
             <input
-                className="h-[3px] cursor-pointer outline-none shadow-none ring-0 [accent-color:var(--primary)] focus:outline-none focus:shadow-none focus:ring-0"
+                className="h-[3px] cursor-pointer [accent-color:var(--primary)] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4"
                 aria-label="Playback position"
                 type="range"
                 min="0"

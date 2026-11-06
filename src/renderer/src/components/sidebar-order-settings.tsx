@@ -23,7 +23,7 @@ function OrderList({ title, group, items, onChange }: OrderListProps) {
             <h3 className="mb-3 text-xs font-medium text-muted-foreground">{title}</h3>
             <ul
                 aria-label={title}
-                className="settings-order-list flex max-h-80 flex-col gap-1 overflow-y-auto"
+                className="settings-order-list flex flex-col gap-1"
             >
                 {items.map((item) => (
                     <li
@@ -56,8 +56,8 @@ interface SidebarOrderSettingsProps {
 export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettingsProps) {
     return (
         <SettingsSection
-            title="Make it your own"
-            description="Drag to arrange your sidebar. Changes are saved automatically."
+            title="Sidebar order"
+            description="Drag items to reorder them. Changes are saved automatically."
         >
             <div className="sidebar-order-settings grid gap-7 md:grid-cols-2">
                 <OrderList
@@ -78,7 +78,7 @@ export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettings
                     />
                 }
             </div>
-            <p className="mt-5 text-xs text-muted-foreground">You can also focus a handle and press Alt + ↑ or ↓ to move it.</p>
+            <p className="mt-5 text-xs text-muted-foreground">Focus a drag handle and press Alt + ↑ or ↓ to reorder.</p>
         </SettingsSection>
     );
 }

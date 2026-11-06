@@ -49,7 +49,7 @@ function ContextMenuContent({
             >
                 <ContextMenuPrimitive.Popup
                     data-slot="context-menu-content"
-                    className={cn("z-50 max-h-(--available-height) w-63 min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[10px] border border-[#3b3b3b] bg-[#232323] p-[7px] text-popover-foreground shadow-[0_12px_48px_#0009] ring-0 duration-0 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-none data-closed:animate-none", className)}
+                    className={cn("z-50 max-h-(--available-height) w-63 min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[10px] border border-border bg-popover p-[7px] text-popover-foreground shadow-[0_12px_48px_#0009] ring-0 duration-0 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-none data-closed:animate-none", className)}
                     {...props}
                 />
             </ContextMenuPrimitive.Positioner>
@@ -75,7 +75,7 @@ function ContextMenuLabel({
             data-slot="context-menu-label"
             data-inset={inset}
             className={cn(
-                "max-w-70 truncate px-3 pt-2 pb-2.5 text-[11px] font-medium text-[#aaa] data-inset:pl-7",
+                "max-w-70 truncate px-3 pt-2 pb-2.5 text-[11px] font-medium text-muted-foreground data-inset:pl-7",
                 className
             )}
             {...props}

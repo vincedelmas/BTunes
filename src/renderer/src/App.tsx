@@ -170,7 +170,7 @@ export function App() {
             <main className="isolate overflow-hidden min-w-0 rounded-xl border border-border/50 bg-background flex flex-col">
                 {view !== "settings" && (
                     <header
-                        className="topbar h-16 flex items-center gap-5 py-0 px-6 sticky top-0 bg-background
+                        className="topbar h-[72px] flex items-center gap-5 py-0 px-6 sticky top-0 bg-background
                     z-[1] shrink-0 max-[1150px]:py-0"
                     >
                         <LibrarySearch
@@ -201,13 +201,13 @@ export function App() {
                     />
                     :
                     <>
-                        <div className="library-hero shrink-0 border-b border-border/60 bg-linear-to-r from-primary/6 to-transparent px-6 pt-3 pb-5">
-                            <h1 className="mb-2 text-3xl leading-tight font-semibold tracking-[-0.035em]">
+                        <div className="library-hero shrink-0 border-b border-border/60 px-6 pt-2 pb-6">
+                            <h1 className="mb-2 text-3xl leading-tight font-semibold tracking-[-0.04em]">
                                 {title}
                             </h1>
                             {view === "android" || view === "downloads" ?
                                 <p className="text-xs text-muted-foreground">
-                                    {view === "downloads" ? "From bookmarks to your library" : "USB music sync"}
+                                    {view === "downloads" ? "Download songs from bookmarks" : "USB music sync"}
                                 </p>
                                 :
                                 <LibraryStats
@@ -215,7 +215,7 @@ export function App() {
                                 />
                             }
                         </div>
-                        <div className="content py-4 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
+                        <div className="content py-5 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
                             {library.error &&
                                 <Alert variant="destructive">
                                     <AlertDescription>
