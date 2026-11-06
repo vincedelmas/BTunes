@@ -1,5 +1,5 @@
 import {resolve} from "node:path";
-import {eq, sql} from "drizzle-orm";
+import {and, eq, inArray, sql} from "drizzle-orm";
 import {DatabaseSync} from "node:sqlite";
 import {drizzle} from "drizzle-orm/node-sqlite";
 import {migrate} from "drizzle-orm/node-sqlite/migrator";
@@ -12,6 +12,7 @@ type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed">;
 
 export class LibraryRepository {
     readonly db: DatabaseSync;
+    revision = 0;
     private readonly queries: ReturnType<typeof drizzle>;
 
     constructor(file: string, migrationsFolder = resolve("drizzle")) {
@@ -30,6 +31,7 @@ export class LibraryRepository {
 
     snapshot(): Snapshot {
         return {
+            revision: this.revision,
             tracks: this.queries
                 .select()
                 .from(tracks)
@@ -64,6 +66,7 @@ export class LibraryRepository {
                 set: track,
                 target: tracks.path,
             }).run();
+        this.revision++;
     }
 
     favorite(id: number) {
@@ -72,6 +75,7 @@ export class LibraryRepository {
             .set({ favorite: sql`1 - ${tracks.favorite}` })
             .where(eq(tracks.id, id))
             .run();
+        this.revision++;
     }
 
     played(id: number) {
@@ -83,6 +87,7 @@ export class LibraryRepository {
             })
             .where(eq(tracks.id, id))
             .run();
+        this.revision++;
     }
 
     folder(path: string) {
@@ -91,6 +96,7 @@ export class LibraryRepository {
             .values({ path })
             .onConflictDoNothing()
             .run();
+        this.revision++;
     }
 
     remove(path: string) {
@@ -98,22 +104,46 @@ export class LibraryRepository {
             .delete(tracks)
             .where(eq(tracks.path, path))
             .run();
+        this.revision++;
     }
 
     create(name: string, rule?: string) {
-        return this.queries
+        const result = this.queries
             .insert(playlists)
             .values({ name, rule: rule ?? null })
             .returning({ id: playlists.id })
             .get()!.id;
+
+        this.revision++;
+        return result;
     }
 
-    add(playlistId: number, trackId: number) {
-        this.queries
-            .insert(playlistTracks)
-            .values({ playlistId, trackId })
-            .onConflictDoNothing()
-            .run();
+    private requireClassicPlaylist(id: number) {
+        const playlist = this.queries.select().from(playlists).where(eq(playlists.id, id)).get();
+        if (!playlist || playlist.rule) throw new Error("Only classic playlists can be edited manually.");
+    }
+
+    add(playlistId: number, input: number | number[]) {
+        this.requireClassicPlaylist(playlistId);
+        const ids = [...new Set(Array.isArray(input) ? input : [input])];
+        if (!ids.length) return;
+
+        this.queries.insert(playlistTracks)
+            .values(ids.map((trackId) => ({ playlistId, trackId })))
+            .onConflictDoNothing().run();
+        this.revision++;
+    }
+
+    removeFromPlaylist(playlistId: number, input: number | number[]) {
+        this.requireClassicPlaylist(playlistId);
+        const ids = [...new Set(Array.isArray(input) ? input : [input])];
+        if (!ids.length) return;
+
+        this.queries.delete(playlistTracks).where(and(
+            eq(playlistTracks.playlistId, playlistId),
+            inArray(playlistTracks.trackId, ids),
+        )).run();
+        this.revision++;
     }
 
     playlist(id: number) {

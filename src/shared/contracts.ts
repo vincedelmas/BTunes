@@ -17,26 +17,33 @@ export type Track = {
 };
 export type Playlist = { id: number; name: string; rule: string | null };
 export type Snapshot = {
+    revision: number;
     tracks: Track[];
     playlists: Playlist[];
     folders: string[];
 };
+type PlaylistMutation =
+    | { playlistId: number; trackId: number }
+    | { playlistId: number; trackIds: number[] };
+
 type Routes = {
     "tags.preview": {
         input: { ids: number[]; patch: TagPatch };
         output: TagPreview;
     };
     "tags.save": { input: { token: string }; output: TagSaveResult };
-    "library.get": { input: undefined; output: Snapshot };
+    "library.get": { input: { revision: number } | undefined; output: Snapshot | null };
     "library.import": {
         input: undefined;
         output: { imported: number; errors: string[] } | null;
     };
+    "track.reveal": { input: { id: number }; output: void };
+    "playlist.remove": { input: PlaylistMutation; output: void };
     "track.favorite": { input: { id: number }; output: void };
     "track.played": { input: { id: number }; output: void };
     "playlist.create": { input: { name: string; rule?: string }; output: number };
     "playlist.add": {
-        input: { playlistId: number; trackId: number };
+        input: PlaylistMutation;
         output: void;
     };
     "playlist.tracks": { input: { id: number }; output: number[] };

@@ -14,18 +14,18 @@ bun install
 bun run dev
 ```
 
-Choose **Add music folder** to index your collection. Click an album to play it, or use the play button beside a song. No sample music is added to your library.
+Open **Settings → Add music folder** to index your collection. Click an album to play it, or use the play button beside a song. No sample music is added to your library.
 
 ## Library and playback
 
 - Recursive import of MP3, FLAC, OGG, Opus, M4A, AAC, WAV, and AIFF files, including embedded artwork. Playback depends on Electron's supported codecs.
 - Album, artist, and song views, instant search, combined artist/genre filters, and sorting by artist, album, title, year, or play count.
-- Persistent favorites, play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
+- Persistent play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
 - Play, pause, stop, previous/next, shuffle, queue repeat, seeking, and volume.
-- Folder watching while the app runs; the renderer refreshes every five seconds. Reimport a folder to reconcile changes made while the app was closed.
+- Folder watching while the app runs; the renderer checks a lightweight revision every five seconds and only downloads changed snapshots. Reimport a folder to reconcile changes made while the app was closed.
 - Possible duplicate detection using title, artist, and rounded duration. No files are automatically deleted.
 
-Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. In the Songs view, use **+ Playlist** to add a song to a classic playlist.
+Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Select multiple songs before right-clicking to act on the selection. Classic playlist menus also offer **Remove from playlist**.
 
 ## Editing tags
 
@@ -54,6 +54,7 @@ src/
     database/schema.ts       Drizzle SQLite tables and indexes
     services/library.ts      Indexing and file watching
     services/tags.ts         Tag previews, writes, backups, and rollback
+    services/audio.ts        Streaming audio with HTTP byte-range seeking
   preload/index.ts           Isolated bridge exposing one rpc() method
   shared/
     contracts.ts             Typed RPC contracts
@@ -67,10 +68,14 @@ src/
       library/               Sidebar, album cards, song table
       player/                Playback bar and queue
       tag-editor.tsx         Single-song and batch editing dialog
+      settings-panel.tsx     Watched folder management
+      virtual-grid.tsx       Shared virtualized card and queue layout
 tests/
   library.test.ts            Persistence and playlist behavior
   tags.test.ts               Format round trips, audio/artwork preservation, rollback
-  electron-smoke.cjs         React, RPC, import, audio protocol, and tag editor interaction
+  electron-smoke.cjs         React, RPC, import, real seeking, and tag editor interaction
+  library-ui.cjs             2,300-song scroll/search/context menu/playback/editor checks
+  audio.test.ts              Byte ranges, partial content, suffixes, and HEAD requests
 ```
 
 React has no Node.js or arbitrary filesystem access. One `rpc` channel carries typed methods, with Zod validation in the main process. The local audio protocol resolves only indexed track IDs. Drizzle uses the Node SQLite module embedded in Electron; no third-party native database addon is needed.
@@ -97,10 +102,10 @@ The Electron test intentionally submits an invalid track ID; its Zod error outpu
 - Embedded artwork replacement, additional tag fields and formats, MusicBrainz lookup, and previewed automatic renaming.
 - Combined smart-playlist rules, relative M3U phone exports, playlist editing/deletion/manual ordering, complete play-event history, and persistent queue/settings.
 - Android comparison and missing-song detection, mounted-folder transfers, then MTP/USB and KDE Connect.
-- Large-library pagination, indexed SQL search, virtualized lists, background metadata extraction, progress, and cancellation.
+- Large-library pagination, indexed SQL search, background metadata extraction, progress, and cancellation.
 - MPRIS, media keys, desktop icon, and validated AppImage packaging.
 
-The current app loads the library into React and indexes files in the main process. Folder removal and changes while the app is closed require a reimport. Initial scans skip symbolic links.
+The current app loads the library metadata into React and indexes files in the main process. Song lists, album/artist grids, and the queue use TanStack Virtual to mount only visible items. Playback progress updates are isolated to the seek slider. Folder removal and changes while the app is closed require a reimport. Initial scans skip symbolic links.
 
 ## Database migrations and code checks
 
@@ -142,3 +147,28 @@ including cached artwork and original-file tag backups. SQLite's backup API
 includes committed WAL data. The original directory is retained.
 An existing BTunes database is never overwritten. Close older running instances
 before launching the renamed app so new plays and edits use the new library.
+
+## Responsiveness checks
+
+`bun run test:electron` uses isolated temporary profiles. In addition to the
+playback/tag-writing test, it seeds 2,300 synthetic song records, verifies
+virtualized scrolling and search, checks context actions and Settings, and
+ensures audio progress does not mutate the song collection's DOM. It captures
+Electron screenshots in `/tmp/btunes-ui-review/` for visual inspection.
+No test imports or modifies your collection.
+
+Folder management lives in Settings. There are no liked-song controls; use
+playlists for curated collections. Existing stored favorites are left intact
+for compatibility with previous versions.
+
+## Linux development logs
+
+Vite build output and dependency re-optimization after lockfile changes are normal
+during development. A process exit code of 0 means a successful exit.
+
+Chromium may report that its Wayland backend does not support Vulkan, or emit
+small negative frame-latency measurements from compositor timing. Native Wayland
+playback and tag-saving checks pass on the current development machine despite
+that startup diagnostic. These messages alone do not indicate a tag-writing
+failure. BTunes keeps Electron's graphics defaults rather than suppressing logs
+or forcing a different rendering backend.

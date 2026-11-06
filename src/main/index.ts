@@ -1,3 +1,4 @@
+import {serveAudio} from "./services/audio";
 import {migrateLegacyUserData} from "./services/user-data";
 import {z} from "zod";
 import {join} from "node:path";
@@ -6,7 +7,7 @@ import {TagService} from "./services/tags";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
 import {type TagPatch, tagPatchSchema} from "../shared/tags";
-import {app, BrowserWindow, dialog, ipcMain, net, protocol} from "electron";
+import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
 
 
 app.setName("BTunes");
@@ -49,6 +50,11 @@ app.whenReady().then(async () => {
     );
 
     const id = z.object({ id: z.number().int().positive() });
+    const playlistMutation = z.union([
+        z.object({ playlistId: z.number().int().positive(), trackId: z.number().int().positive() }).strict(),
+        z.object({ playlistId: z.number().int().positive(), trackIds: z.array(z.number().int().positive()).min(1).max(10000) }).strict(),
+    ]);
+    type PlaylistMutation = z.infer<typeof playlistMutation>;
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 
@@ -77,8 +83,20 @@ app.whenReady().then(async () => {
         },
 
         "library.get": {
-            schema: z.undefined(),
-            run: () => repo.snapshot(),
+            schema: z.object({ revision: z.number().int().nonnegative() }).optional(),
+            run: (input: { revision: number } | undefined) => input?.revision === repo.revision ? null : repo.snapshot(),
+        },
+        "track.reveal": {
+            schema: id,
+            run: (input: { id: number }) => {
+                const track = repo.get(input.id);
+                if (!track) throw new Error("Track not found.");
+                shell.showItemInFolder(track.path);
+            },
+        },
+        "playlist.remove": {
+            schema: playlistMutation,
+            run: (input: PlaylistMutation) => repo.removeFromPlaylist(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
         },
 
         "library.import": {
@@ -111,11 +129,8 @@ app.whenReady().then(async () => {
         },
 
         "playlist.add": {
-            schema: z.object({
-                trackId: z.number().int().positive(),
-                playlistId: z.number().int().positive(),
-            }),
-            run: (input: { playlistId: number; trackId: number }) => repo.add(input.playlistId, input.trackId),
+            schema: playlistMutation,
+            run: (input: PlaylistMutation) => repo.add(input.playlistId, "trackIds" in input ? input.trackIds : input.trackId),
         },
 
         "playlist.tracks": {
@@ -162,7 +177,7 @@ app.whenReady().then(async () => {
         if (url.hostname === "audio") {
             const track = repo.get(Number(url.pathname.slice(1)));
             if (track) {
-                return net.fetch(pathToFileURL(track.path).href, { headers: request.headers });
+                return serveAudio(track.path, request).catch(() => new Response("Audio file not found", { status: 404 }));
             }
         }
 

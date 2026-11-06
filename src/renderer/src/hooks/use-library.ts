@@ -1,10 +1,11 @@
-import {useCallback, useEffect, useState} from "react";
-import type {Snapshot, Track} from "../../../shared/contracts";
+import {useCallback, useEffect, useRef, useState} from "react";
+import type {Snapshot} from "../../../shared/contracts";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 
 export function useLibrary() {
     const [data, setData] = useState<Snapshot>({
+        revision: 0,
         tracks: [],
         playlists: [],
         folders: [],
@@ -13,9 +14,24 @@ export function useLibrary() {
     const [notice, setNotice] = useState("");
     const [busy, setBusy] = useState(false);
 
-    const refresh = useCallback(async () => {
-        const snapshot = await rpc("library.get", undefined);
-        setData(snapshot);
+    const revision = useRef<number | undefined>(undefined);
+    const refreshing = useRef<Promise<void> | undefined>(undefined);
+
+    const refresh = useCallback(() => {
+        if (refreshing.current) return refreshing.current;
+
+        const request = rpc("library.get", revision.current === undefined ? undefined : { revision: revision.current })
+            .then((snapshot) => {
+                if (!snapshot) return;
+                revision.current = snapshot.revision;
+                setData(snapshot);
+            })
+            .finally(() => {
+                refreshing.current = undefined;
+            });
+
+        refreshing.current = request;
+        return request;
     }, []);
 
     const reportError = useCallback(
@@ -29,6 +45,13 @@ export function useLibrary() {
 
         return () => clearInterval(timer);
     }, [refresh, reportError]);
+
+    useEffect(() => {
+        if (!notice) return;
+
+        const timer = setTimeout(() => setNotice(""), 4000);
+        return () => clearTimeout(timer);
+    }, [notice]);
 
     async function importFolder() {
         setBusy(true);
@@ -53,9 +76,10 @@ export function useLibrary() {
         }
     }
 
-    async function favorite(track: Track) {
+    async function addToPlaylist(playlistId: number, trackIds: number[]) {
         try {
-            await rpc("track.favorite", { id: track.id });
+            await rpc("playlist.add", { playlistId, trackIds });
+            setNotice("Songs added to playlist.");
             await refresh();
         }
         catch (error) {
@@ -63,10 +87,10 @@ export function useLibrary() {
         }
     }
 
-    async function addToPlaylist(playlistId: number, trackId: number) {
+    async function removeFromPlaylist(playlistId: number, trackIds: number[]) {
         try {
-            await rpc("playlist.add", { playlistId, trackId });
-            setNotice("Song added to playlist.");
+            await rpc("playlist.remove", { playlistId, trackIds });
+            setNotice("Songs removed from playlist.");
             await refresh();
         }
         catch (error) {
@@ -84,7 +108,7 @@ export function useLibrary() {
         refresh,
         reportError,
         importFolder,
-        favorite,
         addToPlaylist,
+        removeFromPlaylist,
     };
 }

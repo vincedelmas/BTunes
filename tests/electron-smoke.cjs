@@ -7,7 +7,7 @@ const profile = mkdtempSync(join(tmpdir(), "btunes-smoke-"));
 app.setPath("userData", profile);
 const music = join(profile, "music");
 mkdirSync(music);
-const wav = Buffer.alloc(44 + 16000);
+const wav = Buffer.alloc(44 + 16000 * 60);
 wav.write("RIFF", 0);
 wav.writeUInt32LE(wav.length - 8, 4);
 wav.write("WAVEfmt ", 8);
@@ -19,7 +19,7 @@ wav.writeUInt32LE(16000, 28);
 wav.writeUInt16LE(2, 32);
 wav.writeUInt16LE(16, 34);
 wav.write("data", 36);
-wav.writeUInt32LE(16000, 40);
+wav.writeUInt32LE(16000 * 60, 40);
 writeFileSync(join(profile, "Silence.wav"), wav);
 execFileSync("ffmpeg", [
     "-v",
@@ -65,7 +65,7 @@ app.on("browser-window-created", (_, win) => {
      audio.onerror=()=>{clearTimeout(timeout);reject(new Error('Audio protocol failed'))};
      audio.src='btunes://audio/'+indexed.tracks[0].id;audio.load();
     });
-    if(Math.abs(audio.duration-1)>.3) throw new Error('Invalid audio duration');
+    if(Math.abs(audio.duration-60)>.3) throw new Error('Invalid audio duration');
     const id=await window.btunes.rpc('playlist.create',{name:'Smoke'});
     const next=await window.btunes.rpc('library.get',undefined);
     if(!next.playlists.some(p=>p.id===id)) throw new Error('RPC persistence failed');
@@ -80,7 +80,16 @@ app.on("browser-window-created", (_, win) => {
     document.querySelector('button[aria-label="Refresh library"]').click();
     findButton('Songs').click();
     await waitFor(()=>document.querySelector('button[aria-label="Edit tags for Silence"]'));
-    document.querySelector('button[aria-label="Edit tags for Silence"]').click();
+    document.querySelector('button[aria-label="Play Silence"]').click();
+    await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
+    const seekInput=document.querySelector('input[aria-label="Playback position"]');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(seekInput,'37');
+    seekInput.dispatchEvent(new Event('input',{bubbles:true}));
+    await waitFor(()=>audio.currentTime>=36.5);
+    await new Promise(resolve=>setTimeout(resolve,350));
+    if(audio.currentTime<36.5 || audio.currentTime>40)throw new Error('Seeking jumped back or lost its position');
+    audio.pause();
+        document.querySelector('button[aria-label="Edit tags for Silence"]').click();
     await waitFor(()=>document.getElementById('tag-title'));
     const titleInput=document.getElementById('tag-title');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(titleInput,'Edited through UI');
@@ -93,17 +102,19 @@ app.on("browser-window-created", (_, win) => {
     await waitFor(()=>!document.querySelector('[role="dialog"]'));
     const saved=await window.btunes.rpc('library.get',undefined);
     if(saved.tracks[0].title!=='Edited through UI')throw new Error('UI tag save failed');
+    if(document.querySelector('[role="status"]')?.textContent.trim()!=='Tags saved.')throw new Error('Save notice should be concise');
     const font=getComputedStyle(document.body).fontFamily;
     if(!font.includes('Inter Variable'))throw new Error('Bundled font not applied');
     return {heading:document.querySelector('h1')?.textContent,playlist:next.playlists.length,title:saved.tracks[0].title};
 
    })()`);
-            if (!result.heading?.includes("All songs"))
+            if (!result.heading?.includes("Songs"))
                 throw new Error("React failed to render");
             console.log("Electron smoke passed", JSON.stringify(result));
             finish(0);
         } catch (e) {
             console.error(e);
+            console.error(await win.webContents.executeJavaScript("JSON.stringify({time:document.querySelector('audio').currentTime,duration:document.querySelector('audio').duration,readyState:document.querySelector('audio').readyState,slider:document.querySelector('[aria-label=\"Playback position\"]').value})"));
             finish(1);
         }
     });

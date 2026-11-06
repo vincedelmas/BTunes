@@ -52,3 +52,51 @@ test("classic and automatic playlists, parameterized input, deletion cleanup", (
         repo.db.close();
     }
 });
+
+test("library revisions change on writes and classic playlist removal preserves the song", () => {
+    const repo = new LibraryRepository(":memory:");
+
+    try {
+        const initial = repo.snapshot().revision;
+        repo.upsert(track);
+        const song = repo.snapshot().tracks[0];
+        assert.ok(repo.snapshot().revision > initial);
+        const unchanged = repo.snapshot().revision;
+        repo.snapshot();
+        assert.equal(repo.revision, unchanged);
+
+        const playlistId = repo.create("Manual");
+        repo.add(playlistId, song.id);
+        repo.removeFromPlaylist(playlistId, song.id);
+        assert.deepEqual(repo.playlist(playlistId), []);
+        assert.ok(repo.get(song.id));
+        const automaticId = repo.create("Automatic", "ambient");
+        assert.throws(() => repo.removeFromPlaylist(automaticId, song.id), /classic playlists/);
+        assert.deepEqual(repo.playlist(automaticId), [song.id]);
+    }
+    finally {
+        repo.db.close();
+    }
+});
+
+test("bulk playlist edits are atomic and do not duplicate memberships", () => {
+    const repo = new LibraryRepository(":memory:");
+
+    try {
+        repo.upsert(track);
+        repo.upsert({ ...track, path: "/music/second.flac", title: "Second" });
+        const ids = repo.snapshot().tracks.map((song) => song.id);
+        const playlistId = repo.create("Bulk playlist");
+
+        assert.throws(() => repo.add(playlistId, [ids[0], 999999]));
+        assert.deepEqual(repo.playlist(playlistId), []);
+        repo.add(playlistId, [...ids, ids[0]]);
+        assert.deepEqual(repo.playlist(playlistId), ids);
+        repo.removeFromPlaylist(playlistId, ids);
+        assert.deepEqual(repo.playlist(playlistId), []);
+        assert.equal(repo.snapshot().tracks.length, 2);
+    }
+    finally {
+        repo.db.close();
+    }
+});

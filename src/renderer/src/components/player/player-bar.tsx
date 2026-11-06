@@ -1,10 +1,10 @@
 import {cn} from "@/lib/utils";
-import {formatTime} from "@/lib/music";
+import {PlaybackTimeline} from "@/components/player/playback-timeline";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
 import type {PlayerState} from "@/hooks/use-player";
 import type {Track} from "../../../../shared/contracts";
-import {FavoriteButton} from "@/components/favorite-button";
+
 import {ListMusic, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Square, Volume2,} from "lucide-react";
 
 
@@ -12,11 +12,11 @@ interface PlayerBarProps {
     current?: Track;
     player: PlayerState;
     onQueue: () => void;
-    onFavorite: (track: Track) => void;
+
 }
 
 
-export function PlayerBar({ player, current, onFavorite, onQueue }: PlayerBarProps) {
+export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
     return (
         <footer className="player-bar">
             <div className="now-playing">
@@ -29,12 +29,7 @@ export function PlayerBar({ player, current, onFavorite, onQueue }: PlayerBarPro
                     <small>{current?.artist ?? "Play something from your library"}</small>
                 </div>
 
-                {current &&
-                    <FavoriteButton
-                        track={current}
-                        onToggle={onFavorite}
-                    />
-                }
+
             </div>
 
             <div className="transport">
@@ -101,23 +96,7 @@ export function PlayerBar({ player, current, onFavorite, onQueue }: PlayerBarPro
                     </Button>
                 </div>
 
-                <div className="timeline">
-                    <span>
-                        {formatTime(player.position)}
-                    </span>
-                    <input
-                        min="0"
-                        step="0.1"
-                        type="range"
-                        value={player.position}
-                        max={current?.duration || 1}
-                        aria-label="Playback position"
-                        onChange={(ev) => player.seek(Number(ev.target.value))}
-                    />
-                    <span>
-                        {formatTime(current?.duration ?? 0)}
-                    </span>
-                </div>
+                <PlaybackTimeline audio={player.audio} trackId={current?.id} onSeek={player.seek}/>
             </div>
 
             <div className="volume">

@@ -96,12 +96,7 @@ export function TagEditor({
 
         try {
             const result = await rpc("tags.save", { token: preview.token });
-            await onSaved(
-                "Tags saved to " +
-                result.updated +
-                " file(s). Originals backed up in " +
-                result.backupDirectory,
-            );
+            await onSaved(result.updated === 1 ? "Tags saved." : "Tags saved for " + result.updated + " songs.");
             onClose();
         }
         catch (error) {

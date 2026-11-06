@@ -12,9 +12,9 @@ export function Cover({
     return (
         <div className={cn("cover", large && "cover-large")}>
             {track?.cover ? (
-                <img
-                    src={"btunes://cover/" + track.cover}
-                    alt={track.album + " album artwork"}
+                <img loading="lazy" decoding="async"
+                     src={"btunes://cover/" + track.cover}
+                     alt={track.album + " album artwork"}
                 />
             ) : (
                 <Disc3 aria-hidden="true"/>

@@ -5,33 +5,32 @@ import {Button} from "@/components/ui/button";
 import {FilterSelect} from "@/components/filter-select";
 import type {Snapshot} from "../../../../shared/contracts";
 import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
-import {Copy, Disc3, FolderPlus, Heart, History, Library, ListMusic, Music2, Plus, Smartphone,} from "lucide-react";
+import {Copy, Disc3, Settings, History, Library, ListMusic, Music2, Plus, Smartphone,} from "lucide-react";
 
 
 const navigation = [
     { id: "albums", label: "Albums", icon: Disc3 },
     { id: "tracks", label: "Songs", icon: Music2 },
     { id: "artists", label: "Artists", icon: Library },
-    { id: "favorites", label: "Liked songs", icon: Heart },
     { id: "history", label: "Recently played", icon: History },
     { id: "duplicates", label: "Possible duplicates", icon: Copy },
-    { id: "android", label: "Your devices", icon: Smartphone },
+    { id: "android", label: "Devices", icon: Smartphone },
 ];
 
 
 interface SidebarProps {
     view: string;
-    busy: boolean;
+
     data: Snapshot;
     genres: string[];
-    onImport: () => void;
+    onSettings: () => void;
     onRefresh: () => Promise<void>;
     onError: (error: unknown) => void;
     onNavigate: (view: string) => void;
 }
 
 
-export function Sidebar({ data, view, genres, busy, onNavigate, onImport, onRefresh, onError }: SidebarProps) {
+export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh, onError }: SidebarProps) {
     const [name, setName] = useState("");
     const [rule, setRule] = useState("");
     const [saving, setSaving] = useState(false);
@@ -63,10 +62,6 @@ export function Sidebar({ data, view, genres, busy, onNavigate, onImport, onRefr
                 <Disc3/>
                 <span>BTunes</span>
             </div>
-            <div className="library-label">
-                <Library size={20}/>
-                <span>Your Library</span>
-            </div>
 
             <nav aria-label="Library navigation">
                 {navigation.map((item) =>
@@ -79,11 +74,7 @@ export function Sidebar({ data, view, genres, busy, onNavigate, onImport, onRefr
                     >
                         <item.icon data-icon="inline-start"/>
                         {item.label}
-                        {item.id === "favorites" &&
-                            <span className="nav-count">
-                                {data.tracks.filter((track) => track.favorite).length}
-                            </span>
-                        }
+
                     </Button>
                 )}
             </nav>
@@ -154,14 +145,8 @@ export function Sidebar({ data, view, genres, busy, onNavigate, onImport, onRefr
             </div>
 
             <div className="sidebar-bottom">
-                <div className="local-status">
-                    <span/> Your music, on your terms.
-                </div>
-                <small>{data.folders.length} watched folder(s)</small>
-                <Button variant="outline" disabled={busy} onClick={onImport}>
-                    <FolderPlus/>
-                    {busy ? "Indexing…" : "Add music folder"}
-                </Button>
+                <Button variant="ghost" className="nav-item" onClick={onSettings}>
+                    <Settings/>Settings</Button>
             </div>
         </aside>
     );

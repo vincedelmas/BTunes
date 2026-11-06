@@ -861,3 +861,245 @@ input[type="range"] {
         transition: none !important;
     }
 }
+
+/* Keep collection scrolling local so only visible rows need React elements. */
+main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar, .library-hero, .collection-toolbar, .filters {
+    flex-shrink: 0;
+}
+
+.library-hero {
+    padding-block: 24px;
+}
+
+.library-hero h1 {
+    font-size: clamp(36px, 4vw, 56px);
+    margin: 0 0 14px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+    padding: 20px 24px 16px;
+    overflow: hidden;
+}
+
+.collection-toolbar {
+    margin-bottom: 18px;
+}
+
+.collection-toolbar > [data-variant="outline"] {
+    margin-left: 0;
+}
+
+.collection-results {
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.track-scroll, .virtual-grid-scroll {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.track-scroll [data-slot="table-container"] {
+    overflow: visible;
+}
+
+.track-table {
+    table-layout: fixed;
+}
+
+.track-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--background);
+}
+
+.track-table tbody tr:not(.virtual-spacer) {
+    height: 64px;
+}
+
+.track-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-block: 8px;
+}
+
+.track-table tr[aria-selected="true"] {
+    background: var(--secondary);
+}
+
+.track-table .virtual-spacer, .track-table .virtual-spacer td {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.track-cell {
+    min-width: 0;
+}
+
+.track-description {
+    min-width: 0;
+}
+
+.track-description strong, .track-description small {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.virtual-grid-row {
+    align-items: start;
+}
+
+.virtual-grid-cell {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.album-info span, .artist h2, .queue-track span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.queue .virtual-grid-scroll {
+    flex: 1;
+}
+
+.empty {
+    min-height: 180px;
+    height: 100%;
+}
+
+.notice {
+    flex-shrink: 0;
+    max-height: 64px;
+    overflow: auto;
+}
+
+.duplicate-note {
+    flex-shrink: 0;
+    margin: 14px 8px 0;
+    font-size: 12px;
+}
+
+.settings-panel {
+    max-width: 620px;
+}
+
+.settings-panel h3 {
+    font-size: 16px;
+    font-weight: 650;
+    margin-bottom: 8px;
+}
+
+.settings-panel p {
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+.settings-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 20px 0;
+    max-height: 40vh;
+    overflow: auto;
+}
+
+.settings-folders li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.settings-folders svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+[data-slot="context-menu-label"] {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@layer base {
+    * {
+        border-color: var(--border);
+    }
+}
+
+.sidebar {
+    padding: 20px 12px 12px;
+}
+
+.brand {
+    flex-shrink: 0;
+    margin-bottom: 22px;
+}
+
+.sidebar nav, .playlist-heading, .sidebar-bottom {
+    flex-shrink: 0;
+}
+
+.playlist-heading {
+    margin-top: 18px;
+    margin-bottom: 6px;
+}
+
+.playlists {
+    flex: 1;
+    min-height: 0;
+}
+
+.sidebar-bottom {
+    padding-top: 16px;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-button {
+    display: none;
+}
