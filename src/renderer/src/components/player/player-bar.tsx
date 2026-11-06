@@ -19,15 +19,15 @@ interface PlayerBarProps {
 
 export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps) {
     return (
-        <footer className="player-bar col-span-full flex items-center justify-between bg-[#000] py-[10px] px-[15px] gap-5">
+        <footer className="player-bar col-span-full flex items-center justify-between bg-black py-[10px] px-[15px] gap-5">
             <div
                 className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-[64px]">
                 <Cover
                     track={current}
                 />
                 <div className="min-w-0 flex-1 truncate">
-                    <strong className="block truncate text-[15px] font-medium">{current?.title ?? "Find your next favorite"}</strong>
-                    <small className="mt-1 block truncate text-[13px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
+                    <strong className="block truncate text-[15px] font-medium">{current?.title ?? "Nothing playing"}</strong>
+                    <small className="mt-1 block truncate text-sm text-muted-foreground">{current?.artist ?? "Choose a song from your library"}</small>
                 </div>
             </div>
 
@@ -38,6 +38,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         size="icon"
                         variant="ghost"
                         aria-label="Shuffle"
+                        title="Shuffle"
                         aria-pressed={player.shuffle}
                         className={cn(player.shuffle && "enabled text-primary")}
                         onClick={() => player.setShuffle(!player.shuffle)}
@@ -49,6 +50,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         variant="ghost"
                         disabled={!current}
                         aria-label="Previous track"
+                        title="Previous track"
                         onClick={() => player.next(-1)}
                     >
                         <SkipBack/>
@@ -60,6 +62,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         className="play-toggle size-[34px] rounded-full bg-foreground text-black hover:bg-foreground"
                         onClick={player.toggle}
                         aria-label={player.playing ? "Pause" : "Play"}
+                        title={player.playing ? "Pause" : "Play"}
                     >
                         {player.playing
                             ? <Pause fill="currentColor"/>
@@ -71,6 +74,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         variant="ghost"
                         disabled={!current}
                         aria-label="Next track"
+                        title="Next track"
                         onClick={() => player.next()}
                     >
                         <SkipForward/>
@@ -91,6 +95,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         size="icon"
                         variant="ghost"
                         aria-label="Stop"
+                        title="Stop"
                         disabled={!current}
                         onClick={player.stop}
                     >
@@ -114,6 +119,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     size="icon"
                     variant="ghost"
                     aria-label="Show queue"
+                    title="Show queue"
                     onClick={onQueue}
                 >
                     <ListMusic/>

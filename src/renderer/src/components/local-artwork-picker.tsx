@@ -47,7 +47,7 @@ export function LocalArtworkPicker({ track, selected, disabled, onSelect }: Loca
             </div>
             <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold">Album artwork</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{selected ? "New cover selected · ready to save" : "Choose an image from your computer."}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{selected ? "Cover selected · embedded when saved" : "Choose an image from your computer."}</p>
                 {error && <p
                     role="alert"
                     className="mt-2 text-xs text-destructive"

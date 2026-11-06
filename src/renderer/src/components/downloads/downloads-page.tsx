@@ -40,7 +40,7 @@ export function DownloadsPage({ query, genres, onSettings, onSaved }: DownloadsP
     const reviewCount = snapshot?.items.filter((item) => item.status === "review").length ?? 0;
 
     return (
-        <div className="downloads-page flex min-h-0 flex-1 flex-col gap-4">
+        <div className="downloads-page flex min-h-0 flex-1 flex-col gap-3">
             <div className="flex shrink-0 flex-wrap items-center gap-3">
                 <p className="mr-auto text-xs text-muted-foreground">
                     {total.toLocaleString("en")} {total === 1 ? "bookmarked song" : "bookmarked songs"}

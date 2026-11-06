@@ -73,8 +73,8 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                 </h3>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                     {selected
-                        ? "New cover selected · ready to save"
-                        : "Find a new cover using a search"
+                        ? "Cover selected · embedded when saved"
+                        : "Search using this song’s tags"
                     }
                 </p>
             </div>

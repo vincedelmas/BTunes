@@ -37,7 +37,7 @@ export function PlaybackTimeline({ audio, trackId, onSeek }: PlaybackTimelinePro
     }, [audio, trackId]);
 
     return (
-        <div className="timeline flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums [&_input]:flex-1 [&_input]:min-w-0">
+        <div className="timeline flex items-center gap-3 text-xs text-muted-foreground tabular-nums [&_input]:flex-1 [&_input]:min-w-0">
             <span className="w-9 shrink-0 text-right">{formatTime(position)}</span>
             <input
                 className="h-[3px] cursor-pointer outline-none shadow-none ring-0 [accent-color:var(--primary)] focus:outline-none focus:shadow-none focus:ring-0"

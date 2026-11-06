@@ -105,7 +105,8 @@ export function AlbumGrid({ currentTrack, reveal, onRevealed, albums, playlists,
                                         className="mb-1 block truncate text-xs text-muted-foreground"
                                         title={getAlbumArtist(track)}
                                     >{getAlbumArtist(track)}</span>
-                                    <small className="text-[11px] text-muted-foreground">{track.year || "Unknown year"} · {tracks.length} songs</small>
+                                    <small
+                                        className="text-xs text-muted-foreground">{track.year || "Unknown year"} · {tracks.length} {tracks.length === 1 ? "song" : "songs"}</small>
                                 </div>
                                 <Button
                                     size="icon-xs"

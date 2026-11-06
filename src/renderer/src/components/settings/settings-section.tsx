@@ -11,7 +11,7 @@ interface SettingsSectionProps {
 
 export function SettingsSection({ title, description, action, children }: SettingsSectionProps) {
     return (
-        <Card className="gap-5 [--card-spacing:--spacing(6)]">
+        <Card className="gap-5 [--card-spacing:--spacing(5)]">
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>

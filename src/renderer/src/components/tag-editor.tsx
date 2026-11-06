@@ -108,9 +108,9 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
             <DialogContent
                 initialFocus={() => document.getElementById("tag-title")}
                 showCloseButton={!busy}
-                className="tag-editor max-h-[90vh] flex flex-col gap-0 p-0 w-[min(700px,_calc(100vw_-_40px))] max-w-175 overflow-hidden border border-[#424242] rounded-2xl bg-[#1b1b1b] shadow-[0_30px_100px_#000b] [&[data-open]]:[animation:none] sm:max-w-[700px] data-open:animate-none data-closed:animate-none"
+                className="tag-editor max-h-[90vh] flex flex-col gap-0 p-0 w-[min(700px,_calc(100vw_-_40px))] max-w-175 overflow-hidden border border-border rounded-2xl bg-card shadow-[0_30px_100px_#000b] [&[data-open]]:[animation:none] sm:max-w-[700px] data-open:animate-none data-closed:animate-none"
             >
-                <DialogHeader className="tag-editor-header shrink-0 pt-7 px-7 pb-0 [background:linear-gradient(120deg,_#24352b,_#1b1b1b_75%)] text-left">
+                <DialogHeader className="tag-editor-header shrink-0 pt-7 px-7 pb-0 bg-linear-to-r from-primary/8 to-card text-left">
                     <div
                         className="tag-summary flex items-center gap-[18px] pb-6 [&_.cover]:w-18 [&_.cover]:h-18 [&_.cover]:rounded-[10px] [&_.cover]:shadow-[0_6px_20px_#0005]">
                         <Cover
@@ -118,10 +118,10 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                             source={artwork?.thumbnail}
                         />
                         <div className="tag-summary-copy min-w-0 flex-1">
-                            <p className="eyebrow m-0 text-[10px] font-bold tracking-[2px] text-primary">
-                                SONG DETAILS
+                            <p className="eyebrow m-0 text-xs font-medium text-muted-foreground">
+                                Song details
                             </p>
-                            <DialogTitle className="my-[5px] text-[27px] font-[750] tracking-[-1px]">
+                            <DialogTitle className="my-[5px] text-2xl font-semibold tracking-tight">
                                 Edit tags
                             </DialogTitle>
                             <DialogDescription className="truncate text-xs">
@@ -130,7 +130,7 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                         </div>
                         <Badge
                             variant="secondary"
-                            className="mr-3 text-[10px]"
+                            className="mr-3 text-xs"
                         >
                             {batch
                                 ? "Batch edit"
@@ -165,7 +165,7 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                         </Alert>
                     }
                 </div>
-                <DialogFooter className="tag-editor-footer shrink-0 flex items-center gap-[10px] m-0 py-[18px] px-6 border-t border-border bg-[#171717]">
+                <DialogFooter className="tag-editor-footer shrink-0 flex items-center gap-[10px] m-0 py-[18px] px-6 border-t border-border bg-muted/20">
                     <Button
                         variant="ghost"
                         disabled={busy}
@@ -177,7 +177,7 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                         disabled={busy || (!enabled.size && !artwork)}
                         onClick={() => void save()}
                     >
-                        <Check/>
+                        <Check data-icon="inline-start"/>
                         {busy ? "Saving…" : "Save"}
                     </Button>
                 </DialogFooter>

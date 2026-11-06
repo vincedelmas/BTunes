@@ -158,7 +158,7 @@ app.on('browser-window-created', (_, win) => {
     const row=document.querySelector('.download-row');
     const badge=row.querySelector('[data-slot="badge"]').getBoundingClientRect();
     const action=row.querySelector('button').getBoundingClientRect();
-    const message=row.querySelector('[title]').getBoundingClientRect();
+    const message=row.querySelector('.download-status').getBoundingClientRect();
     if(badge.right+8>action.left || message.right+8>action.left)throw new Error('Download status overlaps its action');
     if(row.scrollWidth>row.clientWidth)throw new Error('Download row overflows horizontally');
    })()`);

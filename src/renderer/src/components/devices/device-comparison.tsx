@@ -21,7 +21,7 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
     return (
         <Card className="min-w-0">
             <CardHeader>
-                <CardTitle>{state.phase === "complete" ? "Your music is on your phone" : "PC → Phone"}</CardTitle>
+                <CardTitle>{state.phase === "complete" ? "Your music is on your phone" : "Sync to phone"}</CardTitle>
                 <CardDescription>{state.folder || "Compare your library with a phone folder."}</CardDescription>
             </CardHeader>
             <CardContent className="flex min-w-0 flex-col gap-5">
@@ -60,7 +60,7 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                 )}
                 {state.phase === "ready" && comparison?.preview.length ? (
                     <div>
-                        <p className="mb-3 text-xs font-semibold text-muted-foreground">READY TO COPY · {formatBytes(comparison.bytes)}</p>
+                        <p className="mb-3 text-xs font-semibold text-muted-foreground">Ready to copy · {formatBytes(comparison.bytes)}</p>
                         <ul className="flex flex-col gap-2 text-sm">
                             {comparison.preview.map((track, index) => (
                                 <li

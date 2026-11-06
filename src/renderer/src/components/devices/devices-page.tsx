@@ -16,7 +16,7 @@ export function DevicesPage() {
     return (
         <div className="devices-page grid min-h-0 min-w-0 flex-1 auto-rows-max content-start gap-5 overflow-x-hidden overflow-y-auto pb-3 pr-1">
             <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-muted-foreground">Your PC library, on your phone.</p>
+                <p className="text-sm text-muted-foreground">Copy missing songs from your PC to your phone.</p>
                 <Button
                     variant="outline"
                     disabled={phone.busy || phone.loading}
@@ -40,7 +40,7 @@ export function DevicesPage() {
                 <Card key={device.id}>
                     <CardHeader>
                         <div className="flex items-center gap-3">
-                            <Smartphone className="size-7 text-primary"/>
+                            <Smartphone className="size-6 text-muted-foreground"/>
                             <div>
                                 <CardTitle>{device.name}</CardTitle>
                                 <CardDescription className="mt-1">Connected over USB</CardDescription>

@@ -37,10 +37,10 @@ export function FilterSelect({ className, id, label, placeholder, options, value
                     aria-label={label}
                     placeholder={placeholder}
                     showClear={allowEmpty && Boolean(value)}
-                    className={cn("filter-combobox min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
+                    className={cn("filter-combobox min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-sm", className)}
                 />
                 <ComboboxContent
-                    className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]">
+                    className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]">
                     <ComboboxEmpty>
                         No matches found.
                     </ComboboxEmpty>
@@ -69,12 +69,12 @@ export function FilterSelect({ className, id, label, placeholder, options, value
             <SelectTrigger
                 id={id}
                 aria-label={label}
-                className={cn("filter-trigger min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
+                className={cn("filter-trigger min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-sm", className)}
             >
                 <SelectValue placeholder={placeholder}/>
             </SelectTrigger>
             <SelectContent
-                className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
+                className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
                 align="start"
                 alignItemWithTrigger={false}
             >

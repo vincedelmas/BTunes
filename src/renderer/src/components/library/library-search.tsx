@@ -33,10 +33,10 @@ export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) 
 
     return (
         <InputGroup
-            className="search m-0 h-9 w-[55%] max-w-[450px] gap-3 rounded-full border-transparent bg-[#242424] px-4 text-muted-foreground focus-within:border-primary has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+            className="search m-0 h-9 w-[55%] max-w-[450px] gap-3 rounded-full border-transparent bg-secondary/70 px-4 text-muted-foreground focus-within:border-primary has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
             <InputGroupInput
                 ref={input}
-                className="border-0 bg-transparent p-0 text-xs shadow-none focus-visible:border-0 focus-visible:ring-0"
+                className="border-0 bg-transparent p-0 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0"
                 value={value}
                 aria-label="Search your library"
                 placeholder="Search songs, artists, albums"
@@ -44,7 +44,7 @@ export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) 
             />
             <InputGroupAddon className="p-0">
                 <Search
-                    size={21}
+                    size={18}
                     aria-hidden="true"
                 />
             </InputGroupAddon>

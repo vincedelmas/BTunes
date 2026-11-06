@@ -170,8 +170,8 @@ export function App() {
             <main className="isolate overflow-hidden min-w-0 rounded-lg bg-background flex flex-col">
                 {view !== "settings" && (
                     <header
-                        className="topbar h-14 flex items-center gap-5 py-0 px-7 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)]
-                    z-[1] shrink-0 max-[1150px]:py-0 max-[1150px]:px-5"
+                        className="topbar h-14 flex items-center gap-5 py-0 px-6 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)]
+                    z-[1] shrink-0 max-[1150px]:py-0"
                     >
                         <LibrarySearch
                             value={search}
@@ -201,8 +201,8 @@ export function App() {
                     />
                     :
                     <>
-                        <div className="library-hero shrink-0 bg-linear-to-br from-[#293c32] via-[#1e2b25] to-[#191c1a] px-6 py-3.5">
-                            <h1 className="mb-1.5 text-[clamp(28px,3vw,36px)] leading-tight font-[850] tracking-tight">
+                        <div className="library-hero shrink-0 border-b border-border/40 bg-linear-to-r from-primary/8 via-card/60 to-card/60 px-6 py-3.5">
+                            <h1 className="mb-1.5 text-3xl leading-tight font-bold tracking-tight">
                                 {title}
                             </h1>
                             {view === "android" || view === "downloads" ?
@@ -215,7 +215,7 @@ export function App() {
                                 />
                             }
                         </div>
-                        <div className="content py-3 px-5 flex flex-col min-h-0 flex-1 overflow-hidden">
+                        <div className="content py-3 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
                             {library.error &&
                                 <Alert variant="destructive">
                                     <AlertDescription>

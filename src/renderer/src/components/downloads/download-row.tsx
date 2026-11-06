@@ -1,4 +1,4 @@
-import {ArrowDownToLine, Check, LoaderCircle} from "lucide-react";
+import {ArrowDownToLine, Check, LoaderCircle, TriangleAlert} from "lucide-react";
 import type {DownloadItem} from "../../../../shared/types/downloads";
 import type {SelectionModifiers} from "@/types/selection";
 import {canDownload, downloadStatusLabels} from "@/lib/downloads";
@@ -20,10 +20,18 @@ interface DownloadRowProps {
 export function DownloadRow({ item, selected, busy, onSelect, onDownload, onReview }: DownloadRowProps) {
     const working = item.status === "downloading" || item.status === "enriching" || item.status === "publishing";
     const failed = item.status === "error" || item.status === "invalid";
-    const label = downloadStatusLabels[item.status];
-    let variant: "default" | "destructive" | "secondary" = "secondary";
-    if (item.status === "review") variant = "default";
+    const needsAttention = item.status === "review" && Boolean(item.message) && item.message !== "Review tags and cover, then save to your library.";
+    const label = needsAttention ? "Check tags & cover" : downloadStatusLabels[item.status];
+    let variant: "success" | "warning" | "destructive" | "secondary" = "secondary";
+    if (item.status === "review") variant = "success";
+    if (needsAttention) variant = "warning";
     if (failed) variant = "destructive";
+
+    let detail = "";
+    if (needsAttention) detail = "Some online details are missing.";
+    if (item.status === "error") detail = "Download failed. Try again.";
+    if (item.status === "invalid") detail = "Check the bookmark naming pattern.";
+    if (item.status === "cancelled") detail = "Stopped. You can try again.";
 
     return (
         <div
@@ -43,21 +51,22 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
         >
             <Cover source={item.artwork?.thumbnail}/>
             <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.title}</p>
+                <p className="truncate text-base font-medium">{item.title}</p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">{item.artist || item.name}</p>
             </div>
-            <div className="min-w-0 max-w-[35%] text-right">
+            <div className="download-status min-w-0 max-w-[35%] text-right">
                 <Badge variant={variant} className="max-w-full">
                     {working && <LoaderCircle className="animate-spin"/>}
+                    {needsAttention && <TriangleAlert/>}
                     <span className="truncate">
                         {label}
                         {item.status === "downloading" && " · " + item.progress.toFixed(0) + "%"}
                     </span>
                 </Badge>
-                {item.message && <p
-                    className="mt-1 truncate text-[11px] text-muted-foreground"
+                {detail && <p
+                    className="mt-1 truncate text-xs text-muted-foreground"
                     title={item.message}
-                >{item.message}</p>}
+                >{detail}</p>}
             </div>
             <div className="flex min-w-36 shrink-0 justify-end">
                 {item.status === "review" && <Button

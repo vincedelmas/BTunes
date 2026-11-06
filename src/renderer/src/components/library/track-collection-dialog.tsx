@@ -72,10 +72,10 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
                             <Cover track={first}/>
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="mb-2 text-[10px] font-semibold tracking-widest text-primary">
-                                {artistName ? "ARTIST" : "ALBUM"}
+                            <p className="mb-2 text-xs font-medium text-muted-foreground">
+                                {artistName ? "Artist" : "Album"}
                             </p>
-                            <DialogTitle className="truncate text-2xl font-bold">
+                            <DialogTitle className="truncate text-2xl font-semibold">
                                 {artistName ?? first.album}
                             </DialogTitle>
                             <DialogDescription className="mt-2 truncate">
