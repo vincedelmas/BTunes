@@ -213,3 +213,7 @@ Library polling and automatic playback use Effect Events to read current handler
 without restarting their effects when unrelated state changes. Integration tests
 check that tag editing and a library refresh do not resume paused audio, and that
 playback progress does not rerender the large song collection.
+
+Class-name merging uses shadcn's `cn` package, re-exported from
+`src/renderer/src/lib/utils.ts`. It replaces the local `clsx` + `tailwind-merge`
+wrapper while keeping existing component imports unchanged.
