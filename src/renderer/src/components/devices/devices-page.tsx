@@ -14,7 +14,7 @@ export function DevicesPage() {
     const parent = phone.path.slice(0, phone.path.lastIndexOf("/")) || "/";
 
     return (
-        <div className="devices-page flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-3 pr-1">
+        <div className="devices-page grid min-h-0 min-w-0 flex-1 auto-rows-max content-start gap-5 overflow-x-hidden overflow-y-auto pb-3 pr-1">
             <div className="flex items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">Your PC library, on your phone.</p>
                 <Button

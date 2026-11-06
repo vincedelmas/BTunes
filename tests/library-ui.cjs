@@ -467,7 +467,7 @@ app.on("browser-window-created", (_, win) => {
             await capture("duplicates-empty");
 
             await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button}=window.uiReview;
+                const {waitFor,button,visible}=window.uiReview;
                 button('Devices').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
                 if(document.querySelector('.library-hero .library-stats')) throw new Error('Device page shows local library counts');
@@ -480,6 +480,17 @@ app.on("browser-window-created", (_, win) => {
                 button('Compare with PC').click();
                 await waitFor(()=>button('Copy missing songs') && !button('Copy missing songs').disabled);
                 if(!document.querySelector('.devices-page').textContent.includes('Missing on phone')) throw new Error('Phone comparison did not render');
+                const page=document.querySelector('.devices-page');
+                if(page.scrollHeight<=page.clientHeight) throw new Error('Device content must scroll vertically');
+                for(const card of page.querySelectorAll('[data-slot="card"]')) {
+                    if(card.scrollHeight>card.clientHeight+1) throw new Error('Device card contents are clipped');
+                }
+                page.scrollTop=page.scrollHeight;
+                await waitFor(()=>visible(button('Copy missing songs'),page));
+            })()`, true);
+            await capture("devices-scrolled");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button}=window.uiReview;
                 button('Settings').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
                 if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');
