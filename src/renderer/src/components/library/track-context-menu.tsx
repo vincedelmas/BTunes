@@ -1,6 +1,6 @@
 import type {TrackActions} from "@/types/track-actions";
 import type {ReactElement} from "react";
-import {Clipboard, FolderOpen, ListEnd, ListPlus, Pencil, Play, UserRound, X} from "lucide-react";
+import {Clipboard, Disc3, FolderOpen, ListEnd, ListPlus, Pencil, Play, UserRound, X} from "lucide-react";
 import type {Playlist, Track} from "../../../../shared/types/library";
 import {
     ContextMenu,
@@ -15,7 +15,7 @@ import {
     ContextMenuTrigger
 } from "@/components/ui/context-menu";
 import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "@/lib/music";
+import {getAlbumArtist, getErrorMessage} from "@/lib/music";
 
 interface TrackContextMenuProps {
     tracks: Track[];
@@ -84,9 +84,13 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: Track
                 </ContextMenuGroup>
                 <ContextMenuSeparator/>
                 <ContextMenuGroup>
-                    <ContextMenuItem onClick={() => actions.onArtist(first.artist)}>
+                    <ContextMenuItem onClick={() => actions.onArtist(getAlbumArtist(first))}>
                         <UserRound/>
                         Go to artist
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => actions.onAlbum(first)}>
+                        <Disc3/>
+                        Go to album
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => void rpc("track.reveal", { id: first.id }).catch((error) => actions.onError(getErrorMessage(error)))}>
                         <FolderOpen/>

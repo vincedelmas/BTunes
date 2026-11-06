@@ -45,6 +45,10 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
         onEdit: setEditing,
         onRemove: undefined,
         onPlay: (track, list = orderedTracks) => actions.onPlay(track, list),
+        onAlbum: (track) => {
+            onClose();
+            actions.onAlbum(track);
+        },
         onArtist: (artist) => {
             onClose();
             actions.onArtist(artist);

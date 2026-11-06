@@ -1,3 +1,4 @@
+import type {CollectionLocation} from "@/types/collection";
 import {genreChoices} from "../../../shared/genres";
 import {useDeferredValue, useEffect, useRef, useState} from "react";
 import type {Snapshot} from "../../../shared/types/library";
@@ -18,9 +19,10 @@ const viewTitles: Record<string, string> = {
 };
 
 export function useCollection(data: Snapshot, onError: (error: unknown) => void) {
-    const history = useRef<{ view: string; search: string; artist: string; albumArtistFilter: boolean }[]>([]);
+    const history = useRef<CollectionLocation[]>([]);
+    const future = useRef<CollectionLocation[]>([]);
     const [view, setView] = useState("tracks");
-    const [search, setSearch] = useState("");
+    const [search, updateSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
     const [artist, setArtist] = useState("");
     const [albumArtistFilter, setAlbumArtistFilter] = useState(false);
@@ -79,25 +81,61 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
 
     function clearFilters() {
-        setSearch("");
+        updateSearch("");
         setArtist("");
     }
 
+    function currentLocation(): CollectionLocation {
+        return { view, search, artist, albumArtistFilter };
+    }
+
     function rememberView() {
-        history.current.push({ view, search, artist, albumArtistFilter });
+        history.current.push(currentLocation());
         if (history.current.length > 100) history.current.shift();
+        future.current = [];
+    }
+
+    function restore(location: CollectionLocation) {
+        const missingPlaylist = location.view.startsWith("playlist:") && !data.playlists.some((playlist) => "playlist:" + playlist.id === location.view);
+        const restoredView = missingPlaylist ? "tracks" : location.view;
+        setView(restoredView);
+        updateSearch(location.search);
+        setArtist(location.artist);
+        setAlbumArtistFilter(location.albumArtistFilter);
+        setSelected([]);
+        if (restoredView !== view) setPlaylistIds([]);
     }
 
     function goBack() {
         const previous = history.current.pop();
         if (!previous) return;
-        const missingPlaylist = previous.view.startsWith("playlist:") && !data.playlists.some((playlist) => "playlist:" + playlist.id === previous.view);
-        setView(missingPlaylist ? "tracks" : previous.view);
-        setSearch(previous.search);
-        setArtist(previous.artist);
-        setAlbumArtistFilter(previous.albumArtistFilter);
+
+        future.current.push(currentLocation());
+        restore(previous);
+    }
+
+    function goForward() {
+        const next = future.current.pop();
+        if (!next) return;
+
+        history.current.push(currentLocation());
+        restore(next);
+    }
+
+    function setSearch(value: string) {
+        // One history entry per search, rather than one per keystroke.
+        if (!search && value) rememberView();
+        else future.current = [];
+        updateSearch(value);
+    }
+
+    function clearSearch() {
+        if (!search) return;
+
+        // Leaving a search via X keeps it ahead, ready for Mouse 5 to reopen.
+        future.current.push(currentLocation());
+        updateSearch("");
         setSelected([]);
-        setPlaylistIds([]);
     }
 
     function navigate(nextView: string) {
@@ -123,6 +161,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         view, search, artist, sort, selected, tracks, albums, genres,
         activePlaylist, title,
         setSearch, setArtist, setSort, setSelected,
-        navigate, goBack, showArtist, clearFilters,
+        navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
     };
 }

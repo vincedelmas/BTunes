@@ -53,7 +53,12 @@ export class LibraryService {
 
         return this.enqueue(path, async () => {
             const file = await stat(path);
-            const metadata = await this.readMetadata(path);
+            let metadata = await this.readMetadata(path);
+            if (!Number.isFinite(metadata.format.duration) || !metadata.format.duration || metadata.format.duration < 0) {
+                // Some MP3 headers report zero; scan audio frames only when the quick read has no usable duration.
+                metadata = await this.readMetadata(path, { duration: true });
+            }
+
             const tags = readTags(metadata);
             let cover: string | null = null;
 
@@ -150,7 +155,7 @@ export class LibraryService {
                         seen.add(path);
                         const info = await stat(path);
                         const previous = known.get(path);
-                        if (previous?.albumArtist && previous.modifiedAt === info.mtimeMs && previous.size === info.size) continue;
+                        if (previous?.albumArtist && previous.duration > 0 && previous.modifiedAt === info.mtimeMs && previous.size === info.size) continue;
                         await this.index(path);
                         imported++;
                     }

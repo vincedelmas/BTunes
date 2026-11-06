@@ -39,7 +39,7 @@ export function App() {
     const { audio: audioRef } = player;
     const {
         view, search, artist, sort, selected, tracks, albums, genres, activePlaylist, title,
-        setSearch, setArtist, setSort, setSelected, navigate, goBack, showArtist, clearFilters,
+        setSearch, setArtist, setSort, setSelected, navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
     } = collection;
 
     useEffect(() => {
@@ -53,7 +53,10 @@ export function App() {
 
     const actions: TrackActions = {
         onEdit: setEditing,
-        onArtist: showArtist,
+        onArtist: (artist) => showArtist(artist, true),
+        onAlbum: (track) => setOpenedCollection({
+            ids: library.data.tracks.filter((item) => albumKey(item) === albumKey(track)).map((item) => item.id),
+        }),
         onError: library.setError,
         onEnqueue: player.enqueue,
         onPlay: (track, list = tracks) => player.start(track, list),
@@ -77,30 +80,32 @@ export function App() {
         locator.show(key);
     }
 
-    const handleMouseBack = useEffectEvent((ev: MouseEvent) => {
-        if (ev.button !== 3) return;
+    const handleMouseNavigation = useEffectEvent((ev: MouseEvent) => {
+        if (ev.button !== 3 && ev.button !== 4) return;
         ev.preventDefault();
         const dialogs = document.querySelectorAll('[data-slot="dialog-content"]');
         const dialog = dialogs.item(dialogs.length - 1);
         if (dialog) {
+            if (ev.button === 4) return;
             dialog.querySelector<HTMLButtonElement>('[data-slot="dialog-close"]')?.click();
             return;
         }
-        goBack();
+        if (ev.button === 3) goBack();
+        else goForward();
     });
 
     useEffect(() => {
-        const preventBrowserBack = (ev: MouseEvent) => {
-            if (ev.button === 3) ev.preventDefault();
+        const preventBrowserNavigation = (ev: MouseEvent) => {
+            if (ev.button === 3 || ev.button === 4) ev.preventDefault();
         };
-        const back = (ev: MouseEvent) => handleMouseBack(ev);
-        window.addEventListener("mousedown", preventBrowserBack);
+        const back = (ev: MouseEvent) => handleMouseNavigation(ev);
+        window.addEventListener("mousedown", preventBrowserNavigation);
         window.addEventListener("mouseup", back);
-        window.addEventListener("auxclick", preventBrowserBack);
+        window.addEventListener("auxclick", preventBrowserNavigation);
         return () => {
-            window.removeEventListener("mousedown", preventBrowserBack);
+            window.removeEventListener("mousedown", preventBrowserNavigation);
             window.removeEventListener("mouseup", back);
-            window.removeEventListener("auxclick", preventBrowserBack);
+            window.removeEventListener("auxclick", preventBrowserNavigation);
         };
     }, []);
 
@@ -190,6 +195,7 @@ export function App() {
                     >
                         <LibrarySearch
                             value={search}
+                            onClear={clearSearch}
                             onChange={(value) => {
                                 if (view === "settings" || view === "android") navigate("tracks");
                                 setSearch(value);

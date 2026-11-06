@@ -117,6 +117,7 @@ export class LibraryRepository {
                 path: tracks.path,
                 size: tracks.size,
                 modifiedAt: tracks.modifiedAt,
+                duration: tracks.duration,
                 albumArtist: tracks.albumArtist,
             }).from(tracks)
             .all();

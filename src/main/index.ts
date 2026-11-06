@@ -7,7 +7,7 @@ import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {ArtworkService} from "./services/artwork";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
-import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
+import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell} from "electron";
 
 
 app.setName("BTunes");
@@ -45,6 +45,8 @@ const pendingWrites = new Set<Promise<unknown>>();
 
 
 void app.whenReady().then(async () => {
+    Menu.setApplicationMenu(null);
+
     const repo = new LibraryRepository(
         join(app.getPath("userData"), "library.sqlite"),
         app.isPackaged ? join(process.resourcesPath, "drizzle") : join(__dirname, "../../drizzle"),

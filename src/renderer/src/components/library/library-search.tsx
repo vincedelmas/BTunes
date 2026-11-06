@@ -5,9 +5,11 @@ import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/
 interface LibrarySearchProps {
     value: string;
     onChange: (value: string) => void;
+    onClear: () => void;
 }
 
-export function LibrarySearch({ value, onChange }: LibrarySearchProps) {
+
+export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) {
     const input = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -25,7 +27,7 @@ export function LibrarySearch({ value, onChange }: LibrarySearchProps) {
     }, []);
 
     function clearSearch() {
-        onChange("");
+        onClear();
         input.current?.focus();
     }
 

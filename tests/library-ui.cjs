@@ -190,6 +190,10 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2301');
                 if(search.value || document.querySelector('[aria-label="Clear search"]')) throw new Error('Search was not cleared');
                 if(document.activeElement!==search) throw new Error('Search input should retain focus after clearing');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:4,bubbles:true,cancelable:true}));
+                await waitFor(()=>search.value==='Song 2299' && document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>!search.value && document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2301');
                 scroll.scrollTop = 0;
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 const first = document.querySelector('[data-track-id="1"]');
@@ -197,7 +201,7 @@ app.on("browser-window-created", (_, win) => {
                 first.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rectangle.x+200,clientY:rectangle.y+30}));
                 await waitFor(() => document.querySelector('[role="menu"]'));
                 const menu = document.querySelector('[role="menu"]').textContent;
-                for (const label of ['Play now','Play next','Add to queue','Edit tags','Add to playlist','Show in folder','Copy file path']) {
+                for (const label of ['Play now','Play next','Add to queue','Edit tags','Add to playlist','Go to artist','Go to album','Show in folder','Copy file path']) {
                     if (!menu.includes(label)) throw new Error("Missing context action: "+label);
                 }
                 return {songs:2300, mountedSongRows:songNodes, mountedAlbums:albumNodes};
@@ -206,8 +210,20 @@ app.on("browser-window-created", (_, win) => {
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor}=window.uiReview;
-                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-                await waitFor(()=>!document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Go to album').click();
+                await waitFor(()=>document.querySelector('.album-dialog .track-table'));
+                if(document.querySelector('.album-dialog [data-slot="dialog-title"]').textContent.trim()!=='Album 000') throw new Error('Go to album opened the wrong album');
+                if(document.querySelector('.album-dialog .track-table').getAttribute('aria-rowcount')!=='11') throw new Error('Go to album must include every song in the album');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>!document.querySelector('.album-dialog'));
+                const song=document.querySelector('[data-track-id="1"]');
+                const bounds=song.getBoundingClientRect();
+                song.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:bounds.x+150,clientY:bounds.y+20}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Go to artist').click();
+                await waitFor(()=>document.querySelector('[aria-label="Clear artist filter"]'));
+                if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Go to artist must use album artist');
+                document.querySelector('[aria-label="Show all songs"]').click();
                 window.uiReview.button('Albums').click();
                 await waitFor(()=>document.querySelector('.album'));
                 if(document.querySelector('[aria-label="Filter by genre"]') || document.querySelector('[aria-label="Filter by artist"]')) throw new Error('Collection dropdown filters remain');
@@ -398,6 +414,10 @@ app.on("browser-window-created", (_, win) => {
                 window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
                 await waitFor(()=>document.querySelector('h1').textContent==='Songs' && document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
                 if(document.querySelector('[aria-label="Search your library"]').value!=='Song 2299') throw new Error('Back navigation should restore search');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:4,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('h1').textContent==='Albums');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('h1').textContent==='Songs' && document.querySelector('[aria-label="Search your library"]').value==='Song 2299');
                 document.querySelector('.player-bar [aria-label="Show playing song"]').click();
                 await waitFor(()=>!search.value && visible(document.querySelector('[data-track-id="1"]'),document.querySelector('.track-scroll')));
                 if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Reveal should clear filters hiding the playing song');

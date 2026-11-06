@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
-import {mkdtemp, readFile, rm} from "node:fs/promises";
+import {mkdtemp, readFile, writeFile, stat, rm} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
 import {parseFile} from "music-metadata";
@@ -40,6 +40,46 @@ void test("ID3 slash names and album artists are indexed without changing files"
         const groups = groupAlbums([track, { ...track, id: 2, artist: "Guest singer" }]);
         assert.equal(groups.length, 1);
         assert.equal(groupAlbums([track, { ...track, id: 2, albumArtist: "Different artist" }]).length, 2);
+    }
+    finally {
+        await library.close();
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+void test("zero MP3 header durations are repaired during reconciliation without changing audio", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-duration-"));
+    const repo = new LibraryRepository(":memory:");
+    let reads = 0;
+    const library = new LibraryService(repo, join(root, "covers"), async (path, options) => {
+        reads++;
+        return parseFile(path, options);
+    });
+
+    try {
+        const path = join(root, "zero-header.mp3");
+        await run("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "2", path]);
+        const original = await readFile(path);
+        const header = original.indexOf("Info");
+        assert.ok(header > 0, "Fixture must contain an MP3 frame-count header");
+        original.write("Xing", header);
+        original.writeUInt32BE(0, header + 8);
+        await writeFile(path, original);
+        assert.equal((await parseFile(path)).format.duration, 0);
+        const file = await stat(path);
+        repo.folder(root);
+        repo.upsert({
+            path, title: "Zero header", artist: "Fixture", albumArtist: "Fixture", album: "Test",
+            genre: "Rock", year: 0, duration: 0, size: file.size, modifiedAt: file.mtimeMs, cover: null,
+        });
+        const id = repo.snapshot().tracks[0].id;
+        const result = await library.reconcile();
+        assert.deepEqual(result.errors, []);
+        assert.equal(reads, 2, "A missing duration should trigger a full frame scan");
+        assert.ok(repo.get(id)!.duration > 1.9 && repo.get(id)!.duration < 2.2);
+        assert.deepEqual(await readFile(path), original);
+        await library.reconcile();
+        assert.equal(reads, 2, "Repaired files should be skipped on subsequent refreshes");
     }
     finally {
         await library.close();

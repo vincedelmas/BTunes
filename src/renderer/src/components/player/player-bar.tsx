@@ -22,13 +22,13 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
     return (
         <footer className="player-bar col-span-full flex items-center justify-between bg-[#000] py-[10px] px-[15px] gap-5">
             <div
-                className="now-playing [&_small]:block [&_small]:mt-[5px] flex items-center gap-[13px] w-[28%] min-w-0 [&_.cover]:w-14 [&_.cover]:h-14 [&_strong]:text-xs [&_strong]:font-medium">
+                className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-[64px]">
                 <Cover
                     track={current}
                 />
                 <div className="min-w-0 flex-1 truncate">
-                    <strong>{current?.title ?? "Find your next favorite"}</strong>
-                    <small className="text-[11px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
+                    <strong className="block truncate text-[15px] font-medium">{current?.title ?? "Find your next favorite"}</strong>
+                    <small className="mt-1 block truncate text-[13px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
                 </div>
             </div>
 
