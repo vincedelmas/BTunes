@@ -21,6 +21,9 @@ export default defineConfig({
     },
     renderer: {
         publicDir: resolve("resources"),
+        optimizeDeps: {
+            include: ["@base-ui/react/tabs"],
+        },
         resolve: {
             alias: {
                 "@": resolve("src/renderer/src"),

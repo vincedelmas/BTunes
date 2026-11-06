@@ -205,7 +205,12 @@ void app.whenReady().then(async () => {
     });
 
     win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-    win.webContents.on("will-navigate", (ev) => ev.preventDefault());
+    win.webContents.on("will-navigate", (ev, url) => {
+        const developmentUrl = process.env.ELECTRON_RENDERER_URL;
+        if (developmentUrl && new URL(url).href === new URL(developmentUrl).href) return;
+
+        ev.preventDefault();
+    });
 
     ipcMain.handle("rpc", async (ev, method: unknown, input: unknown) => {
         if (quitting) throw new Error("The application is shutting down.");
@@ -254,11 +259,21 @@ void app.whenReady().then(async () => {
     void service.reconcile().catch(console.error);
 
     if (process.env.ELECTRON_RENDERER_URL) {
-        await win.loadURL(process.env.ELECTRON_RENDERER_URL);
+        try {
+            await win.loadURL(process.env.ELECTRON_RENDERER_URL);
+        }
+        catch (error) {
+            // Vite can reload the page while its initial dependency optimization finishes.
+            if (!(error instanceof Error) || !("code" in error) || error.code !== "ERR_ABORTED") throw error;
+        }
     }
     else {
         await win.loadFile(join(__dirname, "../renderer/index.html"));
     }
+}).catch((error: unknown) => {
+    console.error("BTunes startup failed:", error);
+    dialog.showErrorBox("BTunes could not start", error instanceof Error ? error.message : String(error));
+    app.quit();
 });
 
 

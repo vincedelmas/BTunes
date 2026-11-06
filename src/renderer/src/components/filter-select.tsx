@@ -9,14 +9,15 @@ interface FilterSelectProps {
     label: string;
     value: string;
     disabled?: boolean;
+    allowEmpty?: boolean;
     placeholder: string;
     onChange: (value: string) => void;
     options: { value: string; label: string }[];
 }
 
 
-export function FilterSelect({ className, id, label, placeholder, options, value, disabled, onChange }: FilterSelectProps) {
-    const items = [{ value: "", label: placeholder }, ...options];
+export function FilterSelect({ className, id, label, placeholder, options, value, disabled, allowEmpty = true, onChange }: FilterSelectProps) {
+    const items = allowEmpty ? [{ value: "", label: placeholder }, ...options] : options;
 
     if (options.length > 15) {
         const selected = items.find((item) => item.value === value) ?? null;
@@ -35,7 +36,7 @@ export function FilterSelect({ className, id, label, placeholder, options, value
                     id={id}
                     aria-label={label}
                     placeholder={placeholder}
-                    showClear={Boolean(value)}
+                    showClear={allowEmpty && Boolean(value)}
                     className={cn("filter-combobox min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
                 />
                 <ComboboxContent
@@ -70,7 +71,7 @@ export function FilterSelect({ className, id, label, placeholder, options, value
                 aria-label={label}
                 className={cn("filter-trigger min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
             >
-                <SelectValue/>
+                <SelectValue placeholder={placeholder}/>
             </SelectTrigger>
             <SelectContent
                 className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"

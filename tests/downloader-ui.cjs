@@ -91,7 +91,7 @@ function finish(code) {
 setTimeout(() => {
     console.error('Downloader UI timed out');
     finish(1);
-}, 30000);
+}, 45000);
 app.on('browser-window-created', (_, win) => {
     win.hide();
     win.webContents.once('did-finish-load', async () => {
@@ -102,18 +102,61 @@ app.on('browser-window-created', (_, win) => {
     await waitFor(()=>button('Downloads'));
     button('Downloads').click();
     await waitFor(()=>document.querySelector('.download-row')?.textContent.includes('Fixture Song'));
+    window.downloaderWaitFor=waitFor;
+    document.querySelector('button[aria-label="Download settings"]').click();
+    await waitFor(()=>document.querySelector('[role="tab"][aria-selected="true"]')?.textContent==='Downloads');
+    await waitFor(()=>document.getElementById('download-concurrency'));
+    const setInput=(id,value)=>{
+        const input=document.getElementById(id);
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+    };
+    const tab=(label)=>[...document.querySelectorAll('[role="tab"]')].find(item=>item.textContent===label);
+    setInput('download-concurrency','2');
+    tab('Library').click();
+    await waitFor(()=>tab('Library').getAttribute('aria-selected')==='true');
+    tab('Downloads').click();
+    await waitFor(()=>tab('Downloads').getAttribute('aria-selected')==='true');
+    if(document.getElementById('download-concurrency').value!=='2')throw new Error('Tab switching lost unsaved settings');
+    button('Discard').click();
+    await waitFor(()=>document.getElementById('download-concurrency').value==='1');
+    setInput('download-concurrency','2');
+    button('Save changes').click();
+    await waitFor(()=>[...document.querySelectorAll('[role="status"]')].some(item=>item.textContent==='Changes saved.'));
+    const settings=await window.btunes.rpc('downloads.settings.get',undefined);
+    if(settings.concurrency!==2)throw new Error('Settings save did not persist');
+    if(document.querySelector('.settings-page').scrollWidth>document.querySelector('.settings-page').clientWidth)throw new Error('Settings overflow horizontally');
+   })()`);
+            await win.webContents.executeJavaScript("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+            writeFileSync(join(artifacts, 'download-settings.png'), (await win.webContents.capturePage()).toPNG());
+            win.setMinimumSize(900, 650);
+            win.setSize(900, 650);
+            await win.webContents.executeJavaScript(`(async()=>{
+    const page=document.querySelector('.settings-page');
+    page.scrollTop=page.scrollHeight;
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const save=[...document.querySelectorAll('button')].find(item=>item.textContent.trim()==='Save changes');
+    const bounds=save.getBoundingClientRect();
+    if(page.scrollWidth>page.clientWidth || bounds.bottom>page.getBoundingClientRect().bottom)throw new Error('Small-window settings overflow or hide the save action');
+   })()`);
+            writeFileSync(join(artifacts, 'download-settings-small.png'), (await win.webContents.capturePage()).toPNG());
+            win.setSize(1000, 700);
+            await win.webContents.executeJavaScript(`(async()=>{
+    const button=(label)=>[...document.querySelectorAll('button')].find(item=>item.textContent.trim()===label);
+    button('Downloads').click();
+    await window.downloaderWaitFor(()=>document.querySelector('.download-row'));
+    await window.downloaderWaitFor(()=>!button('Download available').disabled);
     button('Download available').click();
-    await waitFor(()=>button('Review & save'));
+    await window.downloaderWaitFor(()=>button('Review & save'));
     const library=await window.btunes.rpc('library.get',undefined);
     if(library.tracks.length)throw new Error('Unreviewed song was published');
     button('Review & save').click();
-    await waitFor(()=>document.getElementById('tag-album'));
+    await window.downloaderWaitFor(()=>document.getElementById('tag-album'));
     if(document.getElementById('tag-album').value!=='Fixture Album')throw new Error('Online metadata was not applied');
     if(!document.querySelector('[aria-label="Album artwork"] img'))throw new Error('Automatic artwork was not selected');
     const album=document.getElementById('tag-album');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(album,'Reviewed Album');
     album.dispatchEvent(new Event('input',{bubbles:true}));
-    window.downloaderWaitFor=waitFor;
    })()`);
             if (readdirSync(music).length) throw new Error('Staged files leaked into the music folder');
             await win.webContents.executeJavaScript("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,150))))");

@@ -15,7 +15,7 @@
         "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
         "package": "bun run build && electron-builder --linux dir",
         "test": "node --experimental-strip-types --test tests/*.test.ts",
-        "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/downloader-ui.cjs",
+        "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/downloader-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/dev-startup.cjs",
         "desktop:install": "node scripts/install-desktop.cjs"
     },
     "dependencies": {

@@ -38,7 +38,7 @@ bun run dev
 - **Selection:** Ctrl-click toggles songs, Shift-click selects a range, and Ctrl+A selects all filtered songs.
 - **Context menus:** right-click songs or albums for playback, queue, playlist, tag, and file actions, or to go to their album or album artist.
 - **Playlists:** use **+** to create one; right-click a playlist to edit or delete it.
-- **Settings:** manage music folders and sidebar order. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
+- **Settings:** use the Library, Downloads, and Sidebar tabs to manage folders, downloading, and navigation order. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
 
 To edit tags, select up to **100 songs**, right-click → **Edit tags**, change fields, then **Save**.
 Batch edits apply only checked fields. Genre suggestions reuse existing spellings, ignoring case, while still allowing new genres. **Choose image** embeds a local cover in every selected file on Save. Online tag and cover discovery lives in Downloads.
@@ -51,7 +51,7 @@ There is no in-app undo or automatic backup cleanup yet.
 
 In **Settings → Downloads**, choose a Chrome/Brave Bookmarks file, bookmark folder, naming pattern, and an existing BTunes music folder.
 **Import Go app settings** reads Music Downloader’s config. Nested bookmark folders, a pattern preview, MP3 quality, concurrency, and automatic
-metadata lookup are supported.
+metadata lookup are supported. Use **Save changes** to apply your edits or **Discard** to restore saved values.
 
 Opening **Downloads** scans bookmarks and checks tool updates in the background. Select songs with Ctrl/Shift-click or use **Download available**.
 Audio downloads to temporary storage; MusicBrainz suggests tags (with an iTunes fallback) and the artwork search finds a cover. **Review & save** lets you edit

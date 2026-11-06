@@ -27,6 +27,7 @@ import {TrackCollectionDialog} from "@/components/library/track-collection-dialo
 import {LibraryStats} from "@/components/library/library-stats";
 import {LibrarySearch} from "@/components/library/library-search";
 import {CollectionEmptyState} from "@/components/library/collection-empty-state";
+import type {SettingsTab} from "@/types/settings";
 
 
 export function App() {
@@ -35,6 +36,7 @@ export function App() {
     const player = usePlayer(library.setError);
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
+    const [settingsTab, setSettingsTab] = useState<SettingsTab>("library");
     const sidebarLayout = useSidebarLayout(library.data.playlists);
     const [openedCollection, setOpenedCollection] = useState<OpenedCollection>();
     const collection = useCollection(library.data, library.reportError);
@@ -70,6 +72,11 @@ export function App() {
             : undefined,
     };
 
+    function showSettings(tab: SettingsTab = "library") {
+        setSettingsTab(tab);
+        navigate("settings");
+    }
+
     function revealPlaying() {
         if (!current) return;
 
@@ -86,10 +93,6 @@ export function App() {
 
     useMouseNavigation(goBack, goForward);
 
-    const tagsSaved = async () => {
-        await library.refresh();
-    };
-
     const renderCollection = () => {
         if (!tracks.length) {
             return <CollectionEmptyState
@@ -98,7 +101,7 @@ export function App() {
                 hasFilters={Boolean(search || artist)}
                 hasTracks={Boolean(library.data.tracks.length)}
                 hasFolders={Boolean(library.data.folders.length)}
-                onSettings={() => navigate("settings")}
+                onSettings={() => showSettings()}
             />;
         }
 
@@ -161,7 +164,7 @@ export function App() {
                 layout={sidebarLayout}
                 onRefresh={library.refresh}
                 onError={library.reportError}
-                onSettings={() => navigate("settings")}
+                onSettings={() => showSettings()}
             />
 
             <main className="isolate overflow-hidden min-w-0 rounded-lg bg-background flex flex-col">
@@ -182,6 +185,8 @@ export function App() {
                 )}
                 {view === "settings" ?
                     <SettingsPage
+                        tab={settingsTab}
+                        onTabChange={setSettingsTab}
                         busy={library.busy}
                         error={library.error}
                         notice={library.notice}
@@ -237,7 +242,7 @@ export function App() {
                                 <DownloadsPage
                                     query={search}
                                     genres={genres}
-                                    onSettings={() => navigate("settings")}
+                                    onSettings={() => showSettings("downloads")}
                                     onSaved={library.refresh}
                                 />
                             ) : view === "android" ?
@@ -291,7 +296,7 @@ export function App() {
                 artistName={openedCollection?.artistName}
                 genres={genres}
                 actions={actions}
-                onSaved={tagsSaved}
+                onSaved={library.refresh}
                 currentId={current?.id}
                 playing={player.playing}
                 tracks={openedCollectionTracks}
@@ -303,7 +308,7 @@ export function App() {
                     genres={genres}
                     key={editing.map((track) => track.id).join(",")}
                     tracks={editing}
-                    onSaved={tagsSaved}
+                    onSaved={library.refresh}
                     onClose={() => setEditing(undefined)}
                 />
             }

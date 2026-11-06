@@ -3,7 +3,8 @@ import {useDragOrder} from "@/hooks/use-drag-order";
 import {navigationItems} from "@/lib/sidebar-navigation";
 import {ReorderHandle} from "@/components/reorder-handle";
 import type {Playlist} from "../../../shared/types/library";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {SettingsSection} from "@/components/settings/settings-section";
+import {cn} from "@/lib/utils";
 
 
 interface OrderListProps {
@@ -19,20 +20,19 @@ function OrderList({ title, group, items, onChange }: OrderListProps) {
 
     return (
         <section>
-            <h3 className="order-list-title font-semibold mb-3">{title}</h3>
+            <h3 className="mb-3 text-xs font-medium text-muted-foreground">{title}</h3>
             <ul
                 aria-label={title}
-                className="settings-order-list max-h-70 overflow-y-auto [&_li]:flex [&_li]:items-center
-                [&_li]:justify-between [&_li]:gap-4 [&_li]:py-2 [&_li]:px-3 [&_li]:border-b [&_li]:border-border
-                [&_span]:min-w-0 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:whitespace-nowrap"
+                className="settings-order-list flex max-h-80 flex-col gap-1 overflow-y-auto"
             >
                 {items.map((item) => (
                     <li
                         key={item.id}
+                        className={cn("flex items-center justify-between gap-4 rounded-lg bg-muted/30 px-4 py-3", ordering.dragging === item.id && "opacity-40")}
                         onDragOver={ordering.over}
                         onDrop={(ev) => ordering.drop(ev, item.id)}
                     >
-                        <span>{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                         <ReorderHandle
                             onDragEnd={ordering.end}
                             label={"Move " + item.label + " " + group}
@@ -55,16 +55,11 @@ interface SidebarOrderSettingsProps {
 
 export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettingsProps) {
     return (
-        <Card className="settings-card max-w-220 mb-5 bg-[#191919] border border-[#ffffff0c] rounded-[14px]">
-            <CardHeader>
-                <CardTitle>
-                    Sidebar order
-                </CardTitle>
-                <CardDescription>
-                    Drag the handles here to arrange navigation and playlists. Changes are saved automatically.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="sidebar-order-settings grid grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))] gap-6">
+        <SettingsSection
+            title="Make it your own"
+            description="Drag to arrange your sidebar. Changes are saved automatically."
+        >
+            <div className="sidebar-order-settings grid gap-7 md:grid-cols-2">
                 <OrderList
                     title="Navigation"
                     group="navigation item"
@@ -82,7 +77,8 @@ export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettings
                         items={layout.playlistIds.map((id) => ({ id, label: playlists.find((item) => String(item.id) === id)!.name }))}
                     />
                 }
-            </CardContent>
-        </Card>
+            </div>
+            <p className="mt-5 text-xs text-muted-foreground">You can also focus a handle and press Alt + ↑ or ↓ to move it.</p>
+        </SettingsSection>
     );
 }

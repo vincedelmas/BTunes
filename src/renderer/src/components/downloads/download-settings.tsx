@@ -1,129 +1,69 @@
-import {compileBookmarkPattern} from "../../../../shared/bookmarks";
-import {useEffect, useState} from "react";
-import {FolderOpen, Import, Save} from "lucide-react";
-import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "../../../../shared/errors";
-import {downloaderSettingsSchema} from "../../../../shared/schemas/downloads";
-import type {BookmarkFolder, DownloaderSettings} from "../../../../shared/types/downloads";
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
-import {Field, FieldGroup, FieldLabel, FieldDescription} from "@/components/ui/field";
+import {Check, FileJson, FolderOpen, Import, Save} from "lucide-react";
+import {useDownloadSettings} from "@/hooks/use-download-settings";
+import {SettingsSection} from "@/components/settings/settings-section";
+import {BookmarkPatternFields} from "@/components/downloads/bookmark-pattern-fields";
+import {Field, FieldContent, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {Checkbox} from "@/components/ui/checkbox";
 import {FilterSelect} from "@/components/filter-select";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Separator} from "@/components/ui/separator";
+import {downloaderSettingsSchema} from "../../../../shared/schemas/downloads";
+
+const qualityOptions = ["128k", "192k", "256k", "320k"].map((value) => ({ value, label: value.replace("k", " kbps") }));
 
 interface DownloadSettingsProps {
-    musicFolders: string[]
+    musicFolders: string[];
 }
 
 
 export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
-    const [settings, setSettings] = useState<DownloaderSettings>();
-    const [folders, setFolders] = useState<BookmarkFolder[]>([]);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState("");
-    const [notice, setNotice] = useState("");
-    const [example, setExample] = useState("Daft Punk - One More Time");
-    let preview = "Check the pattern and example.";
-    try {
-        const fields = compileBookmarkPattern(settings?.namePattern ?? "{artist} - {title}").exec(example)?.groups;
-        if (fields) preview = "Artist: " + fields.artist + " · Title: " + fields.title;
-    }
-    catch { /* Invalid drafts remain editable until saved. */
-    }
+    const form = useDownloadSettings();
+    const { settings, folders, busy, dirty, error, notice, change } = form;
 
-    useEffect(() => {
-        let active = true;
-        void rpc("downloads.settings.get", undefined).then(async (settings) => {
-            if (!active) return;
-            setSettings(settings);
-            if (settings.bookmarksFile) {
-                const folders = await rpc("downloads.bookmarks.folders", { path: settings.bookmarksFile });
-                if (active) setFolders(folders);
-            }
-        }).catch((error: unknown) => {
-            if (active) setError(getErrorMessage(error));
-        });
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    async function chooseBookmarks() {
-        setBusy(true);
-        setError("");
-        try {
-            const path = await rpc("downloads.bookmarks.choose", undefined);
-            if (!path || !settings) return;
-            const folders = await rpc("downloads.bookmarks.folders", { path });
-            setSettings({ ...settings, bookmarksFile: path, folderId: "" });
-            setFolders(folders);
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
-        finally {
-            setBusy(false);
-        }
-    }
-
-    async function importSettings() {
-        setBusy(true);
-        setError("");
-        try {
-            const settings = await rpc("downloads.settings.import", undefined);
-            if (!settings) return;
-            setSettings(settings);
-            setFolders(await rpc("downloads.bookmarks.folders", { path: settings.bookmarksFile }));
-            setNotice("Music Downloader settings imported.");
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
-        finally {
-            setBusy(false);
-        }
-    }
-
-    async function save() {
-        if (!settings) return;
-        setBusy(true);
-        setError("");
-        setNotice("");
-        try {
-            setSettings(await rpc("downloads.settings.save", downloaderSettingsSchema.parse(settings)));
-            setNotice("Download settings saved.");
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
-        finally {
-            setBusy(false);
-        }
+    if (!settings) {
+        return <p
+            role="status"
+            className="py-6 text-sm text-muted-foreground"
+        >{error || "Loading download settings…"}</p>;
     }
 
     return (
-        <Card className="mb-5 max-w-220">
-            <CardHeader>
-                <CardTitle>Downloads</CardTitle>
-                <CardDescription>Turn your YouTube bookmarks into music, with tags and embedded artwork prepared before adding it to your library.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {settings && <FieldGroup className="gap-5">
+        <div className="flex flex-col gap-6">
+            <SettingsSection
+                title="Bookmarks"
+                description="Choose where BTunes finds the songs you want to download."
+                action={
+                    <Button
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => void form.importSettings()}
+                    >
+                        <Import data-icon="inline-start"/>
+                        Import Go app settings
+                    </Button>
+                }
+            >
+                <FieldGroup>
                     <Field>
-                        <FieldLabel>Browser Bookmarks file</FieldLabel>
-                        <div className="flex items-center gap-3">
-                            <Input
-                                aria-label="Browser Bookmarks file"
-                                readOnly
-                                value={settings.bookmarksFile}
-                                placeholder="Choose Chrome or Brave’s Bookmarks file"
-                            />
+                        <FieldLabel id="download-bookmarks-label">Browser Bookmarks file</FieldLabel>
+                        <div className="flex items-center gap-4 rounded-lg border border-border/60 p-3">
+                            <FileJson className="size-5 shrink-0 text-muted-foreground"/>
+                            <div
+                                className="min-w-0 flex-1"
+                                aria-labelledby="download-bookmarks-label"
+                            >
+                                <p className="truncate font-medium">{settings.bookmarksFile ? "Bookmarks file selected" : "Choose a browser file"}</p>
+                                <p
+                                    className="mt-1 truncate text-xs text-muted-foreground"
+                                    title={settings.bookmarksFile}
+                                >{settings.bookmarksFile || "Chrome or Brave · bookmarks are only read"}</p>
+                            </div>
                             <Button
                                 variant="outline"
                                 disabled={busy}
-                                onClick={() => void chooseBookmarks()}
+                                onClick={() => void form.chooseBookmarks()}
                             >
                                 <FolderOpen data-icon="inline-start"/>
                                 Browse
@@ -136,47 +76,42 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                             id="download-bookmark-folder"
                             label="Bookmark folder"
                             className="w-full max-w-none"
-                            disabled={busy}
+                            disabled={busy || !folders.length}
                             value={settings.folderId}
                             placeholder="Choose a folder"
                             options={folders.map((folder) => ({ value: folder.id, label: folder.label }))}
-                            onChange={(folderId) => setSettings({ ...settings, folderId })}
+                            onChange={(folderId) => change({ folderId })}
                         />
-                        <FieldDescription>Nested folders are included automatically.</FieldDescription>
+                        <FieldDescription>All bookmarks inside nested folders are included.</FieldDescription>
                     </Field>
+                    <Separator/>
+                    <BookmarkPatternFields
+                        pattern={settings.namePattern}
+                        disabled={busy}
+                        onChange={(namePattern) => change({ namePattern })}
+                    />
+                </FieldGroup>
+            </SettingsSection>
+            <SettingsSection
+                title="Audio & library"
+                description="Finished songs arrive here after you review their tags and cover."
+            >
+                <FieldGroup>
                     <Field>
-                        <FieldLabel htmlFor="download-destination">Music folder</FieldLabel>
+                        <FieldLabel htmlFor="download-destination">Save to music folder</FieldLabel>
                         <FilterSelect
                             id="download-destination"
                             label="Download music folder"
                             className="w-full max-w-none"
-                            disabled={busy}
+                            disabled={busy || !musicFolders.length}
                             value={settings.destination}
-                            placeholder="Add a music folder above first"
+                            placeholder="Choose a music folder"
                             options={musicFolders.map((folder) => ({ value: folder, label: folder }))}
-                            onChange={(destination) => setSettings({ ...settings, destination })}
+                            onChange={(destination) => change({ destination })}
                         />
+                        {!musicFolders.length && <FieldDescription>Add a music folder in the Library tab first.</FieldDescription>}
                     </Field>
-                    <Field>
-                        <FieldLabel htmlFor="download-pattern">Bookmark name pattern</FieldLabel>
-                        <Input
-                            id="download-pattern"
-                            disabled={busy}
-                            value={settings.namePattern}
-                            onChange={(ev) => setSettings({ ...settings, namePattern: ev.target.value })}
-                        />
-                        <FieldDescription>For “Daft Punk - One More Time”, use {'{artist} - {title}'}. Use {'{skip}'} for an ignored section.</FieldDescription>
-                    </Field>
-                    <Field>
-                        <FieldLabel htmlFor="download-example">Pattern preview</FieldLabel>
-                        <Input
-                            id="download-example"
-                            value={example}
-                            onChange={(ev) => setExample(ev.target.value)}
-                        />
-                        <FieldDescription>{preview}</FieldDescription>
-                    </Field>
-                    <div className="grid grid-cols-2 gap-5">
+                    <FieldGroup className="grid gap-5 sm:grid-cols-2">
                         <Field>
                             <FieldLabel htmlFor="download-quality">MP3 quality</FieldLabel>
                             <FilterSelect
@@ -185,10 +120,12 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                                 className="w-full max-w-none"
                                 disabled={busy}
                                 value={settings.quality}
-                                placeholder="192k"
-                                options={["128k", "192k", "256k", "320k"].map((quality) => ({ value: quality, label: quality }))}
-                                onChange={(quality) => setSettings({ ...settings, quality: downloaderSettingsSchema.shape.quality.parse(quality) })}
+                                placeholder="Choose quality"
+                                options={qualityOptions}
+                                allowEmpty={false}
+                                onChange={(quality) => change({ quality: downloaderSettingsSchema.shape.quality.parse(quality) })}
                             />
+                            <FieldDescription>192 kbps is a good balance of size and quality.</FieldDescription>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="download-concurrency">Simultaneous downloads</FieldLabel>
@@ -199,48 +136,55 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                                 min={1}
                                 max={10}
                                 value={settings.concurrency}
-                                onChange={(ev) => setSettings({ ...settings, concurrency: Number(ev.target.value) })}
+                                onChange={(ev) => change({ concurrency: Number(ev.target.value) })}
                             />
+                            <FieldDescription>Between 1 and 10 songs at a time.</FieldDescription>
                         </Field>
-                    </div>
-                    <Field orientation="horizontal">
+                    </FieldGroup>
+                    <Separator/>
+                    <Field
+                        orientation="horizontal"
+                        data-disabled={busy}
+                    >
+                        <FieldContent>
+                            <FieldLabel htmlFor="download-metadata">Automatic tags & artwork</FieldLabel>
+                            <FieldDescription>Find online suggestions before reviewing each download.</FieldDescription>
+                        </FieldContent>
                         <Checkbox
                             id="download-metadata"
                             disabled={busy}
                             checked={settings.fetchMetadata}
-                            onCheckedChange={(value) => setSettings({ ...settings, fetchMetadata: Boolean(value) })}
+                            onCheckedChange={(value) => change({ fetchMetadata: Boolean(value) })}
                         />
-                        <FieldLabel htmlFor="download-metadata">Look up tags and artwork online after downloading</FieldLabel>
                     </Field>
-                </FieldGroup>}
-                {error && <Alert
-                    variant="destructive"
-                    className="mt-4"
-                >
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>}
-                {notice && <p
+                </FieldGroup>
+            </SettingsSection>
+            {error && <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>}
+            <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/95 px-5 py-4 backdrop-blur-xl">
+                <p
                     role="status"
-                    className="mt-4 text-sm text-primary"
-                >{notice}</p>}
-            </CardContent>
-            <CardFooter className="flex flex-wrap gap-3">
-                <Button
-                    disabled={busy || !settings}
-                    onClick={() => void save()}
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
                 >
-                    <Save data-icon="inline-start"/>
-                    {busy ? "Working…" : "Save download settings"}
-                </Button>
-                <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => void importSettings()}
-                >
-                    <Import data-icon="inline-start"/>
-                    Import Go app settings
-                </Button>
-            </CardFooter>
-        </Card>
+                    {!dirty && notice && <Check className="size-3.5 text-primary"/>}
+                    {dirty ? "You have unsaved changes." : notice || "Your download preferences are up to date."}
+                </p>
+                <div className="flex items-center gap-2">
+                    {dirty && <Button
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => void form.reset()}
+                    >Discard</Button>}
+                    <Button
+                        disabled={busy || !dirty}
+                        onClick={() => void form.save()}
+                    >
+                        <Save data-icon="inline-start"/>
+                        {busy ? "Working…" : "Save changes"}
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 }
