@@ -187,8 +187,8 @@ void app.whenReady().then(async () => {
         const url = new URL(request.url);
 
         if (url.hostname === "artwork") {
-            return artwork.get(url.pathname.slice(1))
-                .then((image) => new Response(new Uint8Array(image.data), { headers: { "Content-Type": "image/jpeg" } }))
+            return artwork.preview(url.pathname.slice(1))
+                .then((image) => new Response(new Uint8Array(image.data), { headers: { "Content-Type": image.contentType, "Cache-Control": "private, max-age=600" } }))
                 .catch(() => new Response("Cover not found", { status: 404 }));
         }
 

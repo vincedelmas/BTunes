@@ -1,11 +1,19 @@
 import {execFile} from "node:child_process";
 import {createHash, randomUUID} from "node:crypto";
 import type {ArtworkCandidate} from "../../shared/types/artwork.ts";
-import type {CachedArtwork, EmbeddedArtwork} from "../types/artwork.ts";
-import {artworkSearchResponseSchema, coverArchiveSchema, releaseGroupSearchSchema} from "../../shared/schemas/artwork.ts";
+import type {ArtworkImage, CachedArtwork, CachedArtworkSearch, EmbeddedArtwork} from "../types/artwork.ts";
+import {artworkSearchResponseSchema, releaseGroupSearchSchema} from "../../shared/schemas/artwork.ts";
 
 
 const maxImageBytes = 10 * 1024 * 1024;
+const maxSuggestions = 3;
+const searchLifetime = 10 * 60 * 1000;
+
+const searchWords = (value: string) => value.normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
 
 
 const approvedImageUrl = (value: string) => {
@@ -52,76 +60,104 @@ export class ArtworkService {
     private lastSearchAt = 0;
     private readonly request: typeof fetch;
     private candidates = new Map<string, CachedArtwork>();
+    private searches = new Map<string, CachedArtworkSearch>();
 
     constructor(request: typeof fetch = fetch) {
         this.request = request;
     }
 
     async search(query: string): Promise<ArtworkCandidate[]> {
-        const wait = Math.max(0, this.lastSearchAt + 1000 - Date.now());
-        this.lastSearchAt = Date.now() + wait;
+        const key = query.trim().replace(/\s+/g, " ").toLowerCase();
+        const cached = this.searches.get(key);
 
-        if (wait) {
-            await new Promise((resolve) => setTimeout(resolve, wait));
+        if (cached && cached.expiresAt > Date.now()) {
+            const results = await cached.pending;
+            if (results.every((result) => this.candidates.has(result.id))) return results;
         }
 
-        const musicBrainz = await this.searchArchive(query).catch(() => []);
-        if (musicBrainz.length) {
-            return musicBrainz;
+        const pending = this.findCandidates(query);
+        const entry = { pending, expiresAt: Date.now() + searchLifetime };
+        this.searches.set(key, entry);
+
+        while (this.searches.size > 32) {
+            this.searches.delete(this.searches.keys().next().value!);
         }
 
+        try {
+            const results = await pending;
+            if (!results.length) this.searches.delete(key);
+            return results;
+        }
+        catch (error) {
+            if (this.searches.get(key) === entry) this.searches.delete(key);
+            throw error;
+        }
+    }
+
+    private async findCandidates(query: string): Promise<ArtworkCandidate[]> {
+        const store = await this.searchStore(query).catch(() => []);
+        if (store.length) return store;
+
+        return this.searchArchive(query);
+    }
+
+    private async searchStore(query: string): Promise<ArtworkCandidate[]> {
         const url = new URL("https://itunes.apple.com/search");
-        url.search = new URLSearchParams({ term: query, media: "music", entity: "musicTrack", limit: "50" }).toString();
+        url.search = new URLSearchParams({ term: query, media: "music", entity: "album", limit: String(maxSuggestions) }).toString();
+        const response = await this.request(url, { signal: AbortSignal.timeout(3000) });
+        if (!response.ok) return [];
 
-        const response = await this.request(url, { signal: AbortSignal.timeout(15000) });
-        if (!response.ok) {
-            throw new Error("Cover search is unavailable. Try again shortly.");
-        }
-
+        const parsed = artworkSearchResponseSchema.parse(await response.json());
+        const terms = searchWords(query);
         const seen = new Set<string>();
         const results: ArtworkCandidate[] = [];
-        const parsed = artworkSearchResponseSchema.parse(await response.json());
 
         for (const result of parsed.results) {
-            if (!result.artworkUrl100 || results.length >= 18) continue;
+            if (!result.artworkUrl100 || results.length >= maxSuggestions) continue;
 
-            const imageUrl = approvedImageUrl(result.artworkUrl100).replace(/100x100[^/]*\.(jpg|png)/, "600x600bb.$1");
+            const words = new Set(searchWords([result.collectionName, result.artistName].join(" ")));
+            if (!terms.every((term) => words.has(term))) continue;
+
+            const original = approvedImageUrl(result.artworkUrl100);
+            const imageUrl = original.replace(/100x100[^/]*\.(jpg|png)/, "600x600bb.$1");
+            const previewUrl = original.replace(/100x100[^/]*\.(jpg|png)/, "300x300bb.$1");
             if (seen.has(imageUrl)) continue;
 
             seen.add(imageUrl);
-            results.push(this.registerCandidate(imageUrl, result.collectionName ?? "Unknown album", result.artistName));
+            results.push(this.registerCandidate(imageUrl, previewUrl, result.collectionName ?? "Unknown album", result.artistName));
         }
 
         return results;
     }
 
     private async searchArchive(query: string): Promise<ArtworkCandidate[]> {
-        const url = new URL("https://musicbrainz.org/ws/2/release-group");
-        url.search = new URLSearchParams({ query, fmt: "json", limit: "8" }).toString();
+        const wait = Math.max(0, this.lastSearchAt + 1000 - Date.now());
+        this.lastSearchAt = Date.now() + wait;
+        if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
 
+        const url = new URL("https://musicbrainz.org/ws/2/release-group");
+        url.search = new URLSearchParams({ query, fmt: "json", limit: String(maxSuggestions) }).toString();
         const response = await this.request(url, {
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(8000),
             headers: { "User-Agent": "BTunes/0.1 (https://github.com/vincedelmas/BTunes)" },
         });
+        if (!response.ok) throw new Error("Cover search is unavailable. Try again shortly.");
 
-        if (!response.ok) return [];
-        const groups = releaseGroupSearchSchema.parse(await response.json())["release-groups"];
-
+        const groups = releaseGroupSearchSchema.parse(await response.json())["release-groups"].slice(0, maxSuggestions);
         const results = await Promise.all(groups.map(async (group) => {
             try {
-                const listing = await this.request("https://coverartarchive.org/release-group/" + group.id, {
-                    signal: AbortSignal.timeout(10000),
+                const endpoint = "https://coverartarchive.org/release-group/" + group.id + "/front";
+                const preview = await this.request(endpoint + "-250", {
+                    method: "HEAD",
+                    redirect: "manual",
+                    signal: AbortSignal.timeout(3000),
                 });
+                const location = preview.headers.get("location");
+                if (preview.status !== 307 || !location) return undefined;
 
-                if (!listing.ok) return undefined;
-
-                const front = coverArchiveSchema.parse(await listing.json()).images.find((image) => image.front);
-                if (!front) return undefined;
-
-                const imageUrl = front.thumbnails?.large ?? front.image;
                 const artist = group["artist-credit"].map((credit) => credit.name).join(" & ");
-
-                return this.registerCandidate(imageUrl, group.title, artist);
+                const previewUrl = new URL(location, endpoint).href;
+                return this.registerCandidate(endpoint + "-500", previewUrl, group.title, artist);
             }
             catch {
                 return undefined;
@@ -131,9 +167,9 @@ export class ArtworkService {
         return results.filter((result) => result !== undefined);
     }
 
-    private registerCandidate(imageUrl: string, album: string, artist: string): ArtworkCandidate {
+    private registerCandidate(imageUrl: string, previewUrl: string, album: string, artist: string): ArtworkCandidate {
         const id = randomUUID();
-        this.candidates.set(id, { url: approvedImageUrl(imageUrl), expiresAt: Date.now() + 30 * 60 * 1000 });
+        this.candidates.set(id, { url: approvedImageUrl(imageUrl), previewUrl: approvedImageUrl(previewUrl), expiresAt: Date.now() + 30 * 60 * 1000 });
 
         while (this.candidates.size > 64) {
             this.candidates.delete(this.candidates.keys().next().value!);
@@ -142,17 +178,43 @@ export class ArtworkService {
         return { id, album, artist, thumbnail: "btunes://artwork/" + id };
     }
 
-    async get(id: string): Promise<EmbeddedArtwork> {
+    private candidate(id: string) {
         const candidate = this.candidates.get(id);
-
         if (!candidate || candidate.expiresAt < Date.now()) {
             throw new Error("Cover search expired. Search again to select a cover.");
         }
+        return candidate;
+    }
+
+    async preview(id: string): Promise<ArtworkImage> {
+        const candidate = this.candidate(id);
+        if (candidate.preview) return candidate.preview;
+
+        if (!candidate.previewLoading) {
+            candidate.previewLoading = this.downloadImage(candidate.previewUrl)
+                .then((image) => {
+                    candidate.preview = image;
+                    return image;
+                })
+                .finally(() => {
+                    candidate.previewLoading = undefined;
+                });
+        }
+
+        return candidate.previewLoading;
+    }
+
+    async get(id: string): Promise<EmbeddedArtwork> {
+        const candidate = this.candidate(id);
 
         if (candidate.artwork) return candidate.artwork;
 
         if (!candidate.loading) {
-            candidate.loading = this.download(candidate.url)
+            candidate.loading = this.downloadImage(candidate.url)
+                .then(async (image) => {
+                    const data = await normalizeArtwork(image.data);
+                    return { data, hash: createHash("sha256").update(data).digest("hex") };
+                })
                 .then((artwork) => {
                     candidate.artwork = artwork;
                     return artwork;
@@ -165,7 +227,7 @@ export class ArtworkService {
         return candidate.loading;
     }
 
-    private async download(imageUrl: string): Promise<EmbeddedArtwork> {
+    private async downloadImage(imageUrl: string): Promise<ArtworkImage> {
         let url = imageUrl;
         let response: Response | undefined;
 
@@ -200,9 +262,11 @@ export class ArtworkService {
             chunks.push(chunk);
         }
 
-        const data = await normalizeArtwork(Buffer.concat(chunks));
-        const artwork = { data, hash: createHash("sha256").update(data).digest("hex") };
+        const contentType = response.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
+        if (!["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+            throw new Error("Unsupported cover image format.");
+        }
 
-        return artwork;
+        return { data: Buffer.concat(chunks), contentType };
     }
 }

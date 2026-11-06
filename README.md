@@ -21,7 +21,7 @@ bun run dev
 - Playback controls, seeking, shuffle, repeat, queue, play counts, and recently played history.
 - Classic playlists and genre-based automatic playlists.
 - Individual and batch tag editing, including album artist and embedded cover replacement.
-- Online cover search through MusicBrainz / Cover Art Archive, with iTunes as a fallback.
+- Cover search returns up to three matches, using iTunes first and MusicBrainz / Cover Art Archive when needed. Searches and small previews are cached; larger artwork is fetched only when saving.
 
 ## Using your library
 

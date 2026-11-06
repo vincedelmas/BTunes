@@ -16,11 +16,3 @@ export const releaseGroupSearchSchema = z.object({
         "artist-credit": z.array(z.object({ name: z.string() })),
     }))
 });
-
-export const coverArchiveSchema = z.object({
-    images: z.array(z.object({
-        front: z.boolean(),
-        image: z.url(),
-        thumbnails: z.object({ large: z.url().optional() }).optional(),
-    }))
-});
