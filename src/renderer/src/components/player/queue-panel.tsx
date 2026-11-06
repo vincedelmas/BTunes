@@ -4,7 +4,13 @@ import {Button} from "@/components/ui/button";
 import {VirtualGrid} from "@/components/virtual-grid";
 import {cn} from "@/lib/utils";
 
-export function QueuePanel({ player, onClose }: { player: PlayerState; onClose: () => void }) {
+interface QueuePanelProps {
+    player: PlayerState;
+    onClose: () => void
+}
+
+
+export function QueuePanel({ player, onClose }: QueuePanelProps) {
     const items = player.queue.map((track, index) => ({ track, index }));
 
     return (
@@ -18,8 +24,10 @@ export function QueuePanel({ player, onClose }: { player: PlayerState; onClose: 
                          renderItem={({ track, index }) => (
                              <button className={cn("queue-track", player.currentTrack?.id === track.id && "is-current")} onClick={() => player.start(track, player.queue, index)}>
                                  <Cover track={track}/>
-                                 <span>{track.title}<small>{track.artist}</small>
-</span>
+                                 <span>
+                                     {track.title}
+                                     <small>{track.artist}</small>
+                                 </span>
                              </button>
                          )}
             />

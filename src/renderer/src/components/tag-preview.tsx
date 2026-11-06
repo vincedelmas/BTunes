@@ -2,10 +2,18 @@ import {ArrowRight} from "lucide-react";
 import {tagLabels} from "../../../shared/tags";
 import type {TagPreview} from "../../../shared/types/tags";
 
-export function TagPreviewList({ preview }: { preview: TagPreview }) {
+interface TagPreviewListProps {
+    preview: TagPreview
+}
+
+
+export function TagPreviewList({ preview }: TagPreviewListProps) {
     return (
         <section className="tag-preview" aria-label="Tag change preview">
-            <div className="preview-heading"><h3>{preview.files.length ? "Ready to save" : "Everything is up to date"}</h3><span>{preview.files.length} file(s)</span></div>
+            <div className="preview-heading">
+                <h3>{preview.files.length ? "Ready to save" : "Everything is up to date"}</h3>
+                <span>{preview.files.length} file(s)</span>
+            </div>
             {preview.files.map((file) => (
                 <div className="preview-file" key={file.id}>
                     <strong>{file.title}</strong>

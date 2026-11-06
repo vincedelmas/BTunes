@@ -1,23 +1,34 @@
-import {CalendarDays, Disc3, Music2, RotateCcw, Tag, UserRound} from "lucide-react";
-import {tagFields, tagLabels} from "../../../shared/tags";
-import type {TagPatch} from "../../../shared/types/tags";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
+import {cn} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
-import {cn} from "@/lib/utils";
+import {Checkbox} from "@/components/ui/checkbox";
+import type {TagPatch} from "../../../shared/types/tags";
+import {tagFields, tagLabels} from "../../../shared/tags";
+import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
+import {CalendarDays, Disc3, Music2, RotateCcw, Tag, UserRound} from "lucide-react";
 
-const fieldIcons = { title: Music2, artist: UserRound, album: Disc3, genre: Tag, year: CalendarDays };
 
-export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onReset }: {
-    values: Record<keyof TagPatch, string>;
-    enabled: Set<keyof TagPatch>;
-    batch: boolean;
+const fieldIcons = {
+    genre: Tag,
+    album: Disc3,
+    title: Music2,
+    artist: UserRound,
+    year: CalendarDays,
+};
+
+
+interface TagFormProps {
     busy: boolean;
+    batch: boolean;
+    enabled: Set<keyof TagPatch>;
+    values: Record<keyof TagPatch, string>;
+    onReset: (field: keyof TagPatch) => void;
     onChange: (field: keyof TagPatch, value: string) => void;
     onToggle: (field: keyof TagPatch, checked: boolean) => void;
-    onReset: (field: keyof TagPatch) => void;
-}) {
+}
+
+
+export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onReset }: TagFormProps) {
     return (
         <FieldGroup className="tag-fields">
             {tagFields.map((field) => {
@@ -27,13 +38,16 @@ export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onRe
                 return (
                     <Field key={field} className={cn("tag-field", changed && "tag-field-changed")}>
                         <div className="tag-field-label">
-                            <FieldLabel htmlFor={"tag-" + field}><Icon/>{tagLabels[field]}</FieldLabel>
-                            {batch ? (
+                            <FieldLabel htmlFor={"tag-" + field}>
+                                <Icon/> {tagLabels[field]}
+                            </FieldLabel>
+                            {batch ?
                                 <Checkbox aria-label={"Apply " + tagLabels[field]} checked={changed} disabled={busy}
                                           onCheckedChange={(checked) => onToggle(field, Boolean(checked))}/>
-                            ) : changed && (
+                                :
+                                changed &&
                                 <Button variant="ghost" size="icon-xs" aria-label={"Reset " + tagLabels[field]} disabled={busy} onClick={() => onReset(field)}><RotateCcw/></Button>
-                            )}
+                            }
                         </div>
                         <Input id={"tag-" + field} type={field === "year" ? "number" : "text"}
                                min={field === "year" ? 0 : undefined} max={field === "year" ? 9999 : undefined}

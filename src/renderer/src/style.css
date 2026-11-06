@@ -107,7 +107,7 @@ small {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    padding: 24px 14px 20px;
+    padding: 20px 12px 12px;
     min-height: 0;
 }
 
@@ -115,7 +115,8 @@ small {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 0 10px 32px;
+    margin: 0 10px 22px;
+    flex-shrink: 0;
 }
 
 .brand > svg {
@@ -127,15 +128,6 @@ small {
     font-size: 28px;
     font-weight: 850;
     letter-spacing: -1.8px;
-}
-
-.library-label {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    color: var(--muted-foreground);
-    font-weight: 700;
-    padding: 0 12px 24px;
 }
 
 .eyebrow {
@@ -165,18 +157,12 @@ nav {
     color: var(--foreground);
 }
 
-.nav-count {
-    margin-left: auto;
-    font-size: 11px;
-    color: var(--muted-foreground);
-}
-
 .playlist-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-left: 12px;
-    margin: 25px 0 8px;
+    margin: 18px 0 6px;
 }
 
 .playlist-form {
@@ -186,40 +172,25 @@ nav {
 
 .playlists {
     overflow: auto;
+    flex: 1;
+    min-height: 0;
 }
 
 .sidebar-bottom {
     margin-top: auto;
-    padding: 30px 8px 0;
+    padding: 16px 8px 0;
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-.local-status {
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--muted-foreground);
-}
-
-.local-status span {
-    width: 5px;
-    height: 5px;
-    background: var(--primary);
-    border-radius: 50%;
-}
-
-.sidebar-bottom small {
-    padding-left: 13px;
-}
-
 main {
-    overflow: auto;
+    overflow: hidden;
     min-width: 0;
     border-radius: 8px;
     background: var(--background);
+    display: flex;
+    flex-direction: column;
 }
 
 .topbar {
@@ -276,16 +247,16 @@ main {
 }
 
 .library-hero {
-    padding: 40px 32px 32px;
+    padding: 24px 32px;
     background: linear-gradient(145deg, #293c32, #1e2b25 42%, #191c1a);
 }
 
 .library-hero h1 {
-    font-size: clamp(40px, 5vw, 72px);
+    font-size: clamp(36px, 4vw, 56px);
     font-weight: 850;
     letter-spacing: -3px;
     line-height: 1.1;
-    margin: 14px 0 22px;
+    margin: 0 0 14px;
 }
 
 .library-hero > p:last-child {
@@ -299,14 +270,19 @@ main {
 }
 
 .content {
-    padding: 24px 24px 60px;
+    padding: 20px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .collection-toolbar {
     display: flex;
     align-items: center;
     gap: 24px;
-    margin-bottom: 25px;
+    margin-bottom: 18px;
 }
 
 .collection-toolbar > span {
@@ -314,7 +290,7 @@ main {
 }
 
 .collection-toolbar > [data-variant="outline"] {
-    margin-left: auto;
+    margin-left: 0;
 }
 
 .collection-play {
@@ -333,14 +309,6 @@ main {
     height: 23px;
 }
 
-.filters {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 0 8px 22px;
-    gap: 20px;
-}
-
 select {
     color: var(--muted-foreground);
     background: var(--card);
@@ -349,12 +317,6 @@ select {
     padding: 7px 12px;
     max-width: 220px;
     font-size: 12px;
-}
-
-.album-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-    gap: 8px;
 }
 
 .album {
@@ -479,7 +441,7 @@ select {
 }
 
 .empty {
-    min-height: 300px;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -487,6 +449,7 @@ select {
     text-align: center;
     gap: 18px;
     padding: 20px;
+    height: 100%;
 }
 
 .empty > svg {
@@ -517,6 +480,9 @@ select {
     font-size: 12px;
     margin-bottom: 20px;
     overflow-wrap: anywhere;
+    flex-shrink: 0;
+    max-height: 64px;
+    overflow: auto;
 }
 
 .track-table {
@@ -524,19 +490,25 @@ select {
     border-collapse: collapse;
     text-align: left;
     font-size: 12px;
+    table-layout: fixed;
 }
 
 .track-table th {
     font-weight: 400;
     color: var(--muted-foreground);
     font-size: 12px;
-    padding: 12px 8px;
+    padding: 0 8px;
     border-bottom: 1px solid var(--border);
+    position: relative;
+    height: 44px;
 }
 
 .track-table td {
-    padding: 10px 8px;
+    padding: 8px;
     color: var(--muted-foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .track-table tr:hover {
@@ -547,8 +519,7 @@ select {
     width: 24px;
 }
 
-.track-table input[type="checkbox"],
-.tag-fields input[type="checkbox"] {
+.track-table input[type="checkbox"] {
     accent-color: var(--primary);
     width: 15px;
     height: 15px;
@@ -559,6 +530,7 @@ select {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
 .track-cell strong {
@@ -567,7 +539,6 @@ select {
     font-size: 13px;
 }
 
-.track-cell small,
 .now-playing small {
     display: block;
     margin-top: 5px;
@@ -576,12 +547,6 @@ select {
 .is-current,
 .is-current .track-cell strong {
     color: var(--primary);
-}
-
-.artist-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 26px;
 }
 
 .artist {
@@ -706,6 +671,9 @@ input[type="range"] {
     border-radius: 8px;
     z-index: 3;
     box-shadow: -20px 0 70px #0005;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .queue h2 {
@@ -733,20 +701,6 @@ input[type="range"] {
 .queue-track small {
     display: block;
     margin-top: 4px;
-}
-
-.tag-editor {
-    max-height: 90vh;
-    overflow: auto;
-    max-width: 640px;
-    background: #202020;
-}
-
-.tag-editor [data-slot="dialog-title"] {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 24px;
 }
 
 .tag-fields {
@@ -813,22 +767,13 @@ input[type="range"] {
         grid-template-columns: 210px minmax(0, 1fr);
     }
 
-    .sidebar {
-        padding-inline: 10px;
-    }
-
     .topbar {
         padding: 0 20px;
-    }
-
-    .content {
-        padding: 24px 16px;
     }
 
     .volume input {
         width: 60px;
     }
-
 
 }
 
@@ -839,40 +784,9 @@ input[type="range"] {
 }
 
 /* Keep collection scrolling local so only visible rows need React elements. */
-main {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
 
-.topbar, .library-hero, .collection-toolbar, .filters {
+.topbar, .library-hero, .collection-toolbar {
     flex-shrink: 0;
-}
-
-.library-hero {
-    padding-block: 24px;
-}
-
-.library-hero h1 {
-    font-size: clamp(36px, 4vw, 56px);
-    margin: 0 0 14px;
-}
-
-.content {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    flex: 1;
-    padding: 20px 24px 16px;
-    overflow: hidden;
-}
-
-.collection-toolbar {
-    margin-bottom: 18px;
-}
-
-.collection-toolbar > [data-variant="outline"] {
-    margin-left: 0;
 }
 
 .collection-results {
@@ -894,10 +808,6 @@ main {
     overflow: visible;
 }
 
-.track-table {
-    table-layout: fixed;
-}
-
 .track-table thead {
     position: sticky;
     top: 0;
@@ -909,13 +819,6 @@ main {
     height: 64px;
 }
 
-.track-table td {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    padding-block: 8px;
-}
-
 .track-table tr[aria-selected="true"] {
     background: var(--secondary);
 }
@@ -924,21 +827,6 @@ main {
     padding: 0;
     border: 0;
     background: transparent;
-}
-
-.track-cell {
-    min-width: 0;
-}
-
-.track-description {
-    min-width: 0;
-}
-
-.track-description strong, .track-description small {
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .virtual-grid-row {
@@ -956,25 +844,8 @@ main {
     white-space: nowrap;
 }
 
-.queue {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 .queue .virtual-grid-scroll {
     flex: 1;
-}
-
-.empty {
-    min-height: 180px;
-    height: 100%;
-}
-
-.notice {
-    flex-shrink: 0;
-    max-height: 64px;
-    overflow: auto;
 }
 
 .duplicate-note {
@@ -996,31 +867,8 @@ main {
     }
 }
 
-.sidebar {
-    padding: 20px 12px 12px;
-}
-
-.brand {
-    flex-shrink: 0;
-    margin-bottom: 22px;
-}
-
 .sidebar nav, .playlist-heading, .sidebar-bottom {
     flex-shrink: 0;
-}
-
-.playlist-heading {
-    margin-top: 18px;
-    margin-bottom: 6px;
-}
-
-.playlists {
-    flex: 1;
-    min-height: 0;
-}
-
-.sidebar-bottom {
-    padding-top: 16px;
 }
 
 ::-webkit-scrollbar {
@@ -1126,12 +974,6 @@ main {
 
 .track-menu [role="separator"] {
     margin-block: 6px;
-}
-
-.track-table th {
-    position: relative;
-    padding: 0 8px;
-    height: 44px;
 }
 
 .column-sort {
@@ -1328,6 +1170,7 @@ th[aria-sort="ascending"] svg, th[aria-sort="descending"] svg {
 }
 
 .tag-editor {
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
     gap: 0;

@@ -19,7 +19,7 @@ Open **Settings → Add music folder** to index your collection. Click an album 
 ## Library and playback
 
 - Recursive import of MP3, FLAC, OGG, Opus, M4A, AAC, WAV, and AIFF files, including embedded artwork. Playback depends on Electron's supported codecs.
-- Songs opens by default, with album and artist views alongside instant search and combined artist/genre filters. Filter menus use Base UI, with searchable artist/genre lists for larger collections.
+- Songs opens by default with instant search and a table that fills the available width. Album and artist views also offer combined genre/artist filters with searchable Base UI menus for larger collections.
 - Persistent play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
 - Play, pause, stop, previous/next, shuffle, queue repeat, seeking, and volume.
 - Folder watching while the app runs; the renderer checks a lightweight revision every five seconds and only downloads changed snapshots. Reimport a folder to reconcile changes made while the app was closed.
@@ -27,7 +27,7 @@ Open **Settings → Add music folder** to index your collection. Click an album 
 
 Click a song-table heading to sort by title, artist, album, genre, duration, year, or play count. Click again to reverse the direction; missing metadata stays first. Drag column dividers to resize them; widths are remembered on this device. Double-click a divider to reset its width, or focus it and use the arrow keys.
 
-After **Go to artist**, use **All songs** above the table to clear filters. Settings is a dedicated page; **Back to music** returns to your previous view and filters. The old circular-arrow control refreshed the library; it now lives in Settings as **Refresh library**. The decorative avatar has been removed.
+After **Go to artist**, use **All songs** above the table to clear filters. Settings is a dedicated page; **Back to music** returns to your previous view and filters. Use **Refresh library** in Settings to refresh the index.
 
 Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Select multiple songs before right-clicking to act on the selection. Classic playlist menus also offer **Remove from playlist**.
 
@@ -67,7 +67,7 @@ src/
     tags.ts                  Shared tag field names and labels
   renderer/src/
     App.tsx                  Application composition and view selection
-    hooks/                   Library and playback behavior
+    hooks/                   Library, collection navigation/filtering, and playback behavior
     types/                   Reusable player and track-action contracts
     lib/                     Shared music utilities, RPC client, class names
     components/

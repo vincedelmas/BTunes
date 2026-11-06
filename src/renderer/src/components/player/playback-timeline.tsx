@@ -2,11 +2,14 @@ import {useEffect, useRef, useState} from "react";
 import type {RefObject} from "react";
 import {formatTime} from "@/lib/music";
 
-export function PlaybackTimeline({ audio, trackId, onSeek }: {
+interface PlaybackTimelineProps {
     audio: RefObject<HTMLAudioElement | null>;
     trackId?: number;
     onSeek: (seconds: number) => void;
-}) {
+}
+
+
+export function PlaybackTimeline({ audio, trackId, onSeek }: PlaybackTimelineProps) {
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
     const scrubbing = useRef(false);

@@ -25,8 +25,8 @@ export function AlbumGrid({ albums, playlists, actions }: AlbumGridProps) {
                                      <button className="album-artwork" aria-label={"Play " + track.album} onClick={() => actions.onPlay(track, tracks)}>
                                          <Cover track={track} large/>
                                          <span className="album-play">
-<Play size={22} fill="currentColor"/>
-</span>
+                                             <Play size={22} fill="currentColor"/>
+                                         </span>
                                      </button>
                                      <div className="album-info">
                                          <div>

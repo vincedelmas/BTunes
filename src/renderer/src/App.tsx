@@ -1,4 +1,4 @@
-import {useDeferredValue, useEffect, useState} from "react";
+import {useState} from "react";
 import {ArrowLeft, Headphones, Pencil, Play, Search, Smartphone} from "lucide-react";
 import type {Track} from "../../shared/types/library";
 import {Sidebar} from "@/components/library/sidebar";
@@ -12,8 +12,6 @@ import {QueuePanel} from "@/components/player/queue-panel";
 import {TagEditor} from "@/components/tag-editor";
 import {SettingsPage} from "@/components/settings-page";
 import {FilterBar} from "@/components/library/filter-bar";
-import {compareTracks} from "../../shared/track-sorting";
-import type {TrackSort} from "../../shared/types/track-sorting";
 import {EmptyState} from "@/components/empty-state";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
@@ -21,111 +19,24 @@ import {Badge} from "@/components/ui/badge";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {useLibrary} from "@/hooks/use-library";
 import {usePlayer} from "@/hooks/use-player";
-import {duplicateKey, groupAlbums, uniqueValues} from "@/lib/music";
-import {rpc} from "@/lib/rpc";
-
-const viewTitles: Record<string, string> = {
-    albums: "Albums",
-    tracks: "Songs",
-    artists: "Artists",
-    history: "Recently played",
-    duplicates: "Possible duplicates",
-    android: "Devices",
-};
+import {useCollection} from "@/hooks/use-collection";
 
 export function App() {
     const library = useLibrary();
     const player = usePlayer(library.setError);
     const { audio: audioRef } = player;
-    const [view, setView] = useState("tracks");
-    const [search, setSearch] = useState("");
-    const deferredSearch = useDeferredValue(search);
-    const [genre, setGenre] = useState("");
-    const [artist, setArtist] = useState("");
-    const [sort, setSort] = useState<TrackSort>({ field: "title", descending: false });
-    const [playlistIds, setPlaylistIds] = useState<number[]>([]);
     const [showQueue, setShowQueue] = useState(false);
-    const [returnView, setReturnView] = useState("tracks");
-    const [selected, setSelected] = useState<number[]>([]);
     const [editing, setEditing] = useState<Track[]>();
-
-    const genres = uniqueValues(library.data.tracks, "genre");
-    const artists = uniqueValues(library.data.tracks, "artist");
-    const activePlaylist = library.data.playlists.find((playlist) => "playlist:" + playlist.id === view);
-
-    useEffect(() => {
-        let active = true;
-        if (!view.startsWith("playlist:")) return;
-
-        void rpc("playlist.tracks", { id: Number(view.split(":")[1]) })
-            .then((ids) => {
-                if (active) setPlaylistIds(ids);
-            })
-            .catch(library.reportError);
-
-        return () => {
-            active = false;
-        };
-    }, [view, library.data.revision, library.reportError]);
-
-    const duplicates = new Map<string, number>();
-    const playlistMembers = new Set(playlistIds);
-    const query = deferredSearch.trim().toLocaleLowerCase();
-
-    if (view === "duplicates") {
-        for (const track of library.data.tracks) {
-            const key = duplicateKey(track);
-            duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
-        }
-    }
-
-    const tracks = library.data.tracks.filter((track) => {
-        if (query && ![track.title, track.artist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-        if (genre && track.genre !== genre) return false;
-        if (artist && track.artist !== artist) return false;
-        if (view === "history" && !track.lastPlayed) return false;
-        if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
-        if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
-
-        return true;
-    }).sort((first, second) => compareTracks(first, second, sort));
-
-    const albums = groupAlbums(tracks);
-    const selectedIds = new Set(selected);
-    const selectedTracks = tracks.filter((track) => selectedIds.has(track.id));
-    const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
+    const collection = useCollection(library.data, library.reportError);
+    const {
+        view, search, genre, artist, sort, selected, tracks, albums, genres, artists,
+        activePlaylist, selectedTracks, title,
+        setSearch, setGenre, setArtist, setSort, setSelected,
+        navigate, showArtist, clearFilters, returnToMusic,
+    } = collection;
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
-
-    function clearFilters() {
-        setSearch("");
-        setGenre("");
-        setArtist("");
-    }
-
-    function navigate(nextView: string) {
-        if (nextView === view) return;
-
-        if (nextView === "settings") {
-            setReturnView(view);
-            setView(nextView);
-            return;
-        }
-
-        if (nextView === "history") setSort({ field: "lastPlayed", descending: true });
-        else if (sort.field === "lastPlayed") setSort({ field: "title", descending: false });
-
-        setView(nextView);
-        setSelected([]);
-        setPlaylistIds([]);
-        clearFilters();
-    }
-
-    function showArtist(name: string) {
-        navigate("tracks");
-        clearFilters();
-        setSelected([]);
-        setArtist(name);
-    }
+    const showCollectionPlay = view !== "tracks" && tracks.length > 0;
+    const showToolbar = showCollectionPlay || selectedTracks.length > 0;
 
     const actions: TrackActions = {
         onPlay: (track, list = tracks) => player.start(track, list),
@@ -169,13 +80,27 @@ export function App() {
                      onSettings={() => navigate("settings")} onRefresh={library.refresh} onError={library.reportError}/>
             <main>
                 <header className="topbar">
-                    {view === "settings" ? <Button variant="ghost" onClick={() => setView(returnView)}><ArrowLeft/>Back to music</Button> : <>
-                        <div className="page-context"><Headphones size={20}/><span>Music</span></div>
-                        <div className="search">
-                            <Search size={21} aria-hidden="true"/>
-                            <Input aria-label="Search your library" placeholder="Search songs, artists, albums" value={search} onChange={(ev) => setSearch(ev.target.value)}/>
-                        </div>
-                    </>}
+                    {view === "settings" ? (
+                        <Button variant="ghost" onClick={returnToMusic}>
+                            <ArrowLeft/>Back to music
+                        </Button>
+                    ) : (
+                        <>
+                            <div className="page-context">
+                                <Headphones size={20}/>
+                                <span>Music</span>
+                            </div>
+                            <div className="search">
+                                <Search size={21} aria-hidden="true"/>
+                                <Input
+                                    aria-label="Search your library"
+                                    placeholder="Search songs, artists, albums"
+                                    value={search}
+                                    onChange={(ev) => setSearch(ev.target.value)}
+                                />
+                            </div>
+                        </>
+                    )}
                 </header>
                 {view === "settings" ? <SettingsPage folders={library.data.folders} busy={library.busy} songCount={library.data.tracks.length}
                                                      notice={library.notice} error={library.error} onImport={() => void library.importFolder()}
@@ -186,7 +111,9 @@ export function App() {
                     </div>
                     <div className="content">
                         {library.error && <Alert variant="destructive">
-                            <AlertDescription>{library.error}<Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
+                            <AlertDescription>
+                                {library.error}
+                                <Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
                             </AlertDescription>
                         </Alert>}
                         {library.notice && <p role="status" className="notice">{library.notice}</p>}
@@ -197,9 +124,9 @@ export function App() {
                             </EmptyState>
                         ) : (
                             <>
-                                {(view !== "tracks" && !!tracks.length || !!selectedTracks.length) && <div className="collection-toolbar">
-                                    {view !== "tracks" && <Button size="icon" className="collection-play" aria-label="Play visible songs" disabled={!tracks.length}
-                                                                  onClick={() => player.start(tracks[0], tracks)}>
+                                {showToolbar && <div className="collection-toolbar">
+                                    {showCollectionPlay && <Button size="icon" className="collection-play" aria-label="Play visible songs"
+                                                                   onClick={() => player.start(tracks[0], tracks)}>
                                         <Play fill="currentColor"/>
                                     </Button>}
                                     {!!selectedTracks.length && <Button variant="outline" onClick={() => setEditing(selectedTracks)}>

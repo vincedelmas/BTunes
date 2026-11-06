@@ -1,18 +1,19 @@
+import {rpc} from "@/lib/rpc";
 import {useState} from "react";
-import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
-import type {Track} from "../../../shared/types/library";
-import {tagFields} from "../../../shared/tags";
-import {tagPatchSchema} from "../../../shared/schemas/tags";
-import type {TagPatch, TagPreview} from "../../../shared/types/tags";
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {TagForm} from "@/components/tag-form";
-import {TagPreviewList} from "@/components/tag-preview";
 import {Cover} from "@/components/cover";
+import {getErrorMessage} from "@/lib/music";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
+import {TagForm} from "@/components/tag-form";
+import {tagFields} from "../../../shared/tags";
+import {TagPreviewList} from "@/components/tag-preview";
+import type {Track} from "../../../shared/types/library";
+import {tagPatchSchema} from "../../../shared/schemas/tags";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "@/lib/music";
+import type {TagPatch, TagPreview} from "../../../shared/types/tags";
+import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+
 
 interface TagEditorProps {
     tracks: Track[];
@@ -27,36 +28,40 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
         const common = tracks.every((track) => track[field] === first);
         return [field, common ? String(first || "") : ""];
     })) as Record<keyof TagPatch, string>;
-    const [values, setValues] = useState(initialValues);
-    const [enabled, setEnabled] = useState<Set<keyof TagPatch>>(new Set());
-    const [preview, setPreview] = useState<TagPreview>();
-    const [busy, setBusy] = useState(false);
+
     const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [values, setValues] = useState(initialValues);
+    const [preview, setPreview] = useState<TagPreview>();
+    const [enabled, setEnabled] = useState<Set<keyof TagPatch>>(new Set());
 
     function change(field: keyof TagPatch, value: string) {
-        setValues((previous) => ({ ...previous, [field]: value }));
-        setEnabled((previous) => new Set([...previous, field]));
+        setValues((prev) => ({ ...prev, [field]: value }));
+        setEnabled((prev) => new Set([...prev, field]));
         setPreview(undefined);
     }
 
     async function prepare() {
-        setBusy(true);
         setError("");
+        setBusy(true);
 
         await Promise.resolve()
             .then(() => {
-                if (tracks.length > 100) throw new Error("Select up to 100 songs per edit.");
+                if (tracks.length > 100) {
+                    throw new Error("Select up to 100 songs per edit.");
+                }
 
                 const patch = Object.fromEntries([...enabled].map((field) => [
-                    field,
-                    field === "year" ? Number(values[field]) : values[field],
+                    field, field === "year" ? Number(values[field]) : values[field],
                 ]));
+
                 const validated = tagPatchSchema.safeParse(patch);
-                if (!validated.success) throw new Error(validated.error.issues[0].message);
+                if (!validated.success) {
+                    throw new Error(validated.error.issues[0].message);
+                }
 
                 return rpc("tags.preview", { ids: tracks.map((track) => track.id), patch: validated.data });
-            })
-            .then(setPreview)
+            }).then(setPreview)
             .catch((error: unknown) => setError(getErrorMessage(error)))
             .finally(() => setBusy(false));
     }
@@ -64,19 +69,17 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
     async function save() {
         if (!preview) return;
 
-        setBusy(true);
         setError("");
+        setBusy(true);
 
         await rpc("tags.save", { token: preview.token })
             .then(async (result) => {
                 await onSaved(result.updated === 1 ? "Tags saved." : "Tags saved for " + result.updated + " songs.");
                 onClose();
-            })
-            .catch((error: unknown) => {
+            }).catch((error: unknown) => {
                 setError(getErrorMessage(error));
                 setPreview(undefined);
-            })
-            .finally(() => setBusy(false));
+            }).finally(() => setBusy(false));
     }
 
     function toggle(field: keyof TagPatch, checked: boolean) {
@@ -86,6 +89,7 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
             else next.delete(field);
             return next;
         });
+
         setPreview(undefined);
     }
 
@@ -106,34 +110,88 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     <div className="tag-summary">
                         <Cover track={first}/>
                         <div className="tag-summary-copy">
-                            <p className="eyebrow">SONG DETAILS</p>
-                            <DialogTitle>Edit tags</DialogTitle>
-                            <DialogDescription>{batch ? tracks.length + " selected songs" : first.title}</DialogDescription>
+                            <p className="eyebrow">
+                                SONG DETAILS
+                            </p>
+                            <DialogTitle>
+                                Edit tags
+                            </DialogTitle>
+                            <DialogDescription>
+                                {batch ? tracks.length + " selected songs" : first.title}
+                            </DialogDescription>
                         </div>
-                        <Badge variant="secondary">{batch ? "Batch edit" : first.path.split(".").at(-1)?.toUpperCase()}</Badge>
+                        <Badge variant="secondary">
+                            {batch
+                                ? "Batch edit"
+                                : first.path.split(".").at(-1)?.toUpperCase()
+                            }
+                        </Badge>
                     </div>
                     <ol className="tag-steps" aria-label="Editing progress">
-                        <li aria-current={!preview ? "step" : undefined}><span>1</span>Details</li>
-                        <li aria-current={preview ? "step" : undefined}><span>2</span>Review</li>
+                        <li aria-current={!preview ? "step" : undefined}>
+                            <span>1</span>Details
+                        </li>
+                        <li aria-current={preview ? "step" : undefined}>
+                            <span>2</span>Review
+                        </li>
                     </ol>
                 </DialogHeader>
                 <div className="tag-editor-body">
-                    <p className="tag-editor-hint">{preview ? "Review the changes before saving them to your audio files." : batch ? "Checked fields are applied to every selected song." : "Make your changes, then give them a quick review."}</p>
-                    {!preview ? (
-                        <TagForm values={values} enabled={enabled} batch={batch} busy={busy} onChange={change} onToggle={toggle} onReset={reset}/>
-                    ) : <TagPreviewList preview={preview}/>}
-                    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                    <p className="tag-editor-hint">
+                        {preview
+                            ? "Review the changes before saving them to your audio files."
+                            : batch
+                                ? "Checked fields are applied to every selected song."
+                                : "Make your changes, then give them a quick review."
+                        }
+                    </p>
+
+                    {!preview ?
+                        <TagForm
+                            busy={busy}
+                            batch={batch}
+                            values={values}
+                            onReset={reset}
+                            enabled={enabled}
+                            onChange={change}
+                            onToggle={toggle}
+                        />
+                        :
+                        <TagPreviewList
+                            preview={preview}
+                        />
+                    }
+
+                    {error &&
+                        <Alert variant="destructive">
+                            <AlertDescription>
+                                {error}
+                            </AlertDescription>
+                        </Alert>
+                    }
                 </div>
                 <DialogFooter className="tag-editor-footer">
-                    <span className="tag-recovery"><ShieldCheck/>Originals kept for recovery</span>
-                    {preview ? (
-                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}><ArrowLeft/>Details</Button>
-                    ) : <Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>}
-                    {preview ? (
-                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}><Check/>{busy ? "Saving…" : "Save to files"}</Button>
-                    ) : (
-                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>{busy ? "Preparing…" : "Preview changes"}<ArrowRight/></Button>
-                    )}
+                    <span className="tag-recovery">
+                        <ShieldCheck/> Originals kept for recovery
+                    </span>
+                    {preview ?
+                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}>
+                            <ArrowLeft/> Details
+                        </Button>
+                        :
+                        <Button variant="ghost" disabled={busy} onClick={onClose}>
+                            Cancel
+                        </Button>
+                    }
+                    {preview ?
+                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}>
+                            <Check/> {busy ? "Saving…" : "Save to files"}
+                        </Button>
+                        :
+                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>
+                            {busy ? "Preparing…" : "Preview changes"} <ArrowRight/>
+                        </Button>
+                    }
                 </DialogFooter>
             </DialogContent>
         </Dialog>

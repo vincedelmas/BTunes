@@ -17,12 +17,15 @@ import {
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 
-export function TrackContextMenu({ tracks, playlists, actions, children }: {
+interface TrackContextMenuProps {
     tracks: Track[];
     playlists: Playlist[];
     actions: TrackActions;
     children: ReactElement;
-}) {
+}
+
+
+export function TrackContextMenu({ tracks, playlists, actions, children }: TrackContextMenuProps) {
     const first = tracks[0];
     const classicPlaylists = playlists.filter((playlist) => !playlist.rule);
 

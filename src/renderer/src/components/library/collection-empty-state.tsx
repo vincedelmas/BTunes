@@ -2,14 +2,17 @@ import {CopyCheck, Disc3, FilterX, History, ListMusic, Settings} from "lucide-re
 import {EmptyState} from "@/components/empty-state";
 import {Button} from "@/components/ui/button";
 
-export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, onClearFilters, onSettings }: {
+interface CollectionEmptyStateProps {
     view: string;
     hasTracks: boolean;
     hasFolders: boolean;
     hasFilters: boolean;
     onClearFilters: () => void;
     onSettings: () => void;
-}) {
+}
+
+
+export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, onClearFilters, onSettings }: CollectionEmptyStateProps) {
     if (hasFilters) {
         return <EmptyState icon={FilterX} title="No matching songs" description="No songs match your search and filters.">
             <Button variant="outline" onClick={onClearFilters}>Clear search and filters</Button>
