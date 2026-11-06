@@ -2,7 +2,7 @@ import type {RepeatMode} from "@/types/player";
 import {usePreference} from "@/hooks/use-preference";
 import {volumeSchema} from "../../../shared/schemas/preferences";
 import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../shared/errors";
 import type {Track} from "../../../shared/types/library";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 

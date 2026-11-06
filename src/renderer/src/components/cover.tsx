@@ -13,7 +13,7 @@ interface CoverProps {
 export function Cover({ track, large = false, source }: CoverProps) {
     return (
         <div
-            className={cn("cover w-[42px] h-[42px] rounded-sm bg-[#282828] flex items-center justify-center shrink-0 overflow-hidden text-[#aaa]", large && "cover-large w-full h-auto aspect-square [background:linear-gradient(145deg,_#384e45,_#192c25)] [&_>_svg]:w-[44%] [&_>_svg]:h-[44%] [&_>_svg]:stroke-[0.8]")}>
+            className={cn("cover size-[42px] rounded-sm bg-[#282828] flex items-center justify-center shrink-0 overflow-hidden text-[#aaa]", large && "cover-large w-full h-auto aspect-square [background:linear-gradient(145deg,_#384e45,_#192c25)]")}>
             {source || track?.cover ?
                 <img
                     className="size-full object-cover"
@@ -23,7 +23,7 @@ export function Cover({ track, large = false, source }: CoverProps) {
                     src={source ?? "btunes://cover/" + track?.cover}
                 />
                 :
-                <Disc3 aria-hidden="true"/>
+                <Disc3 aria-hidden="true" className={cn(large && "size-[44%] stroke-[0.8]")}/>
             }
         </div>
     );

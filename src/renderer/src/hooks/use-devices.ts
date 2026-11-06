@@ -1,6 +1,6 @@
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "../../../shared/types/devices";
-import {getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../shared/errors";
 import {rpc} from "@/lib/rpc";
 
 export function useDevices() {
@@ -93,10 +93,10 @@ export function useDevices() {
         }
     }
 
-    async function compare() {
+    async function updateSync(operation: () => Promise<void>) {
         setError("");
         try {
-            await rpc("devices.compare", { storageId, path });
+            await operation();
             setState(await rpc("devices.status", undefined));
         }
         catch (error) {
@@ -104,15 +104,12 @@ export function useDevices() {
         }
     }
 
-    async function sync() {
-        setError("");
-        try {
-            await rpc("devices.sync", undefined);
-            setState(await rpc("devices.status", undefined));
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
+    function compare() {
+        return updateSync(() => rpc("devices.compare", { storageId, path }));
+    }
+
+    function sync() {
+        return updateSync(() => rpc("devices.sync", undefined));
     }
 
     async function createMusicFolder() {
@@ -125,13 +122,8 @@ export function useDevices() {
         }
     }
 
-    async function cancel() {
-        try {
-            await rpc("devices.cancel", undefined);
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
+    function cancel() {
+        return updateSync(() => rpc("devices.cancel", undefined));
     }
 
     return {

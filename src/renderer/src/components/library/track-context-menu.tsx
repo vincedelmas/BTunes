@@ -15,7 +15,8 @@ import {
     ContextMenuTrigger
 } from "@/components/ui/context-menu";
 import {rpc} from "@/lib/rpc";
-import {getAlbumArtist, getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../../shared/errors";
+import {getAlbumArtist} from "@/lib/music";
 
 interface TrackContextMenuProps {
     tracks: Track[];

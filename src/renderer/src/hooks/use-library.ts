@@ -1,5 +1,5 @@
 import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../shared/errors";
 import type {Snapshot} from "../../../shared/types/library";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 
@@ -91,10 +91,10 @@ export function useLibrary() {
         }
     }
 
-    async function addToPlaylist(playlistId: number, trackIds: number[]) {
+    async function updatePlaylist(method: "playlist.add" | "playlist.remove", playlistId: number, trackIds: number[], message: string) {
         try {
-            await rpc("playlist.add", { playlistId, trackIds });
-            setNotice("Songs added to playlist.");
+            await rpc(method, { playlistId, trackIds });
+            setNotice(message);
             await refresh();
         }
         catch (error) {
@@ -102,15 +102,12 @@ export function useLibrary() {
         }
     }
 
-    async function removeFromPlaylist(playlistId: number, trackIds: number[]) {
-        try {
-            await rpc("playlist.remove", { playlistId, trackIds });
-            setNotice("Songs removed from playlist.");
-            await refresh();
-        }
-        catch (error) {
-            reportError(error);
-        }
+    function addToPlaylist(playlistId: number, trackIds: number[]) {
+        return updatePlaylist("playlist.add", playlistId, trackIds, "Songs added to playlist.");
+    }
+
+    function removeFromPlaylist(playlistId: number, trackIds: number[]) {
+        return updatePlaylist("playlist.remove", playlistId, trackIds, "Songs removed from playlist.");
     }
 
     return {

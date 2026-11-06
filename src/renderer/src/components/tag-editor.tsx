@@ -4,7 +4,7 @@ import {useState} from "react";
 import {Check} from "lucide-react";
 import {Cover} from "@/components/cover";
 import {CoverSearch} from "@/components/cover-search";
-import {getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../shared/errors";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {TagForm} from "@/components/tag-form";

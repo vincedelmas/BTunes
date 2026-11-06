@@ -1,3 +1,4 @@
+import {getErrorMessage} from "../../shared/errors.ts";
 import {constants} from "node:fs";
 import {copyFile, lstat, realpath, rm, stat, unlink} from "node:fs/promises";
 import {basename, dirname, extname, join} from "node:path";
@@ -72,14 +73,14 @@ export class FileImportService {
                 if (sourceRemoved) await this.library.remove(source);
             }
             catch (error) {
-                let message = error instanceof Error ? error.message : String(error);
+                let message = getErrorMessage(error);
                 if (destination && !sourceRemoved) {
                     try {
                         await rm(destination, { force: true });
                         await this.library.remove(destination);
                     }
                     catch (cleanupError) {
-                        const detail = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+                        const detail = getErrorMessage(cleanupError);
                         message += " Could not finish import cleanup: " + detail;
                     }
                 }

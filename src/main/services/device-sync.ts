@@ -1,3 +1,4 @@
+import {getErrorMessage} from "../../shared/errors.ts";
 import {compareDeviceMusic} from "./device-matching.ts";
 import {basename, posix} from "node:path";
 import {stat} from "node:fs/promises";
@@ -29,7 +30,7 @@ export class DeviceSyncService {
         this.task = operation()
             .catch((error: unknown) => {
                 this.state.phase = "error";
-                this.state.errors.push(error instanceof Error ? error.message : String(error));
+                this.state.errors.push(getErrorMessage(error));
             })
             .finally(() => {
                 if (this.cancelled && this.state.phase !== "error") this.state.phase = "cancelled";

@@ -16,6 +16,7 @@ interface SongColumnHeaderProps {
     resizeOffset: number;
 }
 
+
 export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffset }: SongColumnHeaderProps) {
     "use no memo"; // Read current TanStack sizing values on every table update.
 
@@ -24,7 +25,8 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
     const label = String(column.columnDef.header);
     const active = sort.field === field;
     const direction = sort.descending ? "descending" : "ascending";
-    const SortIcon = sort.descending ? ChevronDown : ChevronUp;
+    const DirectionIcon = sort.descending ? ChevronDown : ChevronUp;
+    const SortIcon = active ? DirectionIcon : ChevronsUpDown;
 
     function resizeWithKeys(ev: KeyboardEvent) {
         if (ev.key === "Home") {
@@ -50,7 +52,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
             aria-sort={active ? direction : undefined}
         >
             <button
-                className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 [&_svg]:w-[13px] [&_svg]:h-[13px] [&_svg]:opacity-[0.35] [&_svg]:shrink-0 hover:text-foreground active:cursor-grabbing [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:whitespace-nowrap", active && "is-sorted text-foreground [&_svg]:text-primary [&_svg]:opacity-100")}
+                className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 hover:text-foreground active:cursor-grabbing", active && "is-sorted text-foreground")}
                 draggable
                 title="Click to sort; drag to reorder. Alt+arrow keys also reorder."
                 onDragStart={(ev) => reordering.start(ev, column.id)}
@@ -59,8 +61,8 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
                 aria-label={"Sort by " + label}
                 onClick={() => onSort({ field, descending: active ? !sort.descending : false })}
             >
-                <span>{label}</span>
-                {active ? <SortIcon/> : <ChevronsUpDown/>}
+                <span className="truncate">{label}</span>
+                <SortIcon className={cn("size-[13px] shrink-0 opacity-35", active && "text-primary opacity-100")}/>
             </button>
             <div
                 role="separator"

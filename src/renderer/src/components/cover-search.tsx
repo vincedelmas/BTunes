@@ -3,7 +3,7 @@ import {cn} from "@/lib/utils";
 import {useRef, useState} from "react";
 import {Cover} from "@/components/cover";
 import {Badge} from "@/components/ui/badge";
-import {getErrorMessage} from "@/lib/music";
+import {getErrorMessage} from "../../../shared/errors";
 import {Button} from "@/components/ui/button";
 import {EmptyState} from "@/components/empty-state";
 import type {Track} from "../../../shared/types/library";
