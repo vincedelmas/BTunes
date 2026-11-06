@@ -77,6 +77,7 @@ app.on("browser-window-created", (_, win) => {
                 window.uiReview = { waitFor, frame, button };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
+                if(document.querySelector('[aria-label="Play visible songs"]') || document.querySelector('.filter-controls')) throw new Error('Songs should not show collection play or filter controls');
                 if(document.querySelector('.profile-avatar')) throw new Error('Decorative avatar remains');
                 button('Albums').click();
                 await waitFor(() => document.querySelectorAll('.album').length);
@@ -90,6 +91,14 @@ app.on("browser-window-created", (_, win) => {
                 if (button('Add music folder')) throw new Error("Folder controls must be in Settings");
                 button('Songs').click();
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
+                const main=document.querySelector('main');
+                main.style.width='1800px';
+                await frame();
+                const tableWidth=document.querySelector('.track-table').getBoundingClientRect().width;
+                const viewportWidth=document.querySelector('.track-scroll').clientWidth;
+                if(tableWidth < viewportWidth - 1) throw new Error('Songs table does not fill a wide viewport');
+                main.style.width='';
+                await frame();
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
                 if (songNodes > 60) throw new Error("Song table is not virtualized");
                 for (const name of ['Title','Artist','Album','Genre','Duration','Year','Plays']) {
@@ -152,6 +161,8 @@ app.on("browser-window-created", (_, win) => {
                 const {waitFor}=window.uiReview;
                 document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
                 await waitFor(()=>!document.querySelector('[role="menu"]'));
+                window.uiReview.button('Albums').click();
+                await waitFor(()=>document.querySelector('.album'));
                 document.querySelector('[aria-label="Filter by genre"]').click();
                 await waitFor(()=>document.querySelector('[role="listbox"]'));
             })()`, true);
@@ -161,7 +172,7 @@ app.on("browser-window-created", (_, win) => {
                 [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Jazz')).click();
                 await waitFor(()=>document.querySelector('[aria-label="Clear genre filter"]'));
                 document.querySelector('[aria-label="Show all songs"]').click();
-                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2301');
+                await waitFor(()=>document.querySelector('.library-hero p').textContent.startsWith('2300 songs'));
                 const artistInput=document.querySelector('[aria-label="Filter by artist"]');
                 artistInput.focus();
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(artistInput,'Fixture');
@@ -172,8 +183,9 @@ app.on("browser-window-created", (_, win) => {
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor}=window.uiReview;
                 [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Fixture artist')).click();
-                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2');
+                await waitFor(()=>document.querySelector('.library-hero p').textContent.startsWith('1 songs'));
                 document.querySelector('[aria-label="Show all songs"]').click();
+                window.uiReview.button('Songs').click();
                 await waitFor(()=>document.querySelector('[data-track-id="1"]'));
                 const first=document.querySelector('[data-track-id="1"]');
                 const rect=first.getBoundingClientRect();

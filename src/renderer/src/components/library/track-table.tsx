@@ -102,7 +102,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
 
     return (
         <div ref={container} className="track-scroll" aria-label="Songs" tabIndex={0}>
-            <Table className="track-table" aria-rowcount={tracks.length + 1} style={{ width: table.getTotalSize() }}>
+            <Table className="track-table" aria-rowcount={tracks.length + 1} style={{ width: table.getTotalSize(), minWidth: "100%" }}>
                 <colgroup>{table.getAllLeafColumns().map((column) => <col key={column.id} style={{ width: column.getSize() }}/>)}</colgroup>
                 <TableHeader>
                     {table.getHeaderGroups().map((group) => <TableRow key={group.id}>

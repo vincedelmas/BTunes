@@ -197,16 +197,17 @@ export function App() {
                             </EmptyState>
                         ) : (
                             <>
-                                {!!tracks.length && <div className="collection-toolbar">
-                                    <Button size="icon" className="collection-play" aria-label="Play visible songs" disabled={!tracks.length}
-                                            onClick={() => player.start(tracks[0], tracks)}>
+                                {(view !== "tracks" && !!tracks.length || !!selectedTracks.length) && <div className="collection-toolbar">
+                                    {view !== "tracks" && <Button size="icon" className="collection-play" aria-label="Play visible songs" disabled={!tracks.length}
+                                                                  onClick={() => player.start(tracks[0], tracks)}>
                                         <Play fill="currentColor"/>
-                                    </Button>
+                                    </Button>}
                                     {!!selectedTracks.length && <Button variant="outline" onClick={() => setEditing(selectedTracks)}>
                                         <Pencil/>Edit tags ({selectedTracks.length})</Button>}
                                 </div>}
                                 <FilterBar genre={genre} artist={artist} search={search} genres={genres} artists={artists} sort={sort}
-                                           showSort={view === "albums" || view === "artists"} onGenre={setGenre} onArtist={setArtist} onSort={setSort} onClear={clearFilters}/>
+                                           showControls={view !== "tracks"} showSort={view === "albums" || view === "artists"} onGenre={setGenre} onArtist={setArtist}
+                                           onSort={setSort} onClear={clearFilters}/>
                                 <div className="collection-results">{renderCollection()}</div>
                                 {view === "duplicates" && !!tracks.length &&
                                     <p className="muted duplicate-note">Matches use title, artist, and rounded duration. No files are deleted.</p>}

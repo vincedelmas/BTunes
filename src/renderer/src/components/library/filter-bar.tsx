@@ -11,7 +11,7 @@ const sortOptions = [
     { value: "plays", label: "Play count" },
 ];
 
-export function FilterBar({ genre, artist, search, genres, artists, sort, showSort, onGenre, onArtist, onSort, onClear }: {
+interface FilterBarProps {
     genre: string;
     artist: string;
     search: string;
@@ -19,16 +19,22 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
     artists: string[];
     sort: TrackSort;
     showSort: boolean;
+    showControls?: boolean;
     onGenre: (value: string) => void;
     onArtist: (value: string) => void;
     onSort: (sort: TrackSort) => void;
     onClear: () => void;
-}) {
+}
+
+
+export function FilterBar({ genre, artist, search, genres, artists, sort, showSort, showControls = true, onGenre, onArtist, onSort, onClear }: FilterBarProps) {
     const filtered = Boolean(genre || artist || search);
+
+    if (!showControls && !filtered) return null;
 
     return (
         <div className="filter-bar">
-            <div className="filter-controls">
+            {showControls && <div className="filter-controls">
                 <FilterSelect label="Filter by genre" placeholder="All genres" value={genre} options={genres.map((name) => ({ value: name, label: name }))} onChange={onGenre}/>
                 <FilterSelect label="Filter by artist" placeholder="All artists" value={artist} options={artists.map((name) => ({ value: name, label: name }))}
                               onChange={onArtist}/>
@@ -38,7 +44,7 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
                     <Button variant="ghost" size="icon" aria-label="Reverse sort order" aria-pressed={sort.descending}
                             onClick={() => onSort({ ...sort, descending: !sort.descending })}><ArrowDownUp/></Button>
                 </div>}
-            </div>
+            </div>}
             {filtered && <div className="active-filters" aria-label="Active filters">
                 <Button variant="ghost" size="sm" onClick={onClear} aria-label="Show all songs"><ArrowLeft/>All songs</Button>
                 {artist && <Button variant="secondary" size="sm" onClick={() => onArtist("")} aria-label="Clear artist filter">{artist}<X/></Button>}
