@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/vincedelmas/BTunes/compare/v1.0.0...v1.0.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* exclude build-only dependencies from AppImage ([0dfd9a6](https://github.com/vincedelmas/BTunes/commit/0dfd9a6a17bcca55e5052fa198fedcbc65e73ec7))
+
 ## 1.0.0 (2026-11-06)
 
 

@@ -1,6 +1,6 @@
 {
     "name": "btunes",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "description": "Local music library manager and player.",
     "main": "out/main/index.js",
