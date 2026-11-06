@@ -3,7 +3,10 @@ import type {rpcSchemas} from "../schemas/rpc.ts";
 import type {Snapshot} from "./library";
 import type {TagPreview, TagSaveResult} from "./tags";
 
+import type {ArtworkCandidate} from "./artwork";
+
 type RpcOutputs = {
+    "artwork.search": ArtworkCandidate[];
     "tags.preview": TagPreview;
     "tags.save": TagSaveResult;
     "library.get": Snapshot | null;

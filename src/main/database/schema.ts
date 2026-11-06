@@ -6,6 +6,7 @@ export const tracks = sqliteTable("tracks", {
     path: text().notNull().unique(),
     title: text().notNull(),
     artist: text().notNull(),
+    albumArtist: text("album_artist").notNull().default(""),
     album: text().notNull(),
     genre: text().notNull(),
     year: integer().notNull(),

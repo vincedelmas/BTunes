@@ -1,5 +1,8 @@
 {
     "$schema": "https://unpkg.com/knip/schema.json",
+    "ignoreBinaries": [
+        "ffmpeg"
+    ],
     "entry": [
         "tests/*.test.ts",
         "tests/electron-smoke.cjs",

@@ -3,7 +3,8 @@ import {parseFile} from "music-metadata";
 import type {FSWatcher} from "chokidar";
 import {watch} from "chokidar";
 import {basename, extname, join} from "node:path";
-import {LibraryRepository} from "../repositories/library";
+import {LibraryRepository} from "../repositories/library.ts";
+import {readTags} from "./metadata.ts";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
 
 
@@ -11,10 +12,17 @@ const audioExtensions = new Set([".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac
 
 
 export class LibraryService {
+    private closing = false;
+    private metadataRefresh?: Promise<void>;
     private watcher?: FSWatcher;
     private jobs = new Map<string, Promise<void>>();
 
-    constructor(readonly repo: LibraryRepository, readonly covers: string) {
+    readonly repo: LibraryRepository;
+    readonly covers: string;
+
+    constructor(repo: LibraryRepository, covers: string) {
+        this.repo = repo;
+        this.covers = covers;
     }
 
     async index(path: string) {
@@ -27,11 +35,11 @@ export class LibraryService {
                 const file = await stat(path);
                 const metadata = await parseFile(path);
 
-                const tags = metadata.common;
+                const tags = readTags(metadata);
                 let cover: string | null = null;
 
-                if (tags.picture?.[0]) {
-                    const picture = tags.picture[0];
+                if (metadata.common.picture?.[0]) {
+                    const picture = metadata.common.picture[0];
                     cover = createHash("sha256").update(picture.data).digest("hex");
 
                     await mkdir(this.covers, { recursive: true });
@@ -45,8 +53,9 @@ export class LibraryService {
                     year: tags.year || 0,
                     album: tags.album || "Unknown album",
                     artist: tags.artist || "Unknown artist",
+                    albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
                     duration: metadata.format.duration || 0,
-                    genre: tags.genre?.[0] || "Uncategorized",
+                    genre: tags.genre || "Uncategorized",
                     title: tags.title || basename(path, extname(path)),
                 });
             });
@@ -139,7 +148,20 @@ export class LibraryService {
             .on("error", console.error);
     }
 
+    refreshLegacyMetadata() {
+        this.metadataRefresh = (async () => {
+            for (const track of this.repo.snapshot().tracks) {
+                if (this.closing) break;
+                if (track.albumArtist) continue;
+                await this.index(track.path).catch(() => undefined);
+            }
+        })();
+        return this.metadataRefresh;
+    }
+
     async close() {
+        this.closing = true;
+        await this.metadataRefresh;
         await this.watcher?.close();
         await Promise.allSettled(this.jobs.values());
         this.repo.db.close();

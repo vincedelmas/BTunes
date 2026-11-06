@@ -13,6 +13,7 @@ const fieldIcons = {
     album: Disc3,
     title: Music2,
     artist: UserRound,
+    albumArtist: UserRound,
     year: CalendarDays,
 };
 
@@ -30,7 +31,7 @@ interface TagFormProps {
 
 export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onReset }: TagFormProps) {
     return (
-        <FieldGroup className="tag-fields">
+        <FieldGroup className="tag-fields grid grid-cols-[1fr_1fr] gap-5 [&_>_:first-child]:col-span-full">
             {tagFields.map((field) => {
                 const Icon = fieldIcons[field];
                 const changed = enabled.has(field);
@@ -38,9 +39,10 @@ export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onRe
                 return (
                     <Field
                         key={field}
-                        className={cn("tag-field", changed && "tag-field-changed")}
+                        className={cn("tag-field gap-[9px] [&_input]:h-[42px] [&_input]:px-3 [&_input]:rounded-lg [&_input]:bg-[#121212] [&_input]:text-[13px] [&_input]:border-[#3a3a3a]", changed && "tag-field-changed [&_input]:border-[#1ed76066]")}
                     >
-                        <div className="tag-field-label">
+                        <div
+                            className="tag-field-label flex items-center justify-between h-[22px] [&_label]:flex [&_label]:items-center [&_label]:gap-2 [&_label]:text-[#bcbcbc] [&_label]:text-xs [&_label_svg]:w-[14px] [&_label_svg]:h-[14px] [&_label_svg]:text-[#888]">
                             <FieldLabel htmlFor={"tag-" + field}>
                                 <Icon/>
                                 {tagLabels[field]}

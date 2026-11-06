@@ -44,8 +44,9 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
     }
 
     return (
-        <aside className="sidebar">
-            <div className="brand">
+        <aside className="sidebar bg-background rounded-lg flex flex-col pt-5 px-3 pb-3 min-h-0 [&_nav]:shrink-0">
+            <div
+                className="brand flex items-center gap-[10px] mt-0 mx-[10px] mb-[22px] shrink-0 [&_>_img]:w-[34px] [&_>_img]:h-[34px] [&_>_span]:text-[28px] [&_>_span]:font-[850] [&_>_span]:tracking-[-1.8px]">
                 <img
                     src="./icon.svg"
                     alt=""
@@ -53,13 +54,16 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 <span>BTunes</span>
             </div>
 
-            <nav aria-label="Library navigation">
+            <nav
+                className="flex flex-col gap-1"
+                aria-label="Library navigation"
+            >
                 {layout.navigationIds.map((id) => {
                     const item = navigationItems.find((entry) => entry.id === id)!;
                     return (
                         <Button
                             key={id}
-                            className="nav-item"
+                            className="nav-item w-full justify-start gap-[14px] h-[42px] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                             onClick={() => onNavigate(id)}
                             variant={view === id ? "secondary" : "ghost"}
                             aria-current={view === id ? "page" : undefined}
@@ -71,8 +75,8 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 })}
             </nav>
 
-            <div className="playlist-heading">
-                <p className="eyebrow">Playlists</p>
+            <div className="playlist-heading flex items-center justify-between pl-3 mt-[18px] mx-0 mb-[6px] shrink-0">
+                <p className="eyebrow text-xs font-bold m-0">Playlists</p>
                 <Button
                     size="icon"
                     variant="ghost"
@@ -83,7 +87,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 </Button>
             </div>
 
-            <div className="playlists">
+            <div className="playlists overflow-auto flex-1 min-h-0">
                 {layout.playlistIds.map((id) => {
                     const playlist = data.playlists.find((entry) => String(entry.id) === id)!;
                     return (
@@ -100,11 +104,14 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
             </div>
 
             {(creating || editing) && (
-                <Dialog open onOpenChange={(open) => {
-                    if (open) return;
-                    setCreating(false);
-                    setEditing(undefined);
-                }}>
+                <Dialog
+                    open
+                    onOpenChange={(open) => {
+                        if (open) return;
+                        setCreating(false);
+                        setEditing(undefined);
+                    }}
+                >
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
@@ -156,11 +163,11 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 </DialogContent>
             </Dialog>}
 
-            <div className="sidebar-bottom">
+            <div className="sidebar-bottom mt-auto pt-4 px-2 pb-0 flex flex-col gap-[14px] shrink-0">
                 <Button
                     variant={view === "settings" ? "secondary" : "ghost"}
                     aria-current={view === "settings" ? "page" : undefined}
-                    className="nav-item"
+                    className="nav-item w-full justify-start gap-[14px] h-[42px] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                     onClick={onSettings}
                 >
                     <Settings/>

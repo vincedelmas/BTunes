@@ -18,25 +18,27 @@ interface PlayerBarProps {
 
 export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
     return (
-        <footer className="player-bar">
-            <div className="now-playing">
+        <footer className="player-bar col-span-full flex items-center justify-between bg-[#000] py-[10px] px-[15px] gap-5">
+            <div
+                className="now-playing [&_small]:block [&_small]:mt-[5px] flex items-center gap-[13px] w-[28%] min-w-0 [&_.cover]:w-14 [&_.cover]:h-14 [&_strong]:text-xs [&_strong]:font-medium">
                 <Cover
                     track={current}
                 />
                 <div className="truncate">
                     <strong>{current?.title ?? "Find your next favorite"}</strong>
-                    <small>{current?.artist ?? "Play something from your library"}</small>
+                    <small className="text-[11px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
                 </div>
             </div>
 
-            <div className="transport">
-                <div className="transport-buttons">
+            <div className="transport w-[42%] max-w-[590px]">
+                <div
+                    className="transport-buttons flex justify-center items-center gap-[9px] mb-2 [&_>_button]:text-muted-foreground [&_>_.enabled]:text-primary [&_>_.play-toggle]:rounded-[50%] [&_>_.play-toggle]:bg-foreground [&_>_.play-toggle]:text-[#000] [&_>_.play-toggle]:w-[34px] [&_>_.play-toggle]:h-[34px]">
                     <Button
                         size="icon"
                         variant="ghost"
                         aria-label="Shuffle"
                         aria-pressed={player.shuffle}
-                        className={cn(player.shuffle && "enabled")}
+                        className={cn(player.shuffle && "enabled text-primary")}
                         onClick={() => player.setShuffle(!player.shuffle)}
                     >
                         <Shuffle/>
@@ -77,7 +79,7 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                         variant="ghost"
                         aria-label="Repeat queue"
                         aria-pressed={player.repeat}
-                        className={cn(player.repeat && "enabled")}
+                        className={cn(player.repeat && "enabled text-primary")}
                         onClick={() => player.setRepeat(!player.repeat)}
                     >
                         <Repeat/>
@@ -100,7 +102,7 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                 />
             </div>
 
-            <div className="volume">
+            <div className="volume flex items-center gap-3 text-muted-foreground [&_input]:w-[90px] max-[1150px]:[&_input]:w-15">
                 <Button
                     size="icon"
                     variant="ghost"
@@ -114,6 +116,7 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                     aria-hidden="true"
                 />
                 <input
+                    className="h-[3px] [accent-color:var(--primary)] cursor-pointer"
                     min="0"
                     max="1"
                     step="0.01"

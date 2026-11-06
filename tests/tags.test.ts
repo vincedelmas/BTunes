@@ -1,3 +1,5 @@
+import {createHash} from "node:crypto";
+import {normalizeArtwork} from "../src/main/services/artwork.ts";
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {execFile} from "node:child_process";
@@ -276,6 +278,41 @@ void test("a failure after replacement restores every source in a batch", async 
             assert.deepEqual(await readFile(track.path), originals[index]);
             assert.equal(f.repo.get(track.id)?.artist, "Test artist");
         }
+    }
+    finally {
+        await f.close();
+    }
+});
+
+void test("album artist and a new embedded cover apply to every selected file without changing audio", async () => {
+    const f = await fixture();
+
+    try {
+        await run("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=c=red:s=64x64", "-frames:v", "1", join(f.root, "replacement.png")]);
+        const data = await normalizeArtwork(await readFile(join(f.root, "replacement.png")));
+        const artwork = { data, hash: createHash("sha256").update(data).digest("hex") };
+        const tracks = await Promise.all([f.create("mp3"), f.create("flac"), f.create("m4a")]);
+        const hashes = await Promise.all(tracks.map((track) => f.audioHash(track.path)));
+        const originals = await Promise.all(tracks.map((track) => readFile(track.path)));
+        const prepared = await f.service.preview(tracks.map((track) => track.id), { albumArtist: "Album artist" }, artwork);
+        const result = await f.service.save(prepared.token);
+        assert.equal(result.updated, 3);
+
+        for (const [index, track] of tracks.entries()) {
+            const after = await parseFile(track.path);
+            assert.equal(after.common.albumartist, "Album artist");
+            assert.equal(after.common.artist, "Test artist");
+            assert.equal(after.common.title, "Before");
+            assert.equal(after.common.track.no, 3);
+            assert.equal(after.common.picture?.length, 1);
+            assert.deepEqual(Buffer.from(after.common.picture![0].data), data);
+            assert.equal(await f.audioHash(track.path), hashes[index]);
+            assert.deepEqual(await readFile(join(result.backupDirectory, track.id + "." + track.path.split(".").at(-1))), originals[index]);
+        }
+
+        const coverOnly = await f.service.preview([tracks[0].id], {}, artwork);
+        assert.equal((await f.service.save(coverOnly.token)).updated, 1);
+        await assert.rejects(f.service.preview([tracks[0].id], {}), /Choose a tag or cover/);
     }
     finally {
         await f.close();

@@ -23,6 +23,7 @@ Open **Settings → Add music folder** to index your collection. Click an album 
 - Persistent play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
 - Play, pause, stop, previous/next, shuffle, queue repeat, seeking, and volume.
 - Folder watching while the app runs; the renderer checks a lightweight revision every five seconds and only downloads changed snapshots. Reimport a folder to reconcile changes made while the app was closed.
+- Albums group by album title and album artist, falling back to track artist when needed. Older library indexes refresh automatically after the album-artist migration, preserving play history and playlists. Literal slash names such as AC/DC are preserved when reading older ID3 tags.
 - Possible duplicate detection using title, artist, and rounded duration. No files are automatically deleted.
 
 Click a song-table heading to sort by title, artist, album, genre, duration, year, or play count. Click again to reverse the direction; missing metadata stays first. Drag column dividers to resize them; widths are remembered on this device. Double-click a divider to reset its width, or focus it and use the arrow keys.
@@ -36,12 +37,13 @@ Create playlists with the **+** button in the sidebar, which opens a playlist di
 Supported write formats: **MP3, FLAC, and M4A**. Other formats remain readable and playable.
 
 1. Right-click a song or a selection and choose **Edit tags**, or use an album's pencil button.
-2. Edit title, artist, album, genre, or year. Batch edits apply only checked fields; mixed values are initially blank. Single-song edits offer a reset button for each changed field.
-3. Choose **Save** to apply the changes. Validation and original-file backups run automatically.
+2. Edit title, artist, album artist, album, genre, or year. Batch edits apply only checked fields; mixed values are initially blank. Single-song edits offer a reset button for each changed field.
+3. Optionally choose **Find a cover**, search by album/artist/title, and select a suggestion. The chosen artwork replaces the embedded cover in every selected file when you save.
+4. Choose **Save** to apply the changes. Validation and original-file backups run automatically.
 
-The editor is a floating, non-modal panel. Drag its header to move it, or focus the header and use **Alt + arrow keys**. Playback and the rest of the library remain usable while editing.
+The editor is a fixed, centered modal. Playback continues while you edit. Cover search uses MusicBrainz and the Cover Art Archive, with iTunes as a fallback; it requires an internet connection.
 
-Edits support up to 100 songs at a time. Text fields require a nonempty value; set the year to 0 to remove it. Embedded artwork is retained but cannot yet be replaced through the editor.
+Edits support up to 100 songs at a time. Text fields require a nonempty value, except album artist, which can be cleared; set the year to 0 to remove it. Existing artwork is retained unless you select a replacement. Cover-only edits are supported.
 
 The writer runs FFmpeg with stream copying, following its [metadata and stream-copy options](https://www.ffmpeg.org/ffmpeg.html). It prepares all output files beside their sources, verifies requested tags and artwork, and replaces each source with a rename. A SHA-256 fingerprint rejects files that changed after preview. Previews expire after ten minutes.
 
@@ -58,7 +60,9 @@ src/
     repositories/library.ts  Typed Drizzle repository queries
     database/schema.ts       Drizzle SQLite tables and indexes
     services/library.ts      Indexing and file watching
-    services/tags.ts         Tag previews, writes, backups, and rollback
+    services/tags.ts         Tag preparation, writes, backups, and rollback
+    services/artwork.ts      Cover search, bounded downloads, and image normalization
+    services/metadata.ts     Consistent tag reading, including legacy slash names
     services/audio.ts        Streaming audio with HTTP byte-range seeking
     types/                   Filesystem tag-write planning types
   preload/index.ts           Isolated bridge exposing one rpc() method

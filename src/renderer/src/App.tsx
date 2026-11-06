@@ -107,7 +107,8 @@ export function App() {
     };
 
     return (
-        <div className="app-shell">
+        <div
+            className="app-shell grid grid-cols-[248px_minmax(0,_1fr)] grid-rows-[minmax(0,_1fr)_98px] h-[100vh] gap-2 pt-2 px-2 pb-0 overflow-hidden max-[1150px]:grid-cols-[210px_minmax(0,_1fr)]">
             <Sidebar
                 layout={sidebarLayout}
                 view={view}
@@ -118,10 +119,14 @@ export function App() {
                 onError={library.reportError}
                 onSettings={() => navigate("settings")}
             />
-            <main>
-                <header className="topbar">
+            <main className="overflow-hidden min-w-0 rounded-lg bg-background flex flex-col">
+                <header
+                    className="topbar h-14 flex items-center gap-5 py-0 px-7 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)] z-[1] shrink-0 max-[1150px]:py-0 max-[1150px]:px-5">
                     {view === "settings" ?
-                        <Button variant="ghost" onClick={returnToMusic}>
+                        <Button
+                            variant="ghost"
+                            onClick={returnToMusic}
+                        >
                             <ArrowLeft/>Back to music
                         </Button>
                         :
@@ -150,28 +155,34 @@ export function App() {
                     />
                     :
                     <>
-                        <div className="library-hero">
+                        <div
+                            className="library-hero py-[14px] px-6 [background:linear-gradient(145deg,_#293c32,_#1e2b25_42%,_#191c1a)] shrink-0 [&_h1]:text-[clamp(28px,_3vw,_36px)] [&_h1]:font-[850] [&_h1]:tracking-[-1.4px] [&_h1]:leading-[1.1] [&_h1]:mt-0 [&_h1]:mx-0 [&_h1]:mb-[6px] [&_>_p:last-child]:text-[#d0d5d1] [&_>_p:last-child]:text-xs [&_>_p:last-child]:m-0 [&_p_span]:my-0 [&_p_span]:mx-[7px]">
                             <h1>{title}</h1>
                             <p>{tracks.length} songs <span>•</span> {albums.length} albums</p>
                         </div>
-                        <div className="content">
+                        <div className="content py-3 px-5 flex flex-col min-h-0 flex-1 overflow-hidden">
                             {library.error &&
                                 <Alert variant="destructive">
                                     <AlertDescription>
                                         {library.error}
-                                        <Button variant="ghost" size="sm" onClick={() => library.setError("")}>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => library.setError("")}
+                                        >
                                             Dismiss
                                         </Button>
                                     </AlertDescription>
                                 </Alert>
                             }
-
                             {library.notice &&
-                                <p role="status" className="notice">
+                                <p
+                                    role="status"
+                                    className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto"
+                                >
                                     {library.notice}
                                 </p>
                             }
-
                             {view === "android" ?
                                 <EmptyState
                                     icon={Smartphone}
@@ -198,13 +209,11 @@ export function App() {
                                         showControls={view !== "tracks"}
                                         showSort={view === "albums" || view === "artists"}
                                     />
-
-                                    <div className="collection-results">
+                                    <div className="collection-results min-h-0 flex-1 flex flex-col">
                                         {renderCollection()}
                                     </div>
-
                                     {view === "duplicates" && !!tracks.length &&
-                                        <p className="muted duplicate-note">
+                                        <p className="muted text-muted-foreground duplicate-note shrink-0 mt-[14px] mx-2 mb-0 text-xs">
                                             Matches use title, artist, and rounded duration. No files are deleted.
                                         </p>
                                     }

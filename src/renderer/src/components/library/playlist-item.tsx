@@ -19,7 +19,7 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
             <ContextMenuTrigger
                 render={
                     <Button
-                        className="nav-item"
+                        className="nav-item w-full justify-start gap-[14px] h-[42px] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                         onClick={onNavigate}
                         variant={active ? "secondary" : "ghost"}
                         aria-current={active ? "page" : undefined}
@@ -43,7 +43,10 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
                 </ContextMenuGroup>
                 <ContextMenuSeparator/>
                 <ContextMenuGroup>
-                    <ContextMenuItem variant="destructive" onClick={onDelete}>
+                    <ContextMenuItem
+                        variant="destructive"
+                        onClick={onDelete}
+                    >
                         <Trash2/>
                         Delete playlist
                     </ContextMenuItem>

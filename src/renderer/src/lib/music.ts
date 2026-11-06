@@ -1,4 +1,4 @@
-import type {Track} from "../../../shared/types/library";
+import type {Track} from "../../../shared/types/library.ts";
 
 
 export const formatTime = (seconds: number) => {
@@ -16,7 +16,7 @@ export const groupAlbums = (tracks: Track[]) => {
     const albums = new Map<string, Track[]>();
 
     for (const track of tracks) {
-        const key = track.artist + "\0" + track.album;
+        const key = (track.albumArtist || track.artist) + "\0" + track.album;
         const album = albums.get(key) ?? [];
 
         album.push(track);

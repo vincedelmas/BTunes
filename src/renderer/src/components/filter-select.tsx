@@ -34,15 +34,19 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
                     aria-label={label}
                     placeholder={placeholder}
                     showClear={Boolean(value)}
-                    className="filter-combobox"
+                    className="filter-combobox min-w-[155px] max-w-65 h-[38px] bg-[#ffffff05] rounded-[9px] text-[#dedede] text-xs hover:bg-[#ffffff0a] hover:border-[#555]"
                 />
-                <ComboboxContent className="filter-popup">
+                <ComboboxContent
+                    className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]">
                     <ComboboxEmpty>
                         No matches found.
                     </ComboboxEmpty>
                     <ComboboxList>
                         {(item: { value: string; label: string }) =>
-                            <ComboboxItem key={item.value} value={item}>
+                            <ComboboxItem
+                                key={item.value}
+                                value={item}
+                            >
                                 {item.label}
                             </ComboboxItem>
                         }
@@ -59,13 +63,24 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
             disabled={disabled}
             onValueChange={(next) => onChange(next ?? "")}
         >
-            <SelectTrigger id={id} aria-label={label} className="filter-trigger">
+            <SelectTrigger
+                id={id}
+                aria-label={label}
+                className="filter-trigger min-w-[155px] max-w-65 h-[38px] bg-[#ffffff05] rounded-[9px] text-[#dedede] text-xs hover:bg-[#ffffff0a] hover:border-[#555]"
+            >
                 <SelectValue/>
             </SelectTrigger>
-            <SelectContent className="filter-popup" align="start" alignItemWithTrigger={false}>
+            <SelectContent
+                className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
+                align="start"
+                alignItemWithTrigger={false}
+            >
                 <SelectGroup>
                     {items.map((item) =>
-                        <SelectItem key={item.value} value={item.value}>
+                        <SelectItem
+                            key={item.value}
+                            value={item.value}
+                        >
                             {item.label}
                         </SelectItem>
                     )}

@@ -27,3 +27,9 @@ void test("playlist edit and delete schemas reject invalid identifiers and blank
     assert.equal(rpcSchemas["playlist.delete"].safeParse({ id: -1 }).success, false);
     assert.deepEqual(rpcSchemas["playlist.update"].parse({ id: 1, name: " Updated ", rule: " Jazz " }), { id: 1, name: "Updated", rule: "Jazz" });
 });
+
+void test("artwork-only tag saves require an opaque artwork ID and search requires a query", () => {
+    assert.equal(rpcSchemas["tags.preview"].safeParse({ ids: [1], patch: {} }).success, false);
+    assert.equal(rpcSchemas["tags.preview"].safeParse({ ids: [1], patch: {}, artworkId: "f3a8fc6f-b13a-4210-9881-92734cfd9362" }).success, true);
+    assert.equal(rpcSchemas["artwork.search"].safeParse({ query: "  " }).success, false);
+});

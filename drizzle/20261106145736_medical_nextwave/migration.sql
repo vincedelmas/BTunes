@@ -1,0 +1,1 @@
+ALTER TABLE `tracks` ADD `album_artist` text DEFAULT '' NOT NULL;

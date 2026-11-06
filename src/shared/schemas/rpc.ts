@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {tagPatchSchema} from "./tags.ts";
+import {tagPatchFieldsSchema} from "./tags.ts";
+import {artworkSearchSchema} from "./artwork.ts";
 
 const trackId = z.number().int().positive();
 const idSchema = z.object({ id: trackId });
@@ -14,7 +15,9 @@ const playlistDetails = {
 };
 
 export const rpcSchemas = {
-    "tags.preview": z.object({ patch: tagPatchSchema, ids: z.array(trackId).min(1).max(100) }),
+    "tags.preview": z.object({ patch: tagPatchFieldsSchema, ids: z.array(trackId).min(1).max(100), artworkId: z.uuid().optional() })
+        .refine((input) => Object.keys(input.patch).length > 0 || Boolean(input.artworkId), "Choose a tag or cover to change."),
+    "artwork.search": artworkSearchSchema,
     "tags.save": z.object({ token: z.uuid() }),
     "library.get": z.object({ revision: z.number().int().nonnegative() }).optional(),
     "library.import": z.undefined(),

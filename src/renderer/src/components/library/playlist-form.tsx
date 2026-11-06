@@ -45,7 +45,7 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
 
     return (
         <form
-            className="playlist-form"
+            className="playlist-form p-[10px] gap-4"
             onSubmit={(ev) => {
                 ev.preventDefault();
                 void save();
@@ -80,10 +80,18 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
                     />
                 </Field>
                 <div className="flex gap-2">
-                    <Button type="button" variant="ghost" disabled={saving} onClick={onCancel}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={saving}
+                        onClick={onCancel}
+                    >
                         Cancel
                     </Button>
-                    <Button type="submit" disabled={saving || !name.trim()}>
+                    <Button
+                        type="submit"
+                        disabled={saving || !name.trim()}
+                    >
                         {saving ? "Saving…" : saveLabel}
                     </Button>
                 </div>

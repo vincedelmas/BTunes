@@ -5,7 +5,7 @@ import {compareTracks} from "../src/shared/track-sorting.ts";
 import type {TrackSortField} from "../src/shared/types/track-sorting.ts";
 
 const original: Track = {
-    id: 1, title: "Song 2", artist: "Artist", album: "Album", genre: "Ambient", year: 2020,
+    id: 1, title: "Song 2", artist: "Artist", albumArtist: "Artist", album: "Album", genre: "Ambient", year: 2020,
     duration: 120, plays: 0, lastPlayed: 0, favorite: 0, cover: null, size: 100, path: "/music/song.mp3",
 };
 

@@ -43,8 +43,8 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
     if (!showControls && !filtered) return null;
 
     return (
-        <div className="filter-bar">
-            {showControls && <div className="filter-controls">
+        <div className="filter-bar shrink-0 mb-[18px]">
+            {showControls && <div className="filter-controls flex items-center gap-[10px] flex-wrap">
                 <FilterSelect
                     value={genre}
                     onChange={onGenre}
@@ -59,7 +59,7 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
                     placeholder="All artists"
                     options={artists.map((name) => ({ value: name, label: name }))}
                 />
-                {showSort && <div className="grid-sort">
+                {showSort && <div className="grid-sort flex items-center gap-[10px] flex-wrap ml-auto">
                     <FilterSelect
                         value={sort.field}
                         placeholder="Title"
@@ -79,8 +79,16 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
                 </div>}
             </div>}
             {filtered &&
-                <div className="active-filters" aria-label="Active filters">
-                    <Button size="sm" variant="ghost" onClick={onClear} aria-label="Show all songs">
+                <div
+                    className="active-filters flex items-center gap-[10px] flex-wrap mt-[14px] [&_>_[data-variant=ghost]]:pl-0 [&_>_[data-variant=ghost]]:text-primary"
+                    aria-label="Active filters"
+                >
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onClear}
+                        aria-label="Show all songs"
+                    >
                         <ArrowLeft/>
                         All songs
                     </Button>
@@ -92,7 +100,8 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
                             aria-label="Clear artist filter"
                             onClick={() => onArtist("")}
                         >
-                            {artist} <X/>
+                            {artist}
+                            <X/>
                         </Button>
                     }
 
@@ -103,12 +112,13 @@ export function FilterBar({ genre, artist, search, genres, artists, sort, showSo
                             aria-label="Clear genre filter"
                             onClick={() => onGenre("")}
                         >
-                            {genre} <X/>
+                            {genre}
+                            <X/>
                         </Button>
                     }
 
                     {search &&
-                        <span className="filter-search-label">
+                        <span className="filter-search-label text-xs text-muted-foreground">
                             Search: "{search}"
                         </span>
                     }

@@ -9,6 +9,8 @@
   Avoid compressed JSX, nested ternaries, and oversized components.
 - Before creating a helper, hook, primitive, or component, search the repo for an existing equivalent. Reuse or extend it
   instead of duplicating nearly identical functions.
+- Use Tailwind utilities directly in JSX wherever possible. Keep CSS for theme tokens, base rules, scrollbars, and animation keyframes;
+  keep inline styles only for runtime measurements or other dynamic values.
 - Compose existing shadcn/ui primitives. Extract repeated app UI into shared components; keep business logic out of presentation
   components.
 - Keep shared pure utilities in `src/shared` or `src/renderer/src/lib`, reusable renderer behavior in hooks, filesystem workflows in

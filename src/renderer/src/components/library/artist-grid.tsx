@@ -31,7 +31,10 @@ export function ArtistGrid({ tracks, onArtist }: ArtistGridProps) {
             label="Artists"
             getKey={(artist) => artist.name}
             renderItem={(artist) => (
-                <button className="artist" onClick={() => onArtist(artist.name)}>
+                <button
+                    className="artist bg-transparent border-0 text-left p-3 [&_.cover]:rounded-[50%] [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-4 [&_h2]:overflow-hidden [&_h2]:text-ellipsis [&_h2]:whitespace-nowrap [&_p]:text-muted-foreground [&_p]:text-xs"
+                    onClick={() => onArtist(artist.name)}
+                >
                     <Cover
                         large={true}
                         track={artist.track}

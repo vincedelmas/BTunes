@@ -21,7 +21,10 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
                 title="No matching songs"
                 description="No songs match your search and filters."
             >
-                <Button variant="outline" onClick={onClearFilters}>
+                <Button
+                    variant="outline"
+                    onClick={onClearFilters}
+                >
                     Clear search and filters
                 </Button>
             </EmptyState>
@@ -65,7 +68,10 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
                 title="No songs indexed yet"
                 description="Your folders are configured. Check them in Settings or wait for indexing to finish."
             >
-                <Button variant="outline" onClick={onSettings}>
+                <Button
+                    variant="outline"
+                    onClick={onSettings}
+                >
                     <Settings/>
                     Open Settings
                 </Button>

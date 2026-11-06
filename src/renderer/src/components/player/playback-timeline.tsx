@@ -32,9 +32,10 @@ export function PlaybackTimeline({ audio, trackId, onSeek }: PlaybackTimelinePro
     }, [audio, trackId]);
 
     return (
-        <div className="timeline">
+        <div className="timeline flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums [&_input]:flex-1 [&_input]:min-w-0">
             <span>{formatTime(position)}</span>
             <input
+                className="h-[3px] [accent-color:var(--primary)] cursor-pointer"
                 aria-label="Playback position"
                 type="range"
                 min="0"

@@ -16,19 +16,27 @@ export function LibrarySearch({ value, onChange }: LibrarySearchProps) {
     }
 
     return (
-        <InputGroup className="search">
+        <InputGroup
+            className="search m-0 h-9 w-[55%] max-w-[450px] gap-3 rounded-full border-transparent bg-[#242424] px-4 text-muted-foreground focus-within:border-primary has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
             <InputGroupInput
                 ref={input}
+                className="border-0 bg-transparent p-0 text-xs shadow-none focus-visible:border-0 focus-visible:ring-0"
                 value={value}
                 aria-label="Search your library"
                 placeholder="Search songs, artists, albums"
                 onChange={(ev) => onChange(ev.target.value)}
             />
             <InputGroupAddon className="p-0">
-                <Search size={21} aria-hidden="true"/>
+                <Search
+                    size={21}
+                    aria-hidden="true"
+                />
             </InputGroupAddon>
             {value && (
-                <InputGroupAddon align="inline-end" className="p-0">
+                <InputGroupAddon
+                    align="inline-end"
+                    className="p-0"
+                >
                     <InputGroupButton
                         size="icon-xs"
                         aria-label="Clear search"

@@ -1,5 +1,6 @@
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
+import {ArtworkService} from "./services/artwork";
 import {TagService} from "./services/tags";
 import {serveAudio} from "./services/audio";
 import {rpcSchemas} from "../shared/schemas/rpc";
@@ -57,12 +58,17 @@ void app.whenReady().then(async () => {
     );
 
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
+    const artwork = new ArtworkService();
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 
     const routes = {
+        "artwork.search": {
+            schema: rpcSchemas["artwork.search"],
+            run: (input: RpcInput<"artwork.search">) => artwork.search(input.query),
+        },
         "tags.preview": {
             schema: rpcSchemas["tags.preview"],
-            run: (input: RpcInput<"tags.preview">) => tags.preview(input.ids, input.patch),
+            run: async (input: RpcInput<"tags.preview">) => tags.preview(input.ids, input.patch, input.artworkId ? await artwork.get(input.artworkId) : undefined),
         },
 
         "tags.save": {
@@ -180,6 +186,12 @@ void app.whenReady().then(async () => {
     protocol.handle("btunes", (request) => {
         const url = new URL(request.url);
 
+        if (url.hostname === "artwork") {
+            return artwork.get(url.pathname.slice(1))
+                .then((image) => new Response(new Uint8Array(image.data), { headers: { "Content-Type": "image/jpeg" } }))
+                .catch(() => new Response("Cover not found", { status: 404 }));
+        }
+
         if (url.hostname === "audio") {
             const track = repo.get(Number(url.pathname.slice(1)));
             if (track) {
@@ -194,6 +206,7 @@ void app.whenReady().then(async () => {
     });
 
     await service.startWatching();
+    void service.refreshLegacyMetadata().catch(console.error);
 
     if (process.env.ELECTRON_RENDERER_URL) {
         await win.loadURL(process.env.ELECTRON_RENDERER_URL);

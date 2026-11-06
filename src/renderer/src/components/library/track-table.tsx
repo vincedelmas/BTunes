@@ -138,11 +138,11 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     function renderCell(track: Track, columnId: string) {
         if (columnId === "title") {
             return (
-                <div className="track-cell">
+                <div className="track-cell flex items-center gap-3 min-w-0 [&_strong]:text-foreground [&_strong]:font-medium [&_strong]:text-[13px] [&_strong]:min-w-0">
                     <Button
                         size="icon-xs"
                         variant="ghost"
-                        className="track-row-play"
+                        className="track-row-play w-6 h-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 [&_svg]:w-[14px] [&_svg]:h-[14px]"
                         aria-label={"Play " + track.title}
                         onClick={() => actions.onPlay(track)}
                     >
@@ -156,8 +156,8 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
             );
         }
         if (columnId === "duration") return formatTime(track.duration);
-        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag">No genre</span>;
-        if (columnId === "year" && !track.year) return <span className="missing-tag">—</span>;
+        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-[#777]">No genre</span>;
+        if (columnId === "year" && !track.year) return <span className="missing-tag text-[#777]">—</span>;
 
         return track[columnId as TrackSortField];
     }
@@ -165,7 +165,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     return (
         <div
             ref={container}
-            className="track-scroll"
+            className="track-scroll h-full min-h-0 overflow-auto overscroll-contain [scrollbar-gutter:stable] overflow-x-hidden [&_[data-slot=table-container]]:overflow-visible"
             aria-label="Songs"
             tabIndex={0}
         >
@@ -178,7 +178,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                     }
                     if (ev.key === "Escape") onSelect([]);
                 }}
-                className="track-table"
+                className="track-table w-full table-fixed border-collapse text-left text-xs"
                 aria-rowcount={tracks.length + 1}
                 aria-multiselectable="true"
                 style={{ width: "100%" }}
@@ -194,6 +194,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                     onChange={(id, visible) => table.getColumn(id)?.toggleVisibility(visible)}
                 >
                     <TableHeader
+                        className="sticky top-0 z-10 bg-background"
                         tabIndex={0}
                         aria-label="Song columns"
                     >
@@ -211,13 +212,14 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                         </TableRow>)}
                     </TableHeader>
                 </ColumnVisibilityMenu>
-                <TableBody>
+                <TableBody className="[&_tr]:select-none">
                     {paddingTop > 0 &&
                         <TableRow
                             aria-hidden="true"
-                            className="virtual-spacer"
+                            className="virtual-spacer border-0 bg-transparent hover:bg-transparent"
                         >
                             <TableCell
+                                className="border-0 p-0"
                                 colSpan={visibleColumns.length}
                                 style={{ height: paddingTop }}
                             />
@@ -237,7 +239,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                                     data-track-id={track.id}
                                     aria-rowindex={row.index + 2}
                                     aria-selected={selectedIds.has(track.id)}
-                                    className={cn(currentId === track.id && "is-current")}
+                                    className={cn("group h-9 hover:bg-white/6 aria-selected:bg-secondary", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
                                     tabIndex={0}
                                     onClick={(ev) => selectRow(row.index, ev)}
                                     onContextMenu={() => {
@@ -256,6 +258,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                                     {visibleColumns.map((column) => (
                                         <TableCell
                                             key={column.id}
+                                            className="min-w-0 truncate px-2 py-1 text-xs text-muted-foreground"
                                             data-column={column.id}
                                         >
                                             {renderCell(track, column.id)}
@@ -268,9 +271,10 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                     {paddingBottom > 0 &&
                         <TableRow
                             aria-hidden="true"
-                            className="virtual-spacer"
+                            className="virtual-spacer border-0 bg-transparent hover:bg-transparent"
                         >
                             <TableCell
+                                className="border-0 p-0"
                                 colSpan={visibleColumns.length}
                                 style={{ height: paddingBottom }}
                             />

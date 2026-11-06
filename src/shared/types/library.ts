@@ -3,6 +3,7 @@ export type Track = {
     path: string;
     title: string;
     artist: string;
+    albumArtist: string;
     album: string;
     genre: string;
     year: number;
@@ -21,4 +22,4 @@ export type Snapshot = {
     folders: string[];
 };
 
-export type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed">;
+export type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed" | "albumArtist"> & { albumArtist?: string };

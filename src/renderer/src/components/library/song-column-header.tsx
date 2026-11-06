@@ -42,6 +42,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
 
     return (
         <TableHead
+            className="relative h-9 min-w-0 overflow-hidden border-b px-2 py-0 text-xs font-normal text-muted-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground data-[dragging=true]:bg-secondary data-[dragging=true]:opacity-60"
             data-column={column.id}
             onDragOver={reordering.over}
             onDrop={(ev) => reordering.drop(ev, column.id)}
@@ -49,7 +50,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
             aria-sort={active ? direction : undefined}
         >
             <button
-                className={cn("column-sort", active && "is-sorted")}
+                className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 [&_svg]:w-[13px] [&_svg]:h-[13px] [&_svg]:opacity-[0.35] [&_svg]:shrink-0 hover:text-foreground active:cursor-grabbing [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:whitespace-nowrap", active && "is-sorted text-foreground [&_svg]:text-primary [&_svg]:opacity-100")}
                 draggable
                 title="Click to sort; drag to reorder. Alt+arrow keys also reorder."
                 onDragStart={(ev) => reordering.start(ev, column.id)}
@@ -70,7 +71,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
                 aria-valuemax={column.columnDef.maxSize}
                 aria-valuenow={column.getSize()}
                 title="Drag to resize. Double-click to reset."
-                className={cn("column-resizer", column.getIsResizing() && "is-resizing")}
+                className={cn("column-resizer absolute right-[-4px] top-[9px] bottom-[9px] w-2 cursor-col-resize touch-none z-[2] after:content-[''] after:absolute after:left-[3px] after:w-[2px] after:h-full after:bg-[#ffffff25] after:rounded-[2px] [&:hover::after]:bg-primary [&:focus-visible::after]:bg-primary [&.is-resizing::after]:bg-primary", column.getIsResizing() && "is-resizing")}
                 onMouseDown={header.getResizeHandler()}
                 onTouchStart={header.getResizeHandler()}
                 onDoubleClick={() => column.resetSize()}

@@ -14,7 +14,8 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
     const items = player.queue.map((track, index) => ({ track, index }));
 
     return (
-        <aside className="queue">
+        <aside
+            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-auto rounded-lg z-[3] shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_h2]:text-xl [&_h2]:font-[750] [&_.virtual-grid-scroll]:flex-1">
             <div className="flex items-center justify-between">
                 <h2>Queue</h2>
                 <Button
@@ -23,7 +24,7 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
                     onClick={onClose}
                 >Close</Button>
             </div>
-            {!items.length && <p className="muted">Play an album or a song to get started.</p>}
+            {!items.length && <p className="muted text-muted-foreground">Play an album or a song to get started.</p>}
             <VirtualGrid
                 items={items}
                 label="Queued songs"
@@ -32,13 +33,13 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
                 getKey={(item) => item.index}
                 renderItem={({ track, index }) => (
                     <button
-                        className={cn("queue-track", player.currentTrack?.id === track.id && "is-current")}
+                        className={cn("queue-track flex items-center gap-3 w-full text-left border-0 rounded-[5px] bg-transparent p-2 text-xs hover:bg-secondary [&_small]:block [&_small]:mt-1 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:whitespace-nowrap", player.currentTrack?.id === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-[1]")}
                         onClick={() => player.start(track, player.queue, index)}
                     >
                         <Cover track={track}/>
                         <span>
 {track.title}
-                            <small>{track.artist}</small>
+                            <small className="text-[11px] text-muted-foreground">{track.artist}</small>
 </span>
                     </button>
                 )}

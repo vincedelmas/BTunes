@@ -61,7 +61,7 @@ void test("Drizzle adopts a legacy database without losing its library or playli
                     repository.db
                         .prepare("SELECT count(*) AS count FROM __drizzle_migrations")
                         .get()?.count,
-                    1,
+                    2,
                 );
             }
             finally {

@@ -1,6 +1,7 @@
 const {app, ipcMain} = require("electron");
 const {DatabaseSync} = require("node:sqlite");
-const {readMigrationFiles} = require("drizzle-orm/migrator");
+const {drizzle} = require("drizzle-orm/node-sqlite");
+const {migrate} = require("drizzle-orm/node-sqlite/migrator");
 const {mkdtempSync, mkdirSync, rmSync, writeFileSync} = require("node:fs");
 const {join} = require("node:path");
 const {tmpdir} = require("node:os");
@@ -21,16 +22,14 @@ execFileSync("ffmpeg", [
 ]);
 
 const database = new DatabaseSync(join(profile, "library.sqlite"));
-for (const migration of readMigrationFiles({migrationsFolder: join(__dirname, "../drizzle")})) {
-    for (const statement of migration.sql) database.exec(statement);
-}
+migrate(drizzle({client: database}), {migrationsFolder: join(__dirname, "../drizzle")});
 database.exec("BEGIN");
-const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,genre,year,duration,size) VALUES (?,?,?,?,?,?,?,?,?)");
+const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,genre,year,duration,size,album_artist) VALUES (?,?,?,?,?,?,?,?,?,?)");
 for (let index = 0; index < 2300; index++) {
     insert.run(index + 1, index ? join(music, "fixture-" + index + ".mp3") : source,
         index ? "Song " + String(index).padStart(4, "0") : "Silence",
         index ? "Artist " + String(index % 30).padStart(2, "0") : "Fixture artist", "Album " + String(Math.floor(index / 10)).padStart(3, "0"),
-        index === 1 ? "Uncategorized" : index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, 10000);
+        index === 1 ? "Uncategorized" : index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, 10000, "Fixture artist");
 }
 database.prepare("INSERT INTO folders VALUES (?)").run(music);
 database.prepare("INSERT INTO playlists(name,rule) VALUES (?,?)").run("Road trip", null);
@@ -90,6 +89,14 @@ app.on("browser-window-created", (_, win) => {
                 const button = text => [...document.querySelectorAll('button')].find(item => item.textContent.trim() === text);
                 window.uiReview = { waitFor, frame, button };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
+                const searchInput=document.querySelector('[aria-label="Search your library"]');
+                searchInput.focus();
+                await frame();
+                await new Promise(resolve => setTimeout(resolve, 200));
+                const searchStyle=getComputedStyle(searchInput.closest('[data-slot="input-group"]'));
+                if(searchStyle.borderColor!=='rgb(30, 215, 96)' || searchStyle.borderTopWidth!=='1px') throw new Error('Search must have one thin green focus border: '+searchStyle.borderColor+' '+searchStyle.borderTopWidth);
+                if(searchStyle.boxShadow!=='none' && !searchStyle.boxShadow.includes('0px 0px 0px 0px')) throw new Error('Search has an extra focus ring: '+searchStyle.boxShadow);
+                searchInput.blur();
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
                 if(document.querySelector('[aria-label="Play visible songs"]') || document.querySelector('.filter-controls')) throw new Error('Songs should not show collection play or filter controls');
                 if(document.querySelector('.profile-avatar')) throw new Error('Decorative avatar remains');
@@ -275,6 +282,7 @@ app.on("browser-window-created", (_, win) => {
                 const playingRect=playingRow.getBoundingClientRect();
                 playingRow.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:playingRect.x+150,clientY:playingRect.y+20}));
                 await waitFor(()=>document.querySelector('[role="menu"]'));
+                if(getComputedStyle(document.querySelector('[role="menu"]')).animationName!=='none') throw new Error('Context menu must appear without animation');
                 [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit tags').click();
                 await waitFor(() => document.getElementById('tag-title'));
                 await frame();
@@ -287,31 +295,30 @@ app.on("browser-window-created", (_, win) => {
                 if(audio.paused) throw new Error("Editing tags interrupted playback");
                 return {openTagEditorMs, libraryMutationsDuringProgress:libraryMutations};
             })()`, true);
-            const editorPosition = await win.webContents.executeJavaScript(`(() => {
-                const header=document.querySelector('[aria-label="Move tag editor"]').getBoundingClientRect();
-                const dialog=document.querySelector('.tag-editor').getBoundingClientRect();
-                return {x:Math.round(header.x+80),y:Math.round(header.y+20),left:dialog.x,top:dialog.y};
-            })()`);
-            win.webContents.sendInputEvent({type: 'mouseDown', x: editorPosition.x, y: editorPosition.y, button: 'left', clickCount: 1});
-            win.webContents.sendInputEvent({type: 'mouseMove', x: editorPosition.x + 70, y: editorPosition.y + 20, movementX: 70, movementY: 20});
-            win.webContents.sendInputEvent({type: 'mouseUp', x: editorPosition.x + 70, y: editorPosition.y + 20, button: 'left', clickCount: 1});
-            await win.webContents.executeJavaScript(`(async () => {
-                await window.uiReview.waitFor(()=>document.querySelector('.tag-editor').getBoundingClientRect().x>${editorPosition.left}+30);
-                const dialog=document.querySelector('.tag-editor').getBoundingClientRect();
-                if(dialog.right>window.innerWidth+1 || dialog.bottom>window.innerHeight+1) throw new Error('Tag editor moved outside the window');
-                if(document.querySelector('[data-slot="dialog-overlay"]')) throw new Error('Tag editor should not block the music view');
+            await win.webContents.executeJavaScript(`(() => {
+                if(!document.querySelector('[data-slot="dialog-overlay"]')) throw new Error('Tag editor must be a fixed modal');
                 if(document.querySelector('.tag-editor').textContent.includes('Preview changes')) throw new Error('Tag editor still shows a preview step');
+                if(!document.getElementById('tag-albumArtist')) throw new Error('Album artist field is missing');
             })()`, true);
             await capture("tag-editor-playing");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor, button}=window.uiReview;
+                document.querySelector('[aria-label="Reset Title"]').click();
+                await waitFor(()=>button('Save').disabled);
+                button('Find a cover').click();
+                await waitFor(()=>button('Search covers'));
+                button('Search covers').click();
+                await waitFor(()=>document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]'));
+                document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]').click();
+                await waitFor(()=>document.querySelector('[aria-pressed="true"][aria-label^="Use cover"]'));
+                if(!document.querySelector('.tag-editor').textContent.includes('embedded in every selected song')) throw new Error('Selected artwork feedback is missing');
+                if(button('Save').disabled) throw new Error('Selected cover cannot be saved');
+            })()`, true);
+            await capture("cover-search");
+
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
-                const anotherRow=document.querySelector('[data-track-id="2"]');
-                const anotherRect=anotherRow.getBoundingClientRect();
-                anotherRow.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:anotherRect.x+120,clientY:anotherRect.y+15}));
-                await waitFor(()=>document.querySelector('[role="menu"]'));
-                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit tags').click();
-                await waitFor(()=>document.getElementById('tag-title')?.value==='Song 0001');
                 button('Cancel').click();
                 await waitFor(()=>!document.querySelector('[role="dialog"]'));
                 button('Possible duplicates').click();
@@ -446,6 +453,14 @@ app.on("browser-window-created", (_, win) => {
 const originalHandle = ipcMain.handle.bind(ipcMain);
 let firstSnapshot = true;
 ipcMain.handle = (channel, handler) => originalHandle(channel, async (ev, method, input) => {
+    if (channel === "rpc" && method === "artwork.search") {
+        return [{
+            id: "f3a8fc6f-b13a-4210-9881-92734cfd9362",
+            album: "Test cover",
+            artist: "Fixture artist",
+            thumbnail: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#1ed760"/></svg>')
+        }];
+    }
     if (channel === "rpc" && method === "library.get" && firstSnapshot) {
         firstSnapshot = false;
         await new Promise(resolve => setTimeout(resolve, 600));

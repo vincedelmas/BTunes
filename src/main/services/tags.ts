@@ -1,4 +1,6 @@
 import type {PlannedFile, SavePlan} from "../types/tags";
+import {readTags} from "./metadata.ts";
+import type {EmbeddedArtwork} from "../types/artwork.ts";
 import {promisify} from "node:util";
 import {parseFile} from "music-metadata";
 import {createReadStream} from "node:fs";
@@ -9,11 +11,13 @@ import {basename, dirname, extname, join} from "node:path";
 import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/promises";
 import {tagFields} from "../../shared/tags.ts";
 import type {TagPatch, TagPreview, TagSaveResult} from "../../shared/types/tags.ts";
-import {tagPatchSchema} from "../../shared/schemas/tags.ts";
+import {tagPatchFieldsSchema} from "../../shared/schemas/tags.ts";
 
 
 const run = promisify(execFile);
 const previewLifetime = 10 * 60 * 1000;
+
+const metadataNames: Record<string, string> = { year: "date", albumArtist: "album_artist" };
 
 const formats: Record<string, string> = {
     ".mp3": "mp3",
@@ -56,9 +60,10 @@ export class TagService {
         this.backupRoot = backupRoot;
     }
 
-    async preview(ids: number[], input: TagPatch): Promise<TagPreview> {
+    async preview(ids: number[], input: TagPatch, artwork?: EmbeddedArtwork): Promise<TagPreview> {
         const files: PlannedFile[] = [];
-        const patch = tagPatchSchema.parse(input);
+        const patch = tagPatchFieldsSchema.parse(input);
+        if (!Object.keys(patch).length && !artwork) throw new Error("Choose a tag or cover to change.");
         const preview: TagPreview = { token: randomUUID(), files: [] };
 
         for (const [token, plan] of this.plans) {
@@ -82,13 +87,7 @@ export class TagService {
             const metadata = await parseFile(track.path);
             const sourceFingerprint = await fingerprint(track.path);
 
-            const currentValues = {
-                year: metadata.common.year ?? 0,
-                title: metadata.common.title ?? "",
-                album: metadata.common.album ?? "",
-                artist: metadata.common.artist ?? "",
-                genre: metadata.common.genre?.[0] ?? "",
-            };
+            const currentValues = readTags(metadata);
 
             if ((await fingerprint(track.path)) !== sourceFingerprint) {
                 throw new Error("A file changed while preparing the preview. Try again.");
@@ -102,9 +101,9 @@ export class TagService {
                     before: currentValues[field],
                 }));
 
-            if (!changes.length) continue;
+            if (!changes.length && !artwork) continue;
 
-            files.push({ track, fingerprint: sourceFingerprint, patch });
+            files.push({ track, fingerprint: sourceFingerprint, patch, artwork });
             preview.files.push({ id, title: track.title, path: track.path, changes });
         }
 
@@ -149,6 +148,13 @@ export class TagService {
                     .map(({ track }) => ({ id: track.id, path: track.path })), null, 2),
             );
 
+            const imagePath = join(backupDirectory, "selected-cover.jpg");
+            const artwork = plan.files[0].artwork;
+
+            if (artwork) {
+                await writeFile(imagePath, artwork.data);
+            }
+
             // Prepare and verify output before replacing any source file
             for (const file of plan.files) {
                 const { track, patch } = file;
@@ -165,29 +171,30 @@ export class TagService {
                 await copyFile(track.path, backup);
                 const original = await parseFile(track.path);
 
+                const imageArguments = file.artwork ? ["-i", imagePath, "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic"] : ["-map", "0"];
+
                 const metadataArguments = Object.entries(patch)
                     .flatMap(([key, value]) => [
                         "-metadata",
-                        (key === "year" ? "date" : key) + "=" + (value === 0 ? "" : String(value))
+                        (metadataNames[key] ?? key) + "=" + (value === 0 ? "" : String(value))
                     ]);
 
                 await run("ffmpeg", [
-                    "-nostdin", "-v", "error", "-n", "-i", track.path, "-map", "0",
+                    "-nostdin", "-v", "error", "-n", "-i", track.path, ...imageArguments,
                     "-map_metadata", "0", "-c", "copy", ...metadataArguments, "-f",
                     formats[extname(track.path).toLowerCase()], temporary,
                 ], { timeout: 120000, maxBuffer: 1024 * 1024 });
 
                 const written = await parseFile(temporary);
+                const writtenValues = readTags(written);
                 for (const field of tagFields) {
-                    if (patch[field] !== undefined && (written.common[field] ?? (field === "year" ? 0 : "")) !== patch[field]) {
-                        if (field === "genre" && written.common.genre?.[0] === patch.genre)
-                            continue;
-
+                    if (patch[field] !== undefined && writtenValues[field] !== patch[field]) {
                         throw new Error(`Could not verify written ${field} tag. Original file not replaced.`);
                     }
                 }
 
-                if (JSON.stringify(pictureHashes(original.common.picture)) !== JSON.stringify(pictureHashes(written.common.picture))) {
+                const expectedPictures = file.artwork ? [file.artwork.hash] : pictureHashes(original.common.picture);
+                if (JSON.stringify(expectedPictures) !== JSON.stringify(pictureHashes(written.common.picture))) {
                     throw new Error("Artwork verification failed. Original file not replaced.");
                 }
 

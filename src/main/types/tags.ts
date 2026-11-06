@@ -8,7 +8,10 @@ export type SavePlan = {
 };
 
 
+import type {EmbeddedArtwork} from "./artwork";
+
 export type PlannedFile = {
+    artwork?: EmbeddedArtwork;
     track: Track;
     patch: TagPatch;
     fingerprint: string;

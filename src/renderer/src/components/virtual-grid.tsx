@@ -48,21 +48,19 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
     return (
         <div
             ref={container}
-            className="virtual-grid-scroll"
+            className="virtual-grid-scroll h-full min-h-0 overflow-auto overscroll-contain [scrollbar-gutter:stable]"
             aria-label={label}
             tabIndex={0}
         >
-            <div style={{ height: virtualizer.getTotalSize(), position: "relative", width: "100%" }}>
+            <div
+                className="relative w-full"
+                style={{ height: virtualizer.getTotalSize() }}
+            >
                 {virtualizer.getVirtualItems().map((row) => (
                     <div
                         key={row.key}
-                        className="virtual-grid-row"
+                        className="virtual-grid-row absolute top-0 left-0 grid w-full items-start"
                         style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            display: "grid",
                             gridTemplateColumns: "repeat(" + columns + ", minmax(0, 1fr))",
                             height: rowHeight,
                             transform: "translateY(" + row.start + "px)",
@@ -71,7 +69,7 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
                         {items.slice(row.index * columns, (row.index + 1) * columns).map((item) => (
                             <div
                                 key={getKey(item)}
-                                className="virtual-grid-cell"
+                                className="virtual-grid-cell min-w-0 overflow-hidden"
                             >{renderItem(item)}</div>
                         ))}
                     </div>
