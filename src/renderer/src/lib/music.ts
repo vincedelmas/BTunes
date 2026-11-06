@@ -17,6 +17,15 @@ export const formatTime = (seconds: number) => {
 };
 
 
+export function formatBytes(bytes: number) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const index = Math.min(Math.floor(Math.log10(bytes) / 3), units.length - 1);
+    return new Intl.NumberFormat("en", { maximumFractionDigits: index ? 1 : 0 }).format(bytes / 1000 ** index) + " " + units[index];
+}
+
+
 export const duplicateKey = (track: Track) => {
     return [track.title, track.artist, Math.round(track.duration)].join("|").toLowerCase();
 }

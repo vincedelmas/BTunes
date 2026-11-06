@@ -1,3 +1,7 @@
+import {MtpClient} from "./services/mtp";
+import {DeviceSyncService} from "./services/device-sync";
+import {fileDropMenu} from "./services/file-drop-menu";
+import {FileImportService} from "./services/file-import";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
 import {TagService} from "./services/tags";
@@ -41,7 +45,18 @@ protocol.registerSchemesAsPrivileged([{
 
 let quitting = false;
 let service: LibraryService;
+let devices: DeviceSyncService;
 const pendingWrites = new Set<Promise<unknown>>();
+
+async function trackWrite<T>(write: Promise<T>) {
+    pendingWrites.add(write);
+    try {
+        return await write;
+    }
+    finally {
+        pendingWrites.delete(write);
+    }
+}
 
 
 void app.whenReady().then(async () => {
@@ -54,9 +69,27 @@ void app.whenReady().then(async () => {
 
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
     const artwork = new ArtworkService();
+    const fileImport = new FileImportService(service);
+    devices = new DeviceSyncService(repo, new MtpClient());
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 
     const routes = {
+        "devices.list": { schema: rpcSchemas["devices.list"], run: () => devices.transport.devices() },
+        "devices.browse": {
+            schema: rpcSchemas["devices.browse"],
+            run: (input: RpcInput<"devices.browse">) => devices.transport.files(input.storageId, input.path),
+        },
+        "devices.mkdir": {
+            schema: rpcSchemas["devices.mkdir"],
+            run: (input: RpcInput<"devices.mkdir">) => trackWrite(devices.transport.mkdir(input.storageId, input.path)),
+        },
+        "devices.compare": {
+            schema: rpcSchemas["devices.compare"],
+            run: (input: RpcInput<"devices.compare">) => devices.compare(input.storageId, input.path),
+        },
+        "devices.status": { schema: rpcSchemas["devices.status"], run: () => devices.status() },
+        "devices.sync": { schema: rpcSchemas["devices.sync"], run: () => devices.sync() },
+        "devices.cancel": { schema: rpcSchemas["devices.cancel"], run: () => devices.cancel() },
         "library.refresh": { schema: rpcSchemas["library.refresh"], run: () => service.reconcile() },
         "artwork.search": {
             schema: rpcSchemas["artwork.search"],
@@ -70,15 +103,7 @@ void app.whenReady().then(async () => {
         "tags.save": {
             schema: rpcSchemas["tags.save"],
             run: async (input: RpcInput<"tags.save">) => {
-                const write = tags.save(input.token);
-                pendingWrites.add(write);
-
-                try {
-                    return await write;
-                }
-                finally {
-                    pendingWrites.delete(write);
-                }
+                return trackWrite(tags.save(input.token));
             },
         },
 
@@ -108,6 +133,14 @@ void app.whenReady().then(async () => {
                 });
                 return result.canceled ? null : service.scan(result.filePaths[0]);
             },
+        },
+
+        "library.drop": {
+            schema: rpcSchemas["library.drop"],
+            run: (input: RpcInput<"library.drop">) => trackWrite((async () => {
+                const choice = await fileDropMenu(win, repo.watchedFolders().map((folder) => folder.path), input.x, input.y);
+                return choice ? fileImport.import(input.paths, choice) : null;
+            })()),
         },
 
         "track.favorite": {
@@ -223,6 +256,7 @@ app.on("before-quit", (ev) => {
 
         quitting = true;
         void Promise.allSettled(pendingWrites)
+            .then(() => devices.close())
             .then(() => service.close())
             .finally(() => app.quit());
     }

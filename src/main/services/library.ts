@@ -1,3 +1,4 @@
+import {isAudioFile} from "../../shared/audio-files.ts";
 import type {FSWatcher} from "chokidar";
 import {watch} from "chokidar";
 import type {Stats} from "node:fs";
@@ -8,7 +9,6 @@ import {basename, extname, join, resolve, sep} from "node:path";
 import type {LibraryRepository} from "../repositories/library.ts";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
 
-const audioExtensions = new Set([".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac", ".wav", ".aiff"]);
 const folderIdentity = (info: Stats) => info.dev + ":" + info.ino;
 
 export class LibraryService {
@@ -49,7 +49,7 @@ export class LibraryService {
     }
 
     index(path: string) {
-        if (!audioExtensions.has(extname(path).toLowerCase())) return Promise.resolve();
+        if (!isAudioFile(path)) return Promise.resolve();
 
         return this.enqueue(path, async () => {
             const file = await stat(path);
@@ -150,7 +150,7 @@ export class LibraryService {
                 const path = join(directory, entry.name);
                 try {
                     if (entry.isDirectory()) await visit(path);
-                    else if (entry.isFile() && audioExtensions.has(extname(path).toLowerCase())) {
+                    else if (entry.isFile() && isAudioFile(path)) {
                         found++;
                         seen.add(path);
                         const info = await stat(path);

@@ -1,3 +1,4 @@
+import type {RepeatMode} from "@/types/player";
 import {usePreference} from "@/hooks/use-preference";
 import {volumeSchema} from "../../../shared/schemas/preferences";
 import {rpc} from "@/lib/rpc";
@@ -12,7 +13,7 @@ export function usePlayer(onError: (message: string) => void) {
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const [queue, setQueue] = useState<Track[]>([]);
     const [volume, setVolume] = usePreference("btunes.volume.v1", volumeSchema, 0.7);
-    const [repeat, setRepeat] = useState(false);
+    const [repeat, setRepeat] = useState<RepeatMode>("off");
     const [playing, setPlaying] = useState(false);
     const [shuffle, setShuffle] = useState(false);
 
@@ -73,7 +74,7 @@ export function usePlayer(onError: (message: string) => void) {
         }
 
         if (index < 0 || index >= queue.length) {
-            if (!repeat) {
+            if (repeat === "off") {
                 audio.current?.pause();
                 return;
             }
@@ -82,6 +83,25 @@ export function usePlayer(onError: (message: string) => void) {
         }
 
         start(queue[index], queue, index);
+    }
+
+    function cycleRepeat() {
+        setRepeat((previous) => {
+            if (previous === "off") return "all";
+            if (previous === "all") return "one";
+            return "off";
+        });
+    }
+
+    function ended() {
+        if (repeat === "one" && currentTrack) {
+            counted.current = false;
+            seek(0);
+            play();
+            return;
+        }
+
+        next();
     }
 
     const enqueue = (tracks: Track[], playNext = false) => {
@@ -129,7 +149,8 @@ export function usePlayer(onError: (message: string) => void) {
         shuffle,
         playing,
         enqueue,
-        setRepeat,
+        cycleRepeat,
+        ended,
         setVolume,
         setPlaying,
         setShuffle,

@@ -1,8 +1,8 @@
+import {fileHash} from "./file-hash.ts";
 import {genreChoices, resolveGenre} from "../../shared/genres.ts";
 import {promisify} from "node:util";
 import {readTags} from "./metadata.ts";
 import {parseFile} from "music-metadata";
-import {createReadStream} from "node:fs";
 import {execFile} from "node:child_process";
 import type {LibraryService} from "./library";
 import {tagFields} from "../../shared/tags.ts";
@@ -34,12 +34,7 @@ async function fingerprint(path: string) {
         throw new Error("Tag editing requires a regular file without hard links.");
     }
 
-    const hash = createHash("sha256");
-    for await (const chunk of createReadStream(path)) {
-        hash.update(chunk);
-    }
-
-    return hash.digest("hex");
+    return fileHash(path);
 }
 
 

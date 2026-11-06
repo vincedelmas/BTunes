@@ -18,7 +18,9 @@ bun run dev
 
 - Songs, albums grouped by album artist, artists, instant search, and possible duplicate detection.
 - Virtualized lists and grids, with sortable, resizable, reorderable columns and saved layout preferences.
-- Playback controls, saved volume, seeking, shuffle, repeat, queue, play counts, and recently played history.
+- Playback controls, saved volume, seeking, shuffle, repeat-all / repeat-one, queue, play counts, and recently played history.
+- Drop audio files onto Songs and choose **Copy here** or **Move here** from the native context menu.
+- USB/MTP device detection, phone-folder browsing, and one-way copying of missing music from PC to phone.
 - Classic playlists and genre-based automatic playlists.
 - Individual and batch tag editing, including album artist and embedded cover replacement.
 - Cover search returns up to three matches, using iTunes first and MusicBrainz / Cover Art Archive when needed. Searches and small previews
@@ -45,6 +47,20 @@ Tag writing supports **MP3, FLAC, and M4A**. Audio is not re-encoded; originals 
 FFmpeg may normalize format-specific metadata, so retain backups until you have checked your edits.
 There is no in-app undo or automatic backup cleanup yet.
 
+## USB sync and dropped files
+
+On CachyOS/KDE, USB sync uses the installed KDE MTP service and `kioclient` (`kio-extras`), with `busctl` from systemd.
+Connect the phone with a data-capable cable, unlock it, and select **File Transfer**. In **Devices**, select storage, open the phone’s
+music folder, and choose **Compare with PC**, then **Copy missing songs**. Progress and stopping after the current song are supported.
+
+Comparison recognizes case-insensitive filenames and common artist/album folders with numbered song filenames, then checks file sizes. Same-name files with different sizes and
+ambiguous PC filenames are reported for review. Phone-only files are retained. This first USB implementation copies missing songs only;
+it does not overwrite different versions, delete phone files, or change PC files. KDE Connect will come later.
+
+Dropped songs are copied into a configured music folder and indexed immediately. When several folders are configured, the native menu
+lets you choose the destination. Existing names get a numeric suffix. **Move here** removes the source only after the copy is verified and
+indexed. Files already directly inside the selected destination are simply reindexed.
+
 ## Development
 
 ```sh
@@ -69,4 +85,4 @@ Application data lives in `~/.config/BTunes/`, including `library.sqlite`, `cove
 
 ## Planned
 
-Android comparison and USB / KDE Connect sync, phone playlist exports, validated AppImage packaging.
+KDE Connect sync, phone playlist exports, richer smart-playlist rules, and validated AppImage packaging.

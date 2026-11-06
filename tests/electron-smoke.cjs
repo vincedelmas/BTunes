@@ -1,5 +1,5 @@
-const {app, dialog} = require("electron");
-const {mkdtempSync, rmSync, writeFileSync, mkdirSync} = require("node:fs");
+const {app, dialog, Menu} = require("electron");
+const {mkdtempSync, rmSync, writeFileSync, mkdirSync, copyFileSync, existsSync} = require("node:fs");
 const {tmpdir} = require("node:os");
 const {join} = require("node:path");
 const {execFileSync} = require("node:child_process");
@@ -31,6 +31,15 @@ execFileSync("ffmpeg", [
     join(music, "Silence.mp3"),
 ]);
 dialog.showOpenDialog = async () => ({canceled: false, filePaths: [music]});
+Menu.prototype.popup = function (options) {
+    const labels = this.items.map((item) => item.label);
+    if (!labels.includes("Copy here") || !labels.includes("Move here") || !labels.includes("Cancel")) throw new Error("Drop menu is missing Copy/Move/Cancel");
+    setImmediate(() => {
+        this.items.find((item) => item.label === "Copy here").click();
+        options.callback?.();
+    });
+};
+
 let done = false;
 const finish = (code) => {
     if (done) return;
@@ -117,7 +126,35 @@ app.on("browser-window-created", (_, win) => {
    })()`);
             if (!result.heading?.includes("Songs"))
                 throw new Error("React failed to render");
-            console.log("Electron smoke passed", JSON.stringify(result));
+            const dropped = join(profile, "Dropped.mp3");
+            copyFileSync(join(music, "Silence.mp3"), dropped);
+            await win.webContents.executeJavaScript(`(() => {
+                const input=document.createElement('input');
+                input.type='file';
+                input.id='drop-fixture';
+                input.style.display='none';
+                document.body.append(input);
+            })()`);
+            win.webContents.debugger.attach("1.3");
+            const documentNode = await win.webContents.debugger.sendCommand("DOM.getDocument");
+            const inputNode = await win.webContents.debugger.sendCommand("DOM.querySelector", {nodeId: documentNode.root.nodeId, selector: "#drop-fixture"});
+            await win.webContents.debugger.sendCommand("DOM.setFileInputFiles", {nodeId: inputNode.nodeId, files: [dropped]});
+            await win.webContents.executeJavaScript(`(async () => {
+                const file=document.getElementById('drop-fixture').files[0];
+                if(!window.btunes.filePaths([file])[0]) throw new Error('Preload did not resolve a dropped file');
+                const transfer=new DataTransfer();
+                transfer.items.add(file);
+                const zone=document.querySelector('.song-drop-zone');
+                zone.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:transfer,clientX:350,clientY:250}));
+                const end=Date.now()+5000;
+                while(document.querySelector('.track-table')?.getAttribute('aria-rowcount')!=='3') {
+                    if(Date.now()>end) throw new Error('Dropped file did not refresh the song table');
+                    await new Promise(resolve=>setTimeout(resolve,25));
+                }
+            })()`);
+            win.webContents.debugger.detach();
+            if (!existsSync(dropped) || !existsSync(join(music, "Dropped.mp3"))) throw new Error("Copy here did not preserve both files");
+            console.log("Electron smoke passed", JSON.stringify({...result, droppedFilesImported: 1}));
             finish(0);
         } catch (e) {
             console.error(e);

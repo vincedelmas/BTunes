@@ -1,3 +1,5 @@
+import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
+import type {FileImportResult} from "./file-import";
 import type {z} from "zod";
 import type {rpcSchemas} from "../schemas/rpc.ts";
 import type {Snapshot} from "./library";
@@ -6,10 +8,18 @@ import type {TagPreview, TagSaveResult} from "./tags";
 import type {ArtworkCandidate} from "./artwork";
 
 type RpcOutputs = {
+    "devices.list": MusicDevice[];
+    "devices.browse": DeviceFile[];
+    "devices.mkdir": void;
+    "devices.compare": void;
+    "devices.status": DeviceSyncState;
+    "devices.sync": void;
+    "devices.cancel": void;
     "artwork.search": ArtworkCandidate[];
     "tags.preview": TagPreview;
     "tags.save": TagSaveResult;
     "library.get": Snapshot | null;
+    "library.drop": FileImportResult | null;
     "library.refresh": { errors: string[] };
     "library.import": { imported: number; errors: string[] } | null;
     "track.reveal": void;
@@ -29,7 +39,7 @@ export type Rpc = <K extends keyof RpcOutputs>(method: K, input: RpcInput<K>) =>
 
 declare global {
     interface Window {
-        btunes: { rpc: Rpc };
+        btunes: { rpc: Rpc; filePaths: (files: File[]) => string[] };
     }
 }
 

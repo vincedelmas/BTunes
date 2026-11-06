@@ -5,7 +5,32 @@ const {migrate} = require("drizzle-orm/node-sqlite/migrator");
 const {mkdtempSync, mkdirSync, rmSync, writeFileSync, statSync} = require("node:fs");
 const {join} = require("node:path");
 const {tmpdir} = require("node:os");
-const {execFileSync} = require("node:child_process");
+const childProcess = require("node:child_process");
+const {execFileSync} = childProcess;
+const {promisify} = require("node:util");
+const originalExecFile = childProcess.execFile;
+const execute = promisify(originalExecFile);
+const mtpStorage = "/modules/kmtpd/device0/storage0";
+
+function testExecFile(...args) {
+    return originalExecFile(...args);
+}
+
+testExecFile[promisify.custom] = (command, args, options) => {
+    if (command !== "busctl") return execute(command, args, options);
+    const method = args[7];
+    const fixture = {
+        listDevices: [["/modules/kmtpd/device0"]],
+        listStorages: [[mtpStorage]],
+        friendlyName: "Fixture phone",
+        description: "Internal storage",
+        freeSpaceInBytes: 100000000,
+        getFilesAndFolders: args.at(-1) === "/" ? [[[1, 0, 1, "Music", 0, 0, "inode/directory"]], 0] : [[], 0],
+    };
+    if (!(method in fixture)) return Promise.reject(new Error("Unexpected MTP method: " + method));
+    return Promise.resolve({stdout: JSON.stringify({data: fixture[method]}), stderr: ""});
+};
+childProcess.execFile = testExecFile;
 
 const profile = mkdtempSync(join(tmpdir(), "btunes-large-library-"));
 const artifacts = join(tmpdir(), "btunes-ui-review");
@@ -313,6 +338,19 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(() => !document.querySelector('[aria-label="Playback position"]').disabled);
                 await audio.play();
                 await waitFor(() => !audio.paused);
+                const repeat=document.querySelector('[aria-label="Repeat"]');
+                if(repeat.dataset.repeat!=='off') throw new Error('Repeat must start disabled');
+                repeat.click();
+                await waitFor(()=>repeat.dataset.repeat==='all');
+                repeat.click();
+                await waitFor(()=>repeat.dataset.repeat==='one');
+                const repeatedSource=audio.src;
+                audio.currentTime=0.5;
+                audio.dispatchEvent(new Event('ended'));
+                await waitFor(()=>audio.currentTime<0.5 && !audio.paused);
+                if(audio.src!==repeatedSource) throw new Error('Repeat one must keep the current song');
+                repeat.click();
+                await waitFor(()=>repeat.dataset.repeat==='off');
                 await frame();
 
                 let libraryMutations = 0;
@@ -433,7 +471,15 @@ app.on("browser-window-created", (_, win) => {
                 button('Devices').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
                 if(document.querySelector('.library-hero .library-stats')) throw new Error('Device page shows local library counts');
-                if(!document.querySelector('[data-slot="empty-title"]').textContent.includes('No device connected')) throw new Error('Missing disconnected device state');
+                await waitFor(()=>[...document.querySelectorAll('[data-slot="card-title"]')].some(title=>title.textContent==='Fixture phone'));
+                const storage=[...document.querySelectorAll('button')].find(item=>item.textContent.includes('Internal storage'));
+                storage.click();
+                await waitFor(()=>[...document.querySelectorAll('button')].some(item=>item.textContent.trim()==='Music'));
+                button('Music').click();
+                await waitFor(()=>!button('Compare with PC').disabled);
+                button('Compare with PC').click();
+                await waitFor(()=>button('Copy missing songs') && !button('Copy missing songs').disabled);
+                if(!document.querySelector('.devices-page').textContent.includes('Missing on phone')) throw new Error('Phone comparison did not render');
                 button('Settings').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
                 if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');

@@ -1,3 +1,5 @@
+import {deviceFolderSchema} from "./devices.ts";
+import {fileDropSchema} from "./file-import.ts";
 import {z} from "zod";
 import {tagPatchFieldsSchema} from "./tags.ts";
 import {artworkSearchSchema} from "./artwork.ts";
@@ -15,6 +17,13 @@ const playlistDetails = {
 };
 
 export const rpcSchemas = {
+    "devices.list": z.undefined(),
+    "devices.browse": deviceFolderSchema,
+    "devices.mkdir": deviceFolderSchema,
+    "devices.compare": deviceFolderSchema,
+    "devices.status": z.undefined(),
+    "devices.sync": z.undefined(),
+    "devices.cancel": z.undefined(),
     "tags.preview": z.object({ patch: tagPatchFieldsSchema, ids: z.array(trackId).min(1).max(100), artworkId: z.uuid().optional() })
         .refine((input) => Object.keys(input.patch).length > 0 || Boolean(input.artworkId), "Choose a tag or cover to change."),
     "artwork.search": artworkSearchSchema,
@@ -22,6 +31,7 @@ export const rpcSchemas = {
     "library.get": z.object({ revision: z.number().int().nonnegative() }).optional(),
     "library.refresh": z.undefined(),
     "library.import": z.undefined(),
+    "library.drop": fileDropSchema,
     "track.reveal": idSchema,
     "track.favorite": idSchema,
     "track.played": idSchema,

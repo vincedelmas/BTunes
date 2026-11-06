@@ -6,7 +6,7 @@ import {Button} from "@/components/ui/button";
 import type {PlayerState} from "@/types/player";
 import type {Track} from "../../../../shared/types/library";
 
-import {ListMusic, Pause, Play, Repeat, Shuffle, SkipBack, SkipForward, Square, Volume2} from "lucide-react";
+import {ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Square, Volume2} from "lucide-react";
 
 
 interface PlayerBarProps {
@@ -79,12 +79,14 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     <Button
                         size="icon"
                         variant="ghost"
-                        aria-label="Repeat queue"
-                        aria-pressed={player.repeat}
-                        className={cn(player.repeat && "enabled text-primary")}
-                        onClick={() => player.setRepeat(!player.repeat)}
+                        aria-label="Repeat"
+                        title={"Repeat: " + player.repeat}
+                        data-repeat={player.repeat}
+                        aria-pressed={player.repeat !== "off"}
+                        className={cn(player.repeat !== "off" && "enabled text-primary")}
+                        onClick={player.cycleRepeat}
                     >
-                        <Repeat/>
+                        {player.repeat === "one" ? <Repeat1/> : <Repeat/>}
                     </Button>
                     <Button
                         size="icon"

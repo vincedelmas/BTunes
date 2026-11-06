@@ -1,3 +1,5 @@
+import {DevicesPage} from "@/components/devices/devices-page";
+import {SongDropZone} from "@/components/library/song-drop-zone";
 import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
 import type {OpenedCollection} from "@/types/collection";
 import {useItemReveal} from "@/hooks/use-item-reveal";
@@ -7,8 +9,6 @@ import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
 import {useLibrary} from "@/hooks/use-library";
 import {TagEditor} from "@/components/tag-editor";
-import {Smartphone} from "lucide-react";
-import {EmptyState} from "@/components/empty-state";
 import {Sidebar} from "@/components/library/sidebar";
 import {useCollection} from "@/hooks/use-collection";
 import type {Track} from "../../shared/types/library";
@@ -201,7 +201,7 @@ export function App() {
                             </h1>
                             {view === "android" ?
                                 <p className="text-xs text-muted-foreground">
-                                    Android sync
+                                    USB music sync
                                 </p>
                                 :
                                 <LibraryStats
@@ -233,11 +233,7 @@ export function App() {
                                 </p>
                             }
                             {view === "android" ?
-                                <EmptyState
-                                    icon={Smartphone}
-                                    title="No device connected"
-                                    description="Android sync is coming soon. Compare and transfer music over USB or KDE Connect when it’s available."
-                                />
+                                <DevicesPage/>
                                 :
                                 <>
                                     <FilterBar
@@ -247,7 +243,17 @@ export function App() {
                                         onClear={clearFilters}
                                     />
                                     <div className="collection-results min-h-0 flex-1 flex flex-col">
-                                        {renderCollection()}
+                                        {view === "tracks" ? (
+                                            <SongDropZone
+                                                onImported={async () => {
+                                                    clearFilters();
+                                                    await library.refresh();
+                                                }}
+                                                onError={library.reportError}
+                                            >
+                                                {renderCollection()}
+                                            </SongDropZone>
+                                        ) : renderCollection()}
                                     </div>
                                     {view === "duplicates" && !!tracks.length &&
                                         <p className="muted text-muted-foreground duplicate-note shrink-0 mt-[14px] mx-2 mb-0 text-xs">
@@ -296,7 +302,7 @@ export function App() {
             <audio
                 ref={audioRef}
                 onTimeUpdate={player.updateTime}
-                onEnded={() => player.next()}
+                onEnded={player.ended}
                 onPlay={() => player.setPlaying(true)}
                 onPause={() => player.setPlaying(false)}
                 src={player.currentTrack ? "btunes://audio/" + player.currentTrack.id : undefined}
