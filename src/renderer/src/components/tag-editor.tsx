@@ -1,3 +1,4 @@
+import {coverSearchQuery} from "@/lib/artwork";
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Check} from "lucide-react";
@@ -147,7 +148,9 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     />
 
                     <CoverSearch
-                        initialQuery={[first.albumArtist || first.artist, first.album === "Unknown album" ? first.title : first.album].join(" ")}
+                        query={coverSearchQuery(first.title, values)}
+                        track={first}
+                        trackCount={tracks.length}
                         selected={artwork}
                         disabled={busy}
                         onSelect={setArtwork}

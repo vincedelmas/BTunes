@@ -5,6 +5,7 @@ import type {TrackSort, TrackSortField} from "./types/track-sorting";
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 const missingText: Partial<Record<TrackSortField, string>> = {
     artist: "unknown artist",
+    albumArtist: "unknown artist",
     album: "unknown album",
     genre: "uncategorized",
 };

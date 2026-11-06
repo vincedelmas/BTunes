@@ -5,7 +5,7 @@ import type {Playlist, Snapshot} from "../../../../shared/types/library";
 import {PlaylistForm} from "@/components/library/playlist-form";
 import {PlaylistItem} from "@/components/library/playlist-item";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
-import {Settings, Plus} from "lucide-react";
+import {ListMusic, Settings, Plus} from "lucide-react";
 import {navigationItems} from "@/lib/sidebar-navigation";
 import type {SidebarLayout} from "@/types/sidebar";
 
@@ -112,10 +112,13 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                         setEditing(undefined);
                     }}
                 >
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
-                            <DialogDescription>Choose a name and an optional automatic genre rule.</DialogDescription>
+                    <DialogContent className="playlist-dialog gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+                        <DialogHeader className="bg-linear-to-br from-primary/10 to-card px-7 py-6">
+                            <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <ListMusic className="size-6"/>
+                            </div>
+                            <DialogTitle className="text-2xl font-bold">{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
+                            <DialogDescription>Give your collection a name. Add songs yourself or let a genre rule fill it for you.</DialogDescription>
                         </DialogHeader>
                         <PlaylistForm
                             key={editing?.id ?? "new"}

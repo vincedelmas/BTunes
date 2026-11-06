@@ -1,5 +1,6 @@
 import {Copy, Disc3, History, Library, Music2, Smartphone} from "lucide-react";
 
+
 export const navigationItems = [
     { id: "tracks", label: "Songs", icon: Music2 },
     { id: "albums", label: "Albums", icon: Disc3 },

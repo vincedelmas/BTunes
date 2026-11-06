@@ -1,9 +1,11 @@
+import {cn} from "@/lib/utils";
 import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList} from "@/components/ui/combobox";
 
 
 interface FilterSelectProps {
     id?: string;
+    className?: string;
     label: string;
     value: string;
     disabled?: boolean;
@@ -13,7 +15,7 @@ interface FilterSelectProps {
 }
 
 
-export function FilterSelect({ id, label, placeholder, options, value, disabled, onChange }: FilterSelectProps) {
+export function FilterSelect({ className, id, label, placeholder, options, value, disabled, onChange }: FilterSelectProps) {
     const items = [{ value: "", label: placeholder }, ...options];
 
     if (options.length > 15) {
@@ -34,7 +36,7 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
                     aria-label={label}
                     placeholder={placeholder}
                     showClear={Boolean(value)}
-                    className="filter-combobox min-w-[155px] max-w-65 h-[38px] bg-[#ffffff05] rounded-[9px] text-[#dedede] text-xs hover:bg-[#ffffff0a] hover:border-[#555]"
+                    className={cn("filter-combobox min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
                 />
                 <ComboboxContent
                     className="filter-popup min-w-55 p-[6px] border border-[#3a3a3a] rounded-xl bg-[#202020] shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]">
@@ -66,7 +68,7 @@ export function FilterSelect({ id, label, placeholder, options, value, disabled,
             <SelectTrigger
                 id={id}
                 aria-label={label}
-                className="filter-trigger min-w-[155px] max-w-65 h-[38px] bg-[#ffffff05] rounded-[9px] text-[#dedede] text-xs hover:bg-[#ffffff0a] hover:border-[#555]"
+                className={cn("filter-trigger min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-xs", className)}
             >
                 <SelectValue/>
             </SelectTrigger>

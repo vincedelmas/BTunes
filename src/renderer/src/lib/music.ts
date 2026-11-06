@@ -1,6 +1,16 @@
 import type {Track} from "../../../shared/types/library.ts";
 
 
+export const getAlbumArtist = (track: Track) => {
+    return track.albumArtist || track.artist;
+}
+
+
+export const albumKey = (track: Track) => {
+    return getAlbumArtist(track) + "\0" + track.album;
+}
+
+
 export const formatTime = (seconds: number) => {
     const safeSeconds = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
     return (Math.floor(safeSeconds / 60) + ":" + String(Math.floor(safeSeconds % 60)).padStart(2, "0"));
@@ -16,7 +26,7 @@ export const groupAlbums = (tracks: Track[]) => {
     const albums = new Map<string, Track[]>();
 
     for (const track of tracks) {
-        const key = (track.albumArtist || track.artist) + "\0" + track.album;
+        const key = albumKey(track);
         const album = albums.get(key) ?? [];
 
         album.push(track);

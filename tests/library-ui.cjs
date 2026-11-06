@@ -48,7 +48,7 @@ function finish(code) {
 setTimeout(() => {
     console.error("Large-library UI test timed out");
     finish(1);
-}, 30000);
+}, 60000);
 
 app.on("browser-window-created", (_, win) => {
     win.hide();
@@ -97,12 +97,17 @@ app.on("browser-window-created", (_, win) => {
                 if(searchStyle.borderColor!=='rgb(30, 215, 96)' || searchStyle.borderTopWidth!=='1px') throw new Error('Search must have one thin green focus border: '+searchStyle.borderColor+' '+searchStyle.borderTopWidth);
                 if(searchStyle.boxShadow!=='none' && !searchStyle.boxShadow.includes('0px 0px 0px 0px')) throw new Error('Search has an extra focus ring: '+searchStyle.boxShadow);
                 searchInput.blur();
+                document.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,cancelable:true,key:'f',ctrlKey:true}));
+                if(document.activeElement!==searchInput) throw new Error('Ctrl+F must focus library search');
+                searchInput.blur();
+                if(!document.querySelector('.library-stats').textContent.includes('1 album artist')) throw new Error('Header is missing album artist counts');
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
                 if(document.querySelector('[aria-label="Play visible songs"]') || document.querySelector('.filter-controls')) throw new Error('Songs should not show collection play or filter controls');
                 if(document.querySelector('.profile-avatar')) throw new Error('Decorative avatar remains');
                 button('Albums').click();
                 await waitFor(() => document.querySelectorAll('.album').length);
                 const albumNodes = document.querySelectorAll('.album').length;
+                if(document.querySelector('[aria-label="Filter by genre"]') || document.querySelector('[aria-label="Filter by artist"]')) throw new Error('Album filters should be removed');
                 if (albumNodes > 60) throw new Error("Albums are not virtualized");
                 const snapshot = await window.btunes.rpc('library.get',undefined);
                 if (snapshot.tracks.length !== 2300) throw new Error("Fixture must have 2300 tracks");
@@ -160,6 +165,10 @@ app.on("browser-window-created", (_, win) => {
                 const headerRect=header.getBoundingClientRect();
                 header.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:headerRect.x+80,clientY:headerRect.y+20}));
                 await waitFor(()=>document.querySelector('[role="menuitemcheckbox"]'));
+                const albumArtistToggle=[...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Album artist');
+                if(!albumArtistToggle) throw new Error('Album artist column is unavailable');
+                albumArtistToggle.click();
+                await waitFor(()=>document.querySelector('th[data-column="albumArtist"]'));
                 const genreToggle=[...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Genre');
                 genreToggle.click();
                 await waitFor(()=>!document.querySelector('th[data-column="genre"]'));
@@ -224,28 +233,66 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>!document.querySelector('[role="menu"]'));
                 window.uiReview.button('Albums').click();
                 await waitFor(()=>document.querySelector('.album'));
-                document.querySelector('[aria-label="Filter by genre"]').click();
-                await waitFor(()=>document.querySelector('[role="listbox"]'));
+                if(document.querySelector('[aria-label="Filter by genre"]') || document.querySelector('[aria-label="Filter by artist"]')) throw new Error('Collection dropdown filters remain');
+                const cards=[...document.querySelectorAll('.album')];
+                cards[0].dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                cards[1].dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                await waitFor(()=>document.querySelectorAll('.album[aria-selected="true"]').length===2);
+                cards[3].dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));
+                await waitFor(()=>document.querySelectorAll('.album[aria-selected="true"]').length===3);
+                if(document.querySelector('.album-dialog')) throw new Error('Modifier selection should not open an album');
+                const chosen=document.querySelector('.album[aria-selected="true"]');
+                const chosenRect=chosen.getBoundingClientRect();
+                chosen.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:chosenRect.x+20,clientY:chosenRect.y+20}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim().startsWith('Edit tags')).click();
+                await waitFor(()=>document.querySelector('.tag-editor'));
+                if(!document.querySelector('.tag-editor').textContent.includes('30 selected songs')) throw new Error('Album batch edit did not include every selected song');
+                window.uiReview.button('Cancel').click();
+                await waitFor(()=>!document.querySelector('.tag-editor'));
+                document.querySelector('[aria-label="Clear album selection"]').click();
+                await waitFor(()=>!document.querySelector('.album[aria-selected="true"]'));
+                document.querySelector('.album').click();
+                await waitFor(()=>document.querySelector('.album-dialog [data-track-id]'));
+                const table=document.querySelector('.album-dialog .track-table');
+                if(table.getAttribute('aria-rowcount')!=='11') throw new Error('Album did not use the shared song table');
+                if(!document.querySelector('.album-dialog .library-stats').textContent.includes('1 album artist')) throw new Error('Album dialog is missing artist counts');
+                const albumRows=[...document.querySelectorAll('.album-dialog [data-track-id]')];
+                albumRows[0].click();
+                albumRows[1].dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                albumRows[3].dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));
+                await waitFor(()=>document.querySelectorAll('.album-dialog [data-track-id][aria-selected="true"]').length===3);
+                window.uiReview.button('Edit selected songs').click();
+                await waitFor(()=>document.querySelector('.tag-editor'));
+                if(!document.querySelector('.tag-editor').textContent.includes('3 selected songs')) throw new Error('Album song selection was not passed to tag editing');
+                window.uiReview.button('Cancel').click();
+                await waitFor(()=>!document.querySelector('.tag-editor'));
             })()`, true);
-            await capture("genre-dropdown");
+            await capture("album-songs");
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor}=window.uiReview;
-                [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Jazz')).click();
-                await waitFor(()=>document.querySelector('[aria-label="Clear genre filter"]'));
-                document.querySelector('[aria-label="Show all songs"]').click();
-                await waitFor(()=>document.querySelector('.library-hero p').textContent.startsWith('2300 songs'));
-                const artistInput=document.querySelector('[aria-label="Filter by artist"]');
-                artistInput.focus();
-                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(artistInput,'Fixture');
-                artistInput.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'Fixture'}));
-                await waitFor(()=>document.querySelector('[role="option"]')?.textContent.includes('Fixture artist'));
+                document.querySelector('.album-dialog [data-slot="dialog-close"]').click();
+                await waitFor(()=>!document.querySelector('.album-dialog'));
+                document.querySelector('[aria-label="Clear album selection"]').click();
+                await waitFor(()=>!document.querySelector('.album[aria-selected="true"]'));
             })()`, true);
-            await capture("artist-dropdown");
+            const marqueeBounds = await win.webContents.executeJavaScript(`(() => {
+                const cells=document.querySelectorAll('[aria-label="Albums"] .virtual-grid-cell');
+                const first=cells[0].getBoundingClientRect();
+                const second=cells[1].getBoundingClientRect();
+                return {startX:Math.round(second.right+3),startY:Math.round(first.top+3),endX:Math.round(first.left+3),endY:Math.round(first.bottom-5)};
+            })()`);
+            win.webContents.sendInputEvent({type: 'mouseDown', x: marqueeBounds.startX, y: marqueeBounds.startY, button: 'left', clickCount: 1});
+            win.webContents.sendInputEvent({type: 'mouseMove', x: marqueeBounds.endX, y: marqueeBounds.endY});
+            await win.webContents.executeJavaScript(`window.uiReview.waitFor(()=>document.querySelectorAll('.album[aria-selected="true"]').length>=2)`);
+            await capture("album-marquee");
+            win.webContents.sendInputEvent({type: 'mouseUp', x: marqueeBounds.endX, y: marqueeBounds.endY, button: 'left', clickCount: 1});
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor}=window.uiReview;
-                [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Fixture artist')).click();
-                await waitFor(()=>document.querySelector('.library-hero p').textContent.startsWith('1 songs'));
-                document.querySelector('[aria-label="Show all songs"]').click();
+                if(document.querySelector('.album-dialog')) throw new Error('Marquee selection opened an album');
+                document.querySelector('[aria-label="Play album Album 000"]').click();
+                await waitFor(()=>!document.querySelector('audio').paused);
+                if(document.querySelector('.album-dialog')) throw new Error('Play album should play directly without opening the album');
                 window.uiReview.button('Songs').click();
                 await waitFor(()=>document.querySelector('[data-track-id="1"]'));
                 const first=document.querySelector('[data-track-id="1"]');
@@ -261,7 +308,12 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(() => !document.querySelector('[role="menu"]'));
                 document.querySelector('[aria-label="Show queue"]').click();
                 await waitFor(()=>document.querySelector('.queue-track')?.textContent.includes('Silence'));
-                document.querySelector('.queue button').click();
+                const queue=document.querySelector('.queue');
+                const queueRect=queue.getBoundingClientRect();
+                const headerRect=document.querySelector('.track-table thead').getBoundingClientRect();
+                if(!document.elementFromPoint(queueRect.x+20,headerRect.y+10)?.closest('.queue')) throw new Error('Song headings overlap the queue');
+                if(!document.querySelector('[aria-label="Close queue"]')) throw new Error('Queue must have an icon close button');
+                document.querySelector('[aria-label="Close queue"]').click();
                 document.querySelector('[aria-label="Play Silence"]').click();
                 const audio = document.querySelector('audio');
                 await waitFor(() => !document.querySelector('[aria-label="Playback position"]').disabled);
@@ -306,15 +358,20 @@ app.on("browser-window-created", (_, win) => {
                 document.querySelector('[aria-label="Reset Title"]').click();
                 await waitFor(()=>button('Save').disabled);
                 button('Find a cover').click();
-                await waitFor(()=>button('Search covers'));
-                button('Search covers').click();
+                await waitFor(()=>document.querySelector('.cover-picker'));
                 await waitFor(()=>document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]'));
                 document.querySelector('[aria-label="Use cover: Test cover by Fixture artist"]').click();
                 await waitFor(()=>document.querySelector('[aria-pressed="true"][aria-label^="Use cover"]'));
-                if(!document.querySelector('.tag-editor').textContent.includes('embedded in every selected song')) throw new Error('Selected artwork feedback is missing');
-                if(button('Save').disabled) throw new Error('Selected cover cannot be saved');
+                if(document.querySelector('#cover-query')) throw new Error('Cover lookup should derive the query from tags');
             })()`, true);
             await capture("cover-search");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button}=window.uiReview;
+                button('Use selected cover').click();
+                await waitFor(()=>!document.querySelector('.cover-picker'));
+                if(!document.querySelector('.tag-editor').textContent.includes('New cover selected')) throw new Error('Selected artwork feedback is missing');
+                if(button('Save').disabled) throw new Error('Cover-only changes cannot be saved');
+            })()`, true);
 
 
             await win.webContents.executeJavaScript(`(async () => {
@@ -330,6 +387,10 @@ app.on("browser-window-created", (_, win) => {
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
+                button('Devices').click();
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
+                if(document.querySelector('.library-hero .library-stats')) throw new Error('Device page shows local library counts');
+                if(!document.querySelector('[data-slot="empty-title"]').textContent.includes('No device connected')) throw new Error('Missing disconnected device state');
                 button('Settings').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
                 if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');
@@ -341,7 +402,7 @@ app.on("browser-window-created", (_, win) => {
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
                 button('Back to music').click();
-                await waitFor(()=>document.querySelector('h1')?.textContent==='Possible duplicates');
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('[data-track-id="1"]'));
                 const first=document.querySelector('[data-track-id="1"]');
@@ -357,14 +418,19 @@ app.on("browser-window-created", (_, win) => {
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
+                document.querySelector('[aria-label="Create playlist"]').click();
+                await waitFor(()=>document.querySelector('[role="dialog"] #playlist-name'));
+                if(document.querySelector('.playlist-dialog').getBoundingClientRect().width<500) throw new Error('Playlist dialog should be wider');
+                if(document.querySelector('[data-slot="dialog-title"]').textContent!=='Create playlist') throw new Error('Playlist creation should open a dialog');
+            })()`, true);
+            await capture("playlist-dialog");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button}=window.uiReview;
                 const menuFor=async target=>{
                     const rect=target.getBoundingClientRect();
                     target.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+80,clientY:rect.y+15}));
                     await waitFor(()=>document.querySelector('[role="menu"]'));
                 };
-                document.querySelector('[aria-label="Create playlist"]').click();
-                await waitFor(()=>document.querySelector('[role="dialog"] #playlist-name'));
-                if(document.querySelector('[data-slot="dialog-title"]').textContent!=='Create playlist') throw new Error('Playlist creation should open a dialog');
                 [...document.querySelectorAll('[role="dialog"] button')].find(item=>item.textContent.trim()==='Cancel').click();
                 await waitFor(()=>!document.querySelector('[role="dialog"]'));
                 await menuFor(button('Road trip'));
@@ -454,6 +520,7 @@ const originalHandle = ipcMain.handle.bind(ipcMain);
 let firstSnapshot = true;
 ipcMain.handle = (channel, handler) => originalHandle(channel, async (ev, method, input) => {
     if (channel === "rpc" && method === "artwork.search") {
+        if (input.query !== "Album 000 Fixture artist") throw new Error("Cover query did not use current tags: " + input.query);
         return [{
             id: "f3a8fc6f-b13a-4210-9881-92734cfd9362",
             album: "Test cover",

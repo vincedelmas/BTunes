@@ -1,3 +1,4 @@
+import {coverSearchQuery} from "../src/renderer/src/lib/artwork.ts";
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {ArtworkService} from "../src/main/services/artwork.ts";
@@ -45,4 +46,10 @@ void test("an unavailable archive falls back to deduplicated iTunes artwork", as
     const results = await service.search("Album Artist");
     assert.equal(results.length, 1);
     assert.equal(results[0].album, "Album");
+});
+
+void test("cover lookup uses current metadata and handles mixed artists without inventing a query", () => {
+    assert.equal(coverSearchQuery("Song", { title: "Song", album: "Brol", artist: "Angèle ft. Roméo Elvis", albumArtist: "Angèle" }), "Brol Angèle");
+    assert.equal(coverSearchQuery("Song", { title: "", album: "Big Willie Style", artist: "", albumArtist: "" }), "Big Willie Style");
+    assert.equal(coverSearchQuery("Song", { title: "New title", album: "Unknown album", artist: "Artist", albumArtist: "" }), "New title Artist");
 });

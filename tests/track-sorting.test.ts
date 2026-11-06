@@ -22,8 +22,8 @@ void test("song sorting uses natural titles and numeric durations in both direct
 });
 
 void test("missing metadata precedes populated values in both sort directions", () => {
-    for (const field of ["artist", "album", "genre", "year"] as const) {
-        const missing = { artist: "Unknown artist", album: "Unknown album", genre: "Uncategorized", year: 0 }[field];
+    for (const field of ["artist", "albumArtist", "album", "genre", "year"] as const) {
+        const missing = { artist: "Unknown artist", albumArtist: "", album: "Unknown album", genre: "Uncategorized", year: 0 }[field];
         const tracks = [original, { ...original, id: 2, [field]: missing }, { ...original, id: 3, [field]: field === "year" ? 2024 : "Zebra" }];
         assert.deepEqual(ordered(tracks, field), [2, 1, 3]);
         assert.deepEqual(ordered(tracks, field, true), [2, 3, 1]);

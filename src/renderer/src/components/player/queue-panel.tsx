@@ -1,3 +1,4 @@
+import {X} from "lucide-react";
 import type {PlayerState} from "@/types/player";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
@@ -15,14 +16,19 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
 
     return (
         <aside
-            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-auto rounded-lg z-[3] shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_h2]:text-xl [&_h2]:font-[750] [&_.virtual-grid-scroll]:flex-1">
+            aria-label="Playback queue"
+            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_h2]:text-xl [&_h2]:font-[750] [&_.virtual-grid-scroll]:flex-1"
+        >
             <div className="flex items-center justify-between">
                 <h2>Queue</h2>
                 <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon-sm"
+                    aria-label="Close queue"
                     onClick={onClose}
-                >Close</Button>
+                >
+                    <X/>
+                </Button>
             </div>
             {!items.length && <p className="muted text-muted-foreground">Play an album or a song to get started.</p>}
             <VirtualGrid

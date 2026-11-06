@@ -1,10 +1,10 @@
-import {createHash} from "node:crypto";
-import {parseFile} from "music-metadata";
 import type {FSWatcher} from "chokidar";
 import {watch} from "chokidar";
+import {createHash} from "node:crypto";
+import {readTags} from "./metadata.ts";
+import {parseFile} from "music-metadata";
 import {basename, extname, join} from "node:path";
 import {LibraryRepository} from "../repositories/library.ts";
-import {readTags} from "./metadata.ts";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
 
 
@@ -13,12 +13,11 @@ const audioExtensions = new Set([".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac
 
 export class LibraryService {
     private closing = false;
-    private metadataRefresh?: Promise<void>;
-    private watcher?: FSWatcher;
-    private jobs = new Map<string, Promise<void>>();
-
-    readonly repo: LibraryRepository;
     readonly covers: string;
+    private watcher?: FSWatcher;
+    readonly repo: LibraryRepository;
+    private metadataRefresh?: Promise<void>;
+    private jobs = new Map<string, Promise<void>>();
 
     constructor(repo: LibraryRepository, covers: string) {
         this.repo = repo;
@@ -26,7 +25,9 @@ export class LibraryService {
     }
 
     async index(path: string) {
-        if (!audioExtensions.has(extname(path).toLowerCase())) return;
+        if (!audioExtensions.has(extname(path).toLowerCase())) {
+            return;
+        }
 
         const previous = this.jobs.get(path) ?? Promise.resolve();
         const job = previous.catch(() => {
@@ -51,12 +52,12 @@ export class LibraryService {
                     cover,
                     size: file.size,
                     year: tags.year || 0,
+                    genre: tags.genre || "Uncategorized",
                     album: tags.album || "Unknown album",
                     artist: tags.artist || "Unknown artist",
-                    albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
                     duration: metadata.format.duration || 0,
-                    genre: tags.genre || "Uncategorized",
                     title: tags.title || basename(path, extname(path)),
+                    albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
                 });
             });
 

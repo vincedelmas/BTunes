@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+
 @theme inline {
     --font-sans: "Inter Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-heading: var(--font-sans);
@@ -30,6 +31,7 @@
     --radius-md: 6px;
     --radius-lg: 8px;
 }
+
 :root {
     --radius: 8px;
     color-scheme: dark;
@@ -57,9 +59,7 @@ body {
     margin: 0;
 }
 
-button,
-input,
-select {
+button, input, select {
     font: inherit;
 }
 

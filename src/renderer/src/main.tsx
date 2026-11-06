@@ -1,8 +1,9 @@
+import "./style.css";
 import React from "react";
-import {createRoot} from "react-dom/client";
 import {App} from "./App";
 import "@fontsource-variable/inter";
-import "./style.css";
+import {createRoot} from "react-dom/client";
+
 
 createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

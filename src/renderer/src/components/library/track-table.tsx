@@ -1,3 +1,4 @@
+import {useListSelection} from "@/hooks/use-list-selection";
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
 import {useTable} from "@tanstack/react-table";
@@ -18,7 +19,7 @@ import {itemOrderSchema} from "../../../../shared/schemas/preferences";
 import {songColumns as columns, songTableFeatures as features} from "@/lib/song-columns";
 import {SongColumnHeader} from "@/components/library/song-column-header";
 import {ColumnVisibilityMenu} from "@/components/library/column-visibility-menu";
-import type {Dispatch, MouseEvent, SetStateAction} from "react";
+import type {Dispatch, SetStateAction} from "react";
 
 const sizingKey = "btunes.song-columns.v1";
 const visibilityKey = "btunes.song-column-visibility.v1";
@@ -43,7 +44,7 @@ function readColumnSizes(): ColumnSizingState {
 function readColumnVisibility(): ColumnVisibilityState {
     try {
         const stored = JSON.parse(localStorage.getItem(visibilityKey) ?? "{}");
-        return Object.fromEntries(columns.map((column) => [column.id, column.id === "title" || stored?.[column.id] !== false]));
+        return Object.fromEntries(columns.map((column) => [column.id, column.id === "title" || (stored?.[column.id] ?? column.id !== "albumArtist")]));
     }
     catch {
         return {};
@@ -68,7 +69,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     const container = useRef<HTMLDivElement>(null);
     const selectedIds = useMemo(() => new Set(selected), [selected]);
     const selectedTracks = useMemo(() => tracks.filter((track) => selectedIds.has(track.id)), [tracks, selectedIds]);
-    const anchorId = useRef<number | undefined>(undefined);
+    const selection = useListSelection(tracks.map((track) => track.id), selected, onSelect);
     const getItemKey = useCallback((index: number) => tracks[index].id, [tracks]);
     const [savedOrder, setOrder] = usePreference("btunes.song-column-order.v1", itemOrderSchema, columns.map((column) => column.id));
     const order = useMemo(() => normalizeOrder(savedOrder, columns.map((column) => column.id)), [savedOrder]);
@@ -111,30 +112,6 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
 
     const visibleColumns = table.getVisibleLeafColumns();
 
-    function selectRow(index: number, ev: MouseEvent) {
-        if ((ev.target as HTMLElement).closest("button")) return;
-
-        const track = tracks[index];
-        const additive = ev.ctrlKey || ev.metaKey;
-
-        if (ev.shiftKey) {
-            const anchorIndex = tracks.findIndex((item) => item.id === anchorId.current);
-            const start = anchorIndex < 0 ? index : anchorIndex;
-            const range = tracks.slice(Math.min(start, index), Math.max(start, index) + 1).map((item) => item.id);
-            onSelect((previous) => additive ? [...new Set([...previous, ...range])] : range);
-            if (anchorIndex < 0) anchorId.current = track.id;
-            return;
-        }
-
-        anchorId.current = track.id;
-        if (additive) {
-            onSelect((previous) => previous.includes(track.id) ? previous.filter((id) => id !== track.id) : [...previous, track.id]);
-            return;
-        }
-
-        onSelect([track.id]);
-    }
-
     function renderCell(track: Track, columnId: string) {
         if (columnId === "title") {
             return (
@@ -156,6 +133,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
             );
         }
         if (columnId === "duration") return formatTime(track.duration);
+        if (columnId === "albumArtist" && !track.albumArtist) return <span className="text-muted-foreground">—</span>;
         if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-[#777]">No genre</span>;
         if (columnId === "year" && !track.year) return <span className="missing-tag text-[#777]">—</span>;
 
@@ -165,7 +143,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
     return (
         <div
             ref={container}
-            className="track-scroll h-full min-h-0 overflow-auto overscroll-contain [scrollbar-gutter:stable] overflow-x-hidden [&_[data-slot=table-container]]:overflow-visible"
+            className="track-scroll h-full min-h-0 overflow-auto overscroll-contain outline-none focus-visible:outline-1 focus-visible:outline-primary focus-visible:-outline-offset-1 [scrollbar-gutter:stable] overflow-x-hidden [&_[data-slot=table-container]]:overflow-visible"
             aria-label="Songs"
             tabIndex={0}
         >
@@ -241,13 +219,10 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                                     aria-selected={selectedIds.has(track.id)}
                                     className={cn("group h-9 hover:bg-white/6 aria-selected:bg-secondary", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
                                     tabIndex={0}
-                                    onClick={(ev) => selectRow(row.index, ev)}
-                                    onContextMenu={() => {
-                                        if (!selectedIds.has(track.id)) {
-                                            anchorId.current = track.id;
-                                            onSelect([track.id]);
-                                        }
+                                    onClick={(ev) => {
+                                        if (!(ev.target as HTMLElement).closest("button")) selection.select(track.id, ev);
                                     }}
+                                    onContextMenu={() => selection.ensureSelected(track.id)}
                                     onDoubleClick={(ev) => {
                                         if (!(ev.target as HTMLElement).closest("button,input")) actions.onPlay(track);
                                     }}

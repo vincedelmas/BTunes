@@ -1,3 +1,5 @@
+import {useMarqueeSelection} from "@/hooks/use-marquee-selection";
+import type {GridSelection} from "@/types/selection";
 import {useCallback, useEffect, useRef, useState} from "react";
 import type {ReactNode} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
@@ -6,6 +8,7 @@ interface VirtualGridProps<T> {
     items: T[];
     getKey: (item: T) => string | number;
     renderItem: (item: T) => ReactNode;
+    selection?: GridSelection;
     minColumnWidth?: number;
     itemHeight?: number;
     maxColumns?: number;
@@ -13,13 +16,14 @@ interface VirtualGridProps<T> {
 }
 
 
-export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label }: VirtualGridProps<T>) {
+export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label, selection }: VirtualGridProps<T>) {
     "use no memo"; // TanStack Virtual measurements must be read on every virtualizer update.
 
     const container = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(0);
     const columns = Math.min(maxColumns, Math.max(1, Math.floor(width / minColumnWidth)));
     const rowHeight = itemHeight ?? Math.ceil(width / columns + 104);
+    const marquee = useMarqueeSelection(container, items.map((item) => String(getKey(item))), { columns, rowHeight, width }, selection);
     const rowKey = useCallback((index: number) => getKey(items[index * columns]), [items, columns, getKey]);
 
     useEffect(() => {
@@ -48,9 +52,23 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
     return (
         <div
             ref={container}
-            className="virtual-grid-scroll h-full min-h-0 overflow-auto overscroll-contain [scrollbar-gutter:stable]"
+            className="virtual-grid-scroll relative h-full min-h-0 overflow-auto overscroll-contain outline-none focus-visible:outline-1 focus-visible:outline-primary focus-visible:-outline-offset-1 [scrollbar-gutter:stable]"
             aria-label={label}
+            role={selection ? "grid" : undefined}
+            aria-multiselectable={selection ? true : undefined}
             tabIndex={0}
+            onPointerDown={marquee.onPointerDown}
+            onPointerMove={marquee.onPointerMove}
+            onPointerUp={marquee.onPointerUp}
+            onPointerCancel={marquee.onPointerCancel}
+            onKeyDown={(ev) => {
+                if (!selection || (ev.target as HTMLElement).closest("button,input")) return;
+                if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") {
+                    ev.preventDefault();
+                    selection.onChange(items.map((item) => String(getKey(item))));
+                }
+                if (ev.key === "Escape") selection.onChange([]);
+            }}
         >
             <div
                 className="relative w-full"
@@ -59,7 +77,8 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
                 {virtualizer.getVirtualItems().map((row) => (
                     <div
                         key={row.key}
-                        className="virtual-grid-row absolute top-0 left-0 grid w-full items-start"
+                        role={selection ? "row" : undefined}
+                        className="virtual-grid-row absolute top-0 left-0 grid w-full items-start gap-x-2"
                         style={{
                             gridTemplateColumns: "repeat(" + columns + ", minmax(0, 1fr))",
                             height: rowHeight,
@@ -74,6 +93,12 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
                         ))}
                     </div>
                 ))}
+                {marquee.rectangle && <div
+                    aria-hidden="true"
+                    data-slot="selection-marquee"
+                    className="pointer-events-none absolute border border-primary bg-primary/10"
+                    style={marquee.rectangle}
+                />}
             </div>
         </div>
     );

@@ -1,23 +1,23 @@
-import type {PlannedFile, SavePlan} from "../types/tags";
-import {readTags} from "./metadata.ts";
-import type {EmbeddedArtwork} from "../types/artwork.ts";
 import {promisify} from "node:util";
+import {readTags} from "./metadata.ts";
 import {parseFile} from "music-metadata";
 import {createReadStream} from "node:fs";
 import {execFile} from "node:child_process";
 import type {LibraryService} from "./library";
-import {createHash, randomUUID} from "node:crypto";
-import {basename, dirname, extname, join} from "node:path";
-import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/promises";
 import {tagFields} from "../../shared/tags.ts";
-import type {TagPatch, TagPreview, TagSaveResult} from "../../shared/types/tags.ts";
+import {createHash, randomUUID} from "node:crypto";
+import type {EmbeddedArtwork} from "../types/artwork.ts";
+import type {PlannedFile, SavePlan} from "../types/tags";
+import {basename, dirname, extname, join} from "node:path";
 import {tagPatchFieldsSchema} from "../../shared/schemas/tags.ts";
+import type {TagPatch, TagPreview, TagSaveResult} from "../../shared/types/tags.ts";
+import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/promises";
 
 
 const run = promisify(execFile);
 const previewLifetime = 10 * 60 * 1000;
-
 const metadataNames: Record<string, string> = { year: "date", albumArtist: "album_artist" };
+
 
 const formats: Record<string, string> = {
     ".mp3": "mp3",
@@ -63,8 +63,11 @@ export class TagService {
     async preview(ids: number[], input: TagPatch, artwork?: EmbeddedArtwork): Promise<TagPreview> {
         const files: PlannedFile[] = [];
         const patch = tagPatchFieldsSchema.parse(input);
-        if (!Object.keys(patch).length && !artwork) throw new Error("Choose a tag or cover to change.");
         const preview: TagPreview = { token: randomUUID(), files: [] };
+
+        if (!Object.keys(patch).length && !artwork) {
+            throw new Error("Choose a tag or cover to change.");
+        }
 
         for (const [token, plan] of this.plans) {
             if (plan.expiresAt < Date.now()) this.plans.delete(token);
@@ -77,17 +80,14 @@ export class TagService {
 
         for (const id of new Set(ids)) {
             const track = this.library.repo.get(id);
-
             if (!track) throw new Error("Track not found.");
 
             if (!formats[extname(track.path).toLowerCase()]) {
                 throw new Error("Tag writing currently supports MP3, FLAC, and M4A files.");
             }
 
-            const metadata = await parseFile(track.path);
             const sourceFingerprint = await fingerprint(track.path);
-
-            const currentValues = readTags(metadata);
+            const currentValues = readTags(await parseFile(track.path));
 
             if ((await fingerprint(track.path)) !== sourceFingerprint) {
                 throw new Error("A file changed while preparing the preview. Try again.");
@@ -171,7 +171,9 @@ export class TagService {
                 await copyFile(track.path, backup);
                 const original = await parseFile(track.path);
 
-                const imageArguments = file.artwork ? ["-i", imagePath, "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic"] : ["-map", "0"];
+                const imageArguments = file.artwork
+                    ? ["-i", imagePath, "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic"]
+                    : ["-map", "0"];
 
                 const metadataArguments = Object.entries(patch)
                     .flatMap(([key, value]) => [
@@ -187,6 +189,7 @@ export class TagService {
 
                 const written = await parseFile(temporary);
                 const writtenValues = readTags(written);
+                
                 for (const field of tagFields) {
                     if (patch[field] !== undefined && writtenValues[field] !== patch[field]) {
                         throw new Error(`Could not verify written ${field} tag. Original file not replaced.`);

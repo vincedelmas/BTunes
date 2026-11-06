@@ -1,10 +1,10 @@
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
-import {ArtworkService} from "./services/artwork";
 import {TagService} from "./services/tags";
 import {serveAudio} from "./services/audio";
 import {rpcSchemas} from "../shared/schemas/rpc";
 import type {RpcInput} from "../shared/types/rpc";
+import {ArtworkService} from "./services/artwork";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
 import {migrateLegacyUserData} from "./services/user-data";

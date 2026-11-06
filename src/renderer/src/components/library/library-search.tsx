@@ -1,4 +1,4 @@
-import {useRef} from "react";
+import {useEffect, useRef} from "react";
 import {Search, X} from "lucide-react";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
 
@@ -9,6 +9,20 @@ interface LibrarySearchProps {
 
 export function LibrarySearch({ value, onChange }: LibrarySearchProps) {
     const input = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        function focusSearch(ev: KeyboardEvent) {
+            if ((!ev.ctrlKey && !ev.metaKey) || ev.altKey || ev.key.toLowerCase() !== "f") return;
+            if (document.querySelector('[data-slot="dialog-content"]')) return;
+
+            ev.preventDefault();
+            input.current?.focus();
+            input.current?.select();
+        }
+
+        document.addEventListener("keydown", focusSearch);
+        return () => document.removeEventListener("keydown", focusSearch);
+    }, []);
 
     function clearSearch() {
         onChange("");

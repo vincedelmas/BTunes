@@ -3,6 +3,7 @@ export interface EmbeddedArtwork {
     hash: string;
 }
 
+
 export interface CachedArtwork {
     url: string;
     expiresAt: number;

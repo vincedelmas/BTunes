@@ -20,7 +20,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const [view, setView] = useState("tracks");
     const [search, setSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
-    const [genre, setGenre] = useState("");
     const [artist, setArtist] = useState("");
     const [savedSort, setSavedSort] = usePreference<TrackSort>("btunes.song-sort.v1", trackSortSchema, { field: "title", descending: false });
     const [historySort, setHistorySort] = useState<TrackSort>({ field: "lastPlayed", descending: true });
@@ -36,7 +35,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const [selected, setSelected] = useState<number[]>([]);
 
     const genres = uniqueValues(data.tracks, "genre");
-    const artists = uniqueValues(data.tracks, "artist");
     const activePlaylist = data.playlists.find((playlist) => "playlist:" + playlist.id === view);
 
     useEffect(() => {
@@ -66,8 +64,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     const tracks = data.tracks.filter((track) => {
-        if (query && ![track.title, track.artist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-        if (genre && track.genre !== genre) return false;
+        if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
         if (artist && track.artist !== artist) return false;
         if (view === "history" && !track.lastPlayed) return false;
         if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
@@ -81,7 +78,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     function clearFilters() {
         setSearch("");
-        setGenre("");
         setArtist("");
     }
 
@@ -113,9 +109,9 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     return {
-        view, search, genre, artist, sort, selected, tracks, albums, genres, artists,
+        view, search, artist, sort, selected, tracks, albums, genres,
         activePlaylist, title,
-        setSearch, setGenre, setArtist, setSort, setSelected,
+        setSearch, setArtist, setSort, setSelected,
         navigate, showArtist, clearFilters, returnToMusic,
     };
 }

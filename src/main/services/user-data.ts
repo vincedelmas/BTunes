@@ -1,31 +1,38 @@
-import {DatabaseSync, backup} from "node:sqlite";
-import {cp, lstat, mkdir, mkdtemp, rename, rm} from "node:fs/promises";
 import {join} from "node:path";
+import {backup, DatabaseSync} from "node:sqlite";
+import {cp, lstat, mkdir, mkdtemp, rename, rm} from "node:fs/promises";
 
-async function exists(path: string) {
+
+const exists = async (path: string) => {
     try {
         await lstat(path);
         return true;
     }
     catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return false;
+        }
+
         throw error;
     }
-}
+};
+
 
 export async function migrateLegacyUserData(legacyDirectory: string, targetDirectory: string) {
     const sourceDatabase = join(legacyDirectory, "library.sqlite");
     const targetDatabase = join(targetDirectory, "library.sqlite");
 
-    if (await exists(targetDatabase) || !await exists(sourceDatabase)) return false;
+    if (await exists(targetDatabase) || !await exists(sourceDatabase)) {
+        return false;
+    }
 
     await mkdir(targetDirectory, { recursive: true });
 
-    const staging = await mkdtemp(join(targetDirectory, ".library-migration-"));
     const copiedDirectories: string[] = [];
+    const staging = await mkdtemp(join(targetDirectory, ".library-migration-"));
 
     try {
-        // SQLite backup includes committed WAL data, unlike a plain database file copy.
+        // SQLite backup includes committed WAL data, unlike plain db file copy
         const source = new DatabaseSync(sourceDatabase, { readOnly: true });
 
         try {
@@ -39,7 +46,10 @@ export async function migrateLegacyUserData(legacyDirectory: string, targetDirec
             const sourcePath = join(legacyDirectory, name);
             const targetPath = join(targetDirectory, name);
 
-            if (!await exists(sourcePath)) continue;
+            if (!await exists(sourcePath)) {
+                continue;
+            }
+
             if (await exists(targetPath)) {
                 throw new Error("Cannot migrate the library: " + targetPath + " already exists.");
             }
@@ -49,8 +59,9 @@ export async function migrateLegacyUserData(legacyDirectory: string, targetDirec
             copiedDirectories.push(targetPath);
         }
 
-        // Publish the database last so a failed copy can be retried on the next launch.
+        // Publish database last so failed copy can be retried on next launch
         await rename(join(staging, "library.sqlite"), targetDatabase);
+        
         return true;
     }
     catch (error) {
