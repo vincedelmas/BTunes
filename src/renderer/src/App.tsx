@@ -1,4 +1,4 @@
-import {useDeferredValue, useEffect, useMemo, useState} from "react";
+import {useDeferredValue, useEffect, useState} from "react";
 import {ArrowLeft, Headphones, Pencil, Play, Search, Smartphone} from "lucide-react";
 import type {Track} from "../../shared/types/library";
 import {Sidebar} from "@/components/library/sidebar";
@@ -49,8 +49,8 @@ export function App() {
     const [selected, setSelected] = useState<number[]>([]);
     const [editing, setEditing] = useState<Track[]>();
 
-    const genres = useMemo(() => uniqueValues(library.data.tracks, "genre"), [library.data.tracks]);
-    const artists = useMemo(() => uniqueValues(library.data.tracks, "artist"), [library.data.tracks]);
+    const genres = uniqueValues(library.data.tracks, "genre");
+    const artists = uniqueValues(library.data.tracks, "artist");
     const activePlaylist = library.data.playlists.find((playlist) => "playlist:" + playlist.id === view);
 
     useEffect(() => {
@@ -68,35 +68,31 @@ export function App() {
         };
     }, [view, library.data.revision, library.reportError]);
 
-    const tracks = useMemo(() => {
-        const duplicates = new Map<string, number>();
-        const playlistMembers = new Set(playlistIds);
-        const query = deferredSearch.trim().toLocaleLowerCase();
+    const duplicates = new Map<string, number>();
+    const playlistMembers = new Set(playlistIds);
+    const query = deferredSearch.trim().toLocaleLowerCase();
 
-        if (view === "duplicates") {
-            for (const track of library.data.tracks) {
-                const key = duplicateKey(track);
-                duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
-            }
+    if (view === "duplicates") {
+        for (const track of library.data.tracks) {
+            const key = duplicateKey(track);
+            duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
         }
+    }
 
-        return library.data.tracks.filter((track) => {
-            if (query && ![track.title, track.artist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-            if (genre && track.genre !== genre) return false;
-            if (artist && track.artist !== artist) return false;
-            if (view === "history" && !track.lastPlayed) return false;
-            if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
-            if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
+    const tracks = library.data.tracks.filter((track) => {
+        if (query && ![track.title, track.artist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
+        if (genre && track.genre !== genre) return false;
+        if (artist && track.artist !== artist) return false;
+        if (view === "history" && !track.lastPlayed) return false;
+        if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
+        if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
 
-            return true;
-        }).sort((first, second) => compareTracks(first, second, sort));
-    }, [library.data.tracks, deferredSearch, genre, artist, view, playlistIds, sort]);
+        return true;
+    }).sort((first, second) => compareTracks(first, second, sort));
 
-    const albums = useMemo(() => groupAlbums(tracks), [tracks]);
-    const selectedTracks = useMemo(() => {
-        const ids = new Set(selected);
-        return tracks.filter((track) => ids.has(track.id));
-    }, [tracks, selected]);
+    const albums = groupAlbums(tracks);
+    const selectedIds = new Set(selected);
+    const selectedTracks = tracks.filter((track) => selectedIds.has(track.id));
     const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
 

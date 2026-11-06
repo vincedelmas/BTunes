@@ -2,7 +2,7 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import type {ReactNode} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
 
-export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label }: {
+interface VirtualGridProps<T> {
     items: T[];
     getKey: (item: T) => string | number;
     renderItem: (item: T) => ReactNode;
@@ -10,7 +10,12 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
     itemHeight?: number;
     maxColumns?: number;
     label: string;
-}) {
+}
+
+
+export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label }: VirtualGridProps<T>) {
+    "use no memo"; // TanStack Virtual measurements must be read on every virtualizer update.
+
     const container = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState(0);
     const columns = Math.min(maxColumns, Math.max(1, Math.floor(width / minColumnWidth)));
@@ -28,7 +33,7 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
         return () => observer.disconnect();
     }, []);
 
-    // TanStack Virtual maintains mutable measurements. Keep this hook outside compiler memoization.
+    // Oxlint checks this API even though the component explicitly opts out above.
     // oxlint-disable-next-line react/incompatible-library
     const virtualizer = useVirtualizer({
         count: Math.ceil(items.length / columns),

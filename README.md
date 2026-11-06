@@ -195,3 +195,21 @@ in `src/renderer/src/types/`, and main-process workflow types in `src/main/types
 Component-specific props remain beside their component. All Zod validation lives
 in `src/shared/schemas/`; RPC input types and `TagPatch` are inferred from these
 schemas instead of duplicating their shapes.
+
+## React Compiler
+
+The renderer uses the stable React Compiler Babel plugin through Vite's
+`reactCompilerPreset`. It runs in development and production and automatically
+memoizes compatible components, derived values, and callbacks. Prefer ordinary
+React code over adding `useMemo`, `useCallback`, or `memo` by default.
+
+`TrackTable` and `VirtualGrid` explicitly use `"use no memo"` because TanStack
+Virtual exposes mutable measurements that must be read on virtualizer updates.
+These boundaries retain a few manual memoizations for selection and key callbacks;
+the rest of the application relies on the compiler. Column sizes use a lazy state
+initializer rather than a memo for persistent initialization.
+
+Library polling and automatic playback use Effect Events to read current handlers
+without restarting their effects when unrelated state changes. Integration tests
+check that tag editing and a library refresh do not resume paused audio, and that
+playback progress does not rerender the large song collection.

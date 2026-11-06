@@ -1,4 +1,4 @@
-import {useMemo, useState} from "react";
+import {useState} from "react";
 import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
 import type {Track} from "../../../shared/types/library";
 import {tagFields} from "../../../shared/tags";
@@ -14,20 +14,19 @@ import {Alert, AlertDescription} from "@/components/ui/alert";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 
-export function TagEditor({
-                              tracks,
-                              onClose,
-                              onSaved,
-                          }: {
+interface TagEditorProps {
     tracks: Track[];
     onClose: () => void;
     onSaved: (message: string) => Promise<void>;
-}) {
-    const initialValues = useMemo(() => Object.fromEntries(tagFields.map((field) => {
+}
+
+
+export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
+    const initialValues = Object.fromEntries(tagFields.map((field) => {
         const first = tracks[0][field];
         const common = tracks.every((track) => track[field] === first);
         return [field, common ? String(first || "") : ""];
-    })) as Record<keyof TagPatch, string>, [tracks]);
+    })) as Record<keyof TagPatch, string>;
     const [values, setValues] = useState(initialValues);
     const [enabled, setEnabled] = useState<Set<keyof TagPatch>>(new Set());
     const [preview, setPreview] = useState<TagPreview>();
@@ -44,34 +43,22 @@ export function TagEditor({
         setBusy(true);
         setError("");
 
-        try {
-            if (tracks.length > 100)
-                throw new Error("Select up to 100 songs per edit.");
+        await Promise.resolve()
+            .then(() => {
+                if (tracks.length > 100) throw new Error("Select up to 100 songs per edit.");
 
-            const patch = Object.fromEntries(
-                [...enabled].map((field) => [
+                const patch = Object.fromEntries([...enabled].map((field) => [
                     field,
                     field === "year" ? Number(values[field]) : values[field],
-                ]),
-            );
-            const validated = tagPatchSchema.safeParse(patch);
+                ]));
+                const validated = tagPatchSchema.safeParse(patch);
+                if (!validated.success) throw new Error(validated.error.issues[0].message);
 
-            if (!validated.success)
-                throw new Error(validated.error.issues[0].message);
-
-            setPreview(
-                await rpc("tags.preview", {
-                    ids: tracks.map((track) => track.id),
-                    patch: validated.data,
-                }),
-            );
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-        }
-        finally {
-            setBusy(false);
-        }
+                return rpc("tags.preview", { ids: tracks.map((track) => track.id), patch: validated.data });
+            })
+            .then(setPreview)
+            .catch((error: unknown) => setError(getErrorMessage(error)))
+            .finally(() => setBusy(false));
     }
 
     async function save() {
@@ -80,18 +67,16 @@ export function TagEditor({
         setBusy(true);
         setError("");
 
-        try {
-            const result = await rpc("tags.save", { token: preview.token });
-            await onSaved(result.updated === 1 ? "Tags saved." : "Tags saved for " + result.updated + " songs.");
-            onClose();
-        }
-        catch (error) {
-            setError(getErrorMessage(error));
-            setPreview(undefined);
-        }
-        finally {
-            setBusy(false);
-        }
+        await rpc("tags.save", { token: preview.token })
+            .then(async (result) => {
+                await onSaved(result.updated === 1 ? "Tags saved." : "Tags saved for " + result.updated + " songs.");
+                onClose();
+            })
+            .catch((error: unknown) => {
+                setError(getErrorMessage(error));
+                setPreview(undefined);
+            })
+            .finally(() => setBusy(false));
     }
 
     function toggle(field: keyof TagPatch, checked: boolean) {

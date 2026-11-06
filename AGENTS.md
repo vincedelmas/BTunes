@@ -41,3 +41,5 @@ export function Cover({ track, large = false }: CoverProps) {
     //...
 }
 ```
+
+- React Compiler handles renderer memoization. Prefer plain calculations and functions; add manual memoization only for a measured need or an explicitly uncompiled library boundary. Keep TanStack Virtual's `"use no memo"` boundaries documented and verify scrolling/resizing after changes.

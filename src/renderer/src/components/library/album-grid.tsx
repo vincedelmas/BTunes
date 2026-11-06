@@ -1,4 +1,3 @@
-import {memo} from "react";
 import {Pencil, Play} from "lucide-react";
 import type {Playlist, Track} from "../../../../shared/types/library";
 import {Cover} from "@/components/cover";
@@ -7,11 +6,14 @@ import {Button} from "@/components/ui/button";
 import {TrackContextMenu} from "@/components/library/track-context-menu";
 import type {TrackActions} from "@/types/track-actions";
 
-export const AlbumGrid = memo(function AlbumGrid({ albums, playlists, actions }: {
+interface AlbumGridProps {
     albums: Track[][];
     playlists: Playlist[];
     actions: TrackActions;
-}) {
+}
+
+
+export function AlbumGrid({ albums, playlists, actions }: AlbumGridProps) {
     return (
         <VirtualGrid items={albums} label="Albums" getKey={(tracks) => tracks[0].artist + "|" + tracks[0].album}
                      renderItem={(tracks) => {
@@ -42,4 +44,4 @@ export const AlbumGrid = memo(function AlbumGrid({ albums, playlists, actions }:
                      }}
         />
     );
-});
+}

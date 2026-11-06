@@ -1,4 +1,3 @@
-import {useMemo} from "react";
 import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList} from "@/components/ui/combobox";
 
@@ -13,7 +12,7 @@ interface FilterSelectProps {
 }
 
 export function FilterSelect({ id, label, placeholder, options, value, disabled, onChange }: FilterSelectProps) {
-    const items = useMemo(() => [{ value: "", label: placeholder }, ...options], [options, placeholder]);
+    const items = [{ value: "", label: placeholder }, ...options];
 
     if (options.length > 15) {
         const selected = items.find((item) => item.value === value) ?? null;

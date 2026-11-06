@@ -1,20 +1,23 @@
-import {useMemo} from "react";
 import type {Track} from "../../../../shared/types/library";
 import {Cover} from "@/components/cover";
 import {VirtualGrid} from "@/components/virtual-grid";
 
-export function ArtistGrid({ tracks, onArtist }: { tracks: Track[]; onArtist: (artist: string) => void }) {
-    const artists = useMemo(() => {
-        const groups = new Map<string, { name: string; track: Track; count: number }>();
+interface ArtistGridProps {
+    tracks: Track[];
+    onArtist: (artist: string) => void;
+}
 
-        for (const track of tracks) {
-            const artist = groups.get(track.artist);
-            if (artist) artist.count++;
-            else groups.set(track.artist, { name: track.artist, track, count: 1 });
-        }
 
-        return [...groups.values()];
-    }, [tracks]);
+export function ArtistGrid({ tracks, onArtist }: ArtistGridProps) {
+    const groups = new Map<string, { name: string; track: Track; count: number }>();
+
+    for (const track of tracks) {
+        const artist = groups.get(track.artist);
+        if (artist) artist.count++;
+        else groups.set(track.artist, { name: track.artist, track, count: 1 });
+    }
+
+    const artists = [...groups.values()];
 
     return (
         <VirtualGrid items={artists} label="Artists" getKey={(artist) => artist.name} renderItem={(artist) => (

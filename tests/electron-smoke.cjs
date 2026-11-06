@@ -106,6 +106,7 @@ app.on("browser-window-created", (_, win) => {
     await waitFor(()=>!document.querySelector('[role="dialog"]'));
     const saved=await window.btunes.rpc('library.get',undefined);
     if(saved.tracks[0].title!=='Edited through UI')throw new Error('UI tag save failed');
+    if(!audio.paused)throw new Error('Tag editing or a library refresh resumed paused playback');
     if(document.querySelector('[role="status"]')?.textContent.trim()!=='Tags saved.')throw new Error('Save notice should be concise');
     const font=getComputedStyle(document.body).fontFamily;
     if(!font.includes('Inter Variable'))throw new Error('Bundled font not applied');

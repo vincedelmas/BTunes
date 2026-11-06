@@ -1,7 +1,7 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 import type {Snapshot} from "../../../shared/types/library";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useEffectEvent, useRef, useState} from "react";
 
 
 export function useLibrary() {
@@ -18,7 +18,7 @@ export function useLibrary() {
     const revision = useRef<number | undefined>(undefined);
     const refreshing = useRef<Promise<void> | undefined>(undefined);
 
-    const refresh = useCallback(() => {
+    const refresh = () => {
         if (refreshing.current) return refreshing.current;
 
         const request = rpc("library.get", revision.current === undefined ? undefined : { revision: revision.current })
@@ -33,16 +33,20 @@ export function useLibrary() {
 
         refreshing.current = request;
         return request;
-    }, []);
+    };
 
-    const reportError = useCallback((error: unknown) => setError(getErrorMessage(error)), []);
+    const reportError = (error: unknown) => setError(getErrorMessage(error));
+
+    const pollLibrary = useEffectEvent(() => {
+        void refresh().catch(reportError);
+    });
 
     useEffect(() => {
-        void refresh().catch(reportError);
-        const timer = setInterval(() => void refresh().catch(reportError), 5000);
+        pollLibrary();
+        const timer = setInterval(() => pollLibrary(), 5000);
 
         return () => clearInterval(timer);
-    }, [refresh, reportError]);
+    }, []);
 
     useEffect(() => {
         if (!notice) return;
@@ -55,24 +59,18 @@ export function useLibrary() {
         setBusy(true);
         setError("");
 
-        try {
-            const result = await rpc("library.import", undefined);
+        await rpc("library.import", undefined)
+            .then(async (result) => {
+                if (!result) return;
 
-            if (result) {
                 let message = result.imported + " songs indexed.";
-                if (result.errors.length)
-                    message += " " + result.errors.length + " files skipped.";
+                if (result.errors.length) message += " " + result.errors.length + " files skipped.";
 
                 setNotice(message);
                 await refresh();
-            }
-        }
-        catch (error) {
-            reportError(error);
-        }
-        finally {
-            setBusy(false);
-        }
+            })
+            .catch(reportError)
+            .finally(() => setBusy(false));
     }
 
     async function addToPlaylist(playlistId: number, trackIds: number[]) {

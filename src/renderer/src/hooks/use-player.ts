@@ -1,7 +1,7 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 import type {Track} from "../../../shared/types/library";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useEffect, useEffectEvent, useRef, useState} from "react";
 
 
 export function usePlayer(onError: (message: string) => void) {
@@ -16,21 +16,22 @@ export function usePlayer(onError: (message: string) => void) {
 
     const audio = useRef<HTMLAudioElement>(null);
 
-    const report = useCallback((error: unknown) => onError(getErrorMessage(error)), [onError]);
+    const report = (error: unknown) => onError(getErrorMessage(error));
 
-    const play = useCallback(() => {
+    const play = () => {
         void audio.current?.play().catch(report);
-    }, [report]);
+    };
 
-    const seek = useCallback((seconds: number) => {
+    const seek = (seconds: number) => {
         const media = audio.current;
         if (!media || !Number.isFinite(seconds) || !Number.isFinite(media.duration)) return;
 
         media.currentTime = Math.max(0, Math.min(seconds, Math.max(0, media.duration - 0.01)));
-    }, []);
+    };
 
-    const start = useCallback((track: Track, tracks: Track[], index = tracks.findIndex((item) => item.id === track.id)) => {
-        cursor.current = Math.max(0, index);
+    const start = (track: Track, tracks: Track[], index?: number) => {
+        const nextIndex = index ?? tracks.findIndex((item) => item.id === track.id);
+        cursor.current = Math.max(0, nextIndex);
         setQueue([...tracks]);
         counted.current = false;
 
@@ -41,13 +42,14 @@ export function usePlayer(onError: (message: string) => void) {
         }
 
         setCurrentTrack(track);
-    }, [currentTrack?.id, seek, play]);
+    };
 
     const currentTrackId = currentTrack?.id;
+    const playOnTrackChange = useEffectEvent(play);
 
     useEffect(() => {
-        if (currentTrackId) play();
-    }, [currentTrackId, play]);
+        if (currentTrackId) playOnTrackChange();
+    }, [currentTrackId]);
 
     useEffect(() => {
         if (audio.current) audio.current.volume = volume;
@@ -80,7 +82,7 @@ export function usePlayer(onError: (message: string) => void) {
         start(queue[index], queue, index);
     }
 
-    const enqueue = useCallback((tracks: Track[], playNext = false) => {
+    const enqueue = (tracks: Track[], playNext = false) => {
         if (!tracks.length) return;
 
         if (!currentTrack) {
@@ -94,7 +96,7 @@ export function usePlayer(onError: (message: string) => void) {
             const index = cursor.current;
             return [...previous.slice(0, index + 1), ...tracks, ...previous.slice(index + 1)];
         });
-    }, [currentTrack, start]);
+    };
 
     function updateTime() {
         const seconds = audio.current?.currentTime ?? 0;

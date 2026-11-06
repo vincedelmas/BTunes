@@ -1,4 +1,4 @@
-import {memo, useCallback, useEffect, useMemo, useRef} from "react";
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
 import {useTable, tableFeatures, columnSizingFeature, columnResizingFeature} from "@tanstack/react-table";
 import type {ColumnSizingState} from "@tanstack/react-table";
@@ -57,12 +57,14 @@ interface TrackTableProps {
 }
 
 export const TrackTable = memo(function TrackTable({ tracks, playlists, currentId, playing, selected, sort, onSort, onSelect, actions }: TrackTableProps) {
+    "use no memo"; // TanStack Virtual measurements and column resizing update through mutable library state.
+
     const container = useRef<HTMLDivElement>(null);
     const selectedIds = useMemo(() => new Set(selected), [selected]);
     const selectedTracks = useMemo(() => tracks.filter((track) => selectedIds.has(track.id)), [tracks, selectedIds]);
     const allSelected = tracks.length > 0 && selectedTracks.length === tracks.length;
     const getItemKey = useCallback((index: number) => tracks[index].id, [tracks]);
-    const initialSizing = useMemo(readColumnSizes, []);
+    const [initialSizing] = useState(readColumnSizes);
 
     const table = useTable({
         features, data: tracks, columns, columnResizeMode: "onEnd",
