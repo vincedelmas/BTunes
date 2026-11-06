@@ -7,7 +7,7 @@ import {cn} from "@/lib/utils";
 
 interface QueuePanelProps {
     player: PlayerState;
-    onClose: () => void
+    onClose: () => void;
 }
 
 
@@ -17,10 +17,10 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
     return (
         <aside
             aria-label="Playback queue"
-            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_h2]:text-xl [&_h2]:font-[750] [&_.virtual-grid-scroll]:flex-1"
+            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] bg-card p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_.virtual-grid-scroll]:flex-1"
         >
             <div className="flex items-center justify-between">
-                <h2>Queue</h2>
+                <h2 className="text-xl font-[750]">Queue</h2>
                 <Button
                     variant="ghost"
                     size="icon-sm"
@@ -39,14 +39,14 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
                 getKey={(item) => item.index}
                 renderItem={({ track, index }) => (
                     <button
-                        className={cn("queue-track flex items-center gap-3 w-full text-left border-0 rounded-[5px] bg-transparent p-2 text-xs hover:bg-secondary [&_small]:block [&_small]:mt-1 [&_span]:overflow-hidden [&_span]:text-ellipsis [&_span]:whitespace-nowrap", player.currentTrack?.id === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-[1]")}
+                        className={cn("queue-track flex items-center gap-3 w-full text-left border-0 rounded-[5px] bg-transparent p-2 text-xs hover:bg-secondary", player.currentTrack?.id === track.id && "is-current text-primary")}
                         onClick={() => player.start(track, player.queue, index)}
                     >
                         <Cover track={track}/>
-                        <span>
-{track.title}
-                            <small className="text-[11px] text-muted-foreground">{track.artist}</small>
-</span>
+                        <span className="min-w-0 truncate">
+                            {track.title}
+                            <small className="mt-1 block truncate text-[11px] text-muted-foreground">{track.artist}</small>
+                        </span>
                     </button>
                 )}
             />

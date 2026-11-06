@@ -37,7 +37,8 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
 
     const first = tracks[0];
     const editLabel = artistName ? "Edit artist tags" : "Edit album tags";
-    const selectedTracks = tracks.filter((track) => selected.includes(track.id));
+    const selectedIds = new Set(selected);
+    const selectedTracks = tracks.filter((track) => selectedIds.has(track.id));
     const orderedTracks = [...tracks].sort((first, second) => compareTracks(first, second, sort));
 
     const collectionActions: TrackActions = {

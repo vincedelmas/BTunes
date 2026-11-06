@@ -73,18 +73,22 @@ export function useLibrary() {
         setBusy(true);
         setError("");
 
-        await rpc("library.import", undefined)
-            .then(async (result) => {
-                if (!result) return;
+        try {
+            const result = await rpc("library.import", undefined);
+            if (!result) return;
 
-                let message = result.imported + " songs indexed.";
-                if (result.errors.length) message += " " + result.errors.length + " files skipped.";
+            let message = result.imported + " songs indexed.";
+            if (result.errors.length) message += " " + result.errors.length + " files skipped.";
 
-                setNotice(message);
-                await refresh();
-            })
-            .catch(reportError)
-            .finally(() => setBusy(false));
+            setNotice(message);
+            await refresh();
+        }
+        catch (error) {
+            reportError(error);
+        }
+        finally {
+            setBusy(false);
+        }
     }
 
     async function addToPlaylist(playlistId: number, trackIds: number[]) {

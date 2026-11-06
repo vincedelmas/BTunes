@@ -2,5 +2,9 @@ export interface CollectionLocation {
     view: string;
     search: string;
     artist: string;
-    albumArtistFilter: boolean;
+}
+
+export interface OpenedCollection {
+    ids: number[];
+    artistName?: string;
 }

@@ -25,7 +25,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const [search, updateSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
     const [artist, setArtist] = useState("");
-    const [albumArtistFilter, setAlbumArtistFilter] = useState(false);
     const [savedSort, setSavedSort] = usePreference<TrackSort>("btunes.song-sort.v1", trackSortSchema, { field: "title", descending: false });
     const [historySort, setHistorySort] = useState<TrackSort>({ field: "lastPlayed", descending: true });
     const sort = view === "history" ? historySort : savedSort;
@@ -69,7 +68,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     const tracks = data.tracks.filter((track) => {
         if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-        if (artist && (albumArtistFilter ? getAlbumArtist(track) : track.artist) !== artist) return false;
+        if (artist && getAlbumArtist(track) !== artist) return false;
         if (view === "history" && !track.lastPlayed) return false;
         if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
         if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
@@ -86,7 +85,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     function currentLocation(): CollectionLocation {
-        return { view, search, artist, albumArtistFilter };
+        return { view, search, artist };
     }
 
     function rememberView() {
@@ -101,7 +100,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         setView(restoredView);
         updateSearch(location.search);
         setArtist(location.artist);
-        setAlbumArtistFilter(location.albumArtistFilter);
         setSelected([]);
         if (restoredView !== view) setPlaylistIds([]);
     }
@@ -148,13 +146,12 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         clearFilters();
     }
 
-    function showArtist(name: string, useAlbumArtist = false) {
+    function showArtist(name: string) {
         if (view === "tracks") rememberView();
         navigate("tracks");
         clearFilters();
         setSelected([]);
         setArtist(name);
-        setAlbumArtistFilter(useAlbumArtist);
     }
 
     return {

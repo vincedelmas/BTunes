@@ -38,16 +38,16 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
         setError("");
         setResults([]);
 
-        await rpc("artwork.search", { query })
-            .then((candidates) => {
-                if (searchId.current === id) setResults(candidates);
-            })
-            .catch((failure: unknown) => {
-                if (searchId.current === id) setError(getErrorMessage(failure));
-            })
-            .finally(() => {
-                if (searchId.current === id) setBusy(false);
-            });
+        try {
+            const candidates = await rpc("artwork.search", { query });
+            if (searchId.current === id) setResults(candidates);
+        }
+        catch (error) {
+            if (searchId.current === id) setError(getErrorMessage(error));
+        }
+        finally {
+            if (searchId.current === id) setBusy(false);
+        }
     }
 
     function findCovers() {

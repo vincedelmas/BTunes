@@ -33,14 +33,19 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
         if (!deleting) return;
         setRemoving(true);
 
-        await rpc("playlist.delete", { id: deleting.id })
-            .then(async () => {
-                if (view === "playlist:" + deleting.id) onNavigate("tracks");
-                await onRefresh();
-                setDeleting(undefined);
-            })
-            .catch(onError)
-            .finally(() => setRemoving(false));
+        try {
+            await rpc("playlist.delete", { id: deleting.id });
+            if (view === "playlist:" + deleting.id) onNavigate("tracks");
+
+            await onRefresh();
+            setDeleting(undefined);
+        }
+        catch (error) {
+            onError(error);
+        }
+        finally {
+            setRemoving(false);
+        }
     }
 
     return (

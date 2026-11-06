@@ -81,9 +81,11 @@ export function AlbumGrid({ currentTrack, reveal, onRevealed, albums, playlists,
                                     track={track}
                                 />
                                 {currentTrack && key === albumKey(currentTrack) && <NowPlayingBadge/>}
-                                {isSelected && <span className="absolute top-2 left-2 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-<Check className="size-3"/>
-</span>}
+                                {isSelected && (
+                                    <span className="absolute top-2 left-2 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                        <Check className="size-3"/>
+                                    </span>
+                                )}
                                 <Button
                                     size="icon-lg"
                                     className="album-play absolute right-2 bottom-2 rounded-full opacity-0 shadow-lg group-hover:opacity-100 group-focus-within:opacity-100"

@@ -24,13 +24,12 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
     return (
         <div className="settings-page overflow-auto min-h-0 flex-1 pt-4 px-6 pb-8">
             <div
-                className="settings-heading max-w-220 mb-8 [&_.eyebrow]:text-primary [&_.eyebrow]:text-[10px] [&_.eyebrow]:tracking-[2px]
-                [&_h1]:text-[34px] [&_h1]:font-[750] [&_h1]:tracking-[-1.5px] [&_h1]:mt-2 [&_h1]:mx-0 [&_h1]:mb-3"
+                className="settings-heading mb-8 max-w-220"
             >
-                <p className="eyebrow text-xs font-bold m-0">
+                <p className="eyebrow m-0 text-[10px] font-bold tracking-[2px] text-primary">
                     BTUNES
                 </p>
-                <h1>Settings</h1>
+                <h1 className="mt-2 mb-3 text-[34px] font-[750] tracking-[-1.5px]">Settings</h1>
                 <p className="muted text-muted-foreground">
                     A home for your music. Set it up your way.
                 </p>
@@ -68,23 +67,22 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                 <CardContent>
                     {folders.length ?
                         <ul
-                            className="folder-list flex flex-col gap-[10px] [&_li]:flex [&_li]:items-center [&_li]:gap-[14px]
-                            [&_li]:p-4 [&_li]:bg-[#ffffff04] [&_li]:border [&_li]:border-[#ffffff09] [&_li]:rounded-[10px]
-                            [&_li_>_div:nth-child(2)]:flex-1 [&_li_>_div:nth-child(2)]:min-w-0 [&_strong]:block [&_strong]:text-[13px]
-                            [&_strong]:mb-[5px] [&_span]:block [&_span]:text-muted-foreground [&_span]:text-[11px]
-                            [&_span]:[overflow-wrap:anywhere]"
+                            className="folder-list flex flex-col gap-[10px]"
                         >
                             {folders.map((folder) =>
-                                <li key={folder}>
+                                <li
+                                    key={folder}
+                                    className="flex items-center gap-[14px] rounded-[10px] border border-[#ffffff09] bg-[#ffffff04] p-4"
+                                >
                                     <div
-                                        className="folder-icon grid place-items-center w-[42px] h-[42px] text-primary bg-[#1ed7600c]
+                                        className="folder-icon grid place-items-center size-[42px] text-primary bg-[#1ed7600c]
                                         rounded-[9px] shrink-0 [&_svg]:w-5"
                                     >
                                         <Folder/>
                                     </div>
-                                    <div>
-                                        <strong>{folder.split("/").filter(Boolean).at(-1) ?? folder}</strong>
-                                        <span>{folder}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <strong className="mb-[5px] block text-[13px]">{folder.split("/").filter(Boolean).at(-1) ?? folder}</strong>
+                                        <span className="block text-[11px] text-muted-foreground [overflow-wrap:anywhere]">{folder}</span>
                                     </div>
                                     <Badge variant="outline">
                                         Watching
@@ -123,11 +121,10 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                 </CardHeader>
                 <CardContent>
                     <div
-                        className="library-stat flex items-baseline gap-3 [&_strong]:text-[32px] [&_strong]:tracking-[-1px]
-                        [&_strong]:font-bold [&_span]:text-muted-foreground [&_span]:text-xs"
+                        className="library-stat flex items-baseline gap-3"
                     >
-                        <strong>{songCount.toLocaleString("en")}</strong>
-                        <span>songs</span>
+                        <strong className="text-[32px] font-bold tracking-[-1px]">{songCount.toLocaleString("en")}</strong>
+                        <span className="text-xs text-muted-foreground">songs</span>
                     </div>
                 </CardContent>
                 <CardFooter>
@@ -136,7 +133,8 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                         aria-label="Refresh library"
                         onClick={onRefresh}
                     >
-                        <RefreshCw/>Refresh library
+                        <RefreshCw data-icon="inline-start"/>
+                        Refresh library
                     </Button>
                 </CardFooter>
             </Card>

@@ -1,6 +1,8 @@
+import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
+import type {OpenedCollection} from "@/types/collection";
 import {useItemReveal} from "@/hooks/use-item-reveal";
 import {albumKey, getAlbumArtist} from "@/lib/music";
-import {useEffect, useEffectEvent, useState} from "react";
+import {useEffect, useState} from "react";
 import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
 import {useLibrary} from "@/hooks/use-library";
@@ -33,7 +35,7 @@ export function App() {
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
     const sidebarLayout = useSidebarLayout(library.data.playlists);
-    const [openedCollection, setOpenedCollection] = useState<{ ids: number[]; artistName?: string }>();
+    const [openedCollection, setOpenedCollection] = useState<OpenedCollection>();
     const collection = useCollection(library.data, library.reportError);
 
     const { audio: audioRef } = player;
@@ -48,12 +50,13 @@ export function App() {
         }
     }, [library.ready]);
 
-    const openedCollectionTracks = library.data.tracks.filter((track) => openedCollection?.ids.includes(track.id));
+    const openedCollectionIds = new Set(openedCollection?.ids);
+    const openedCollectionTracks = library.data.tracks.filter((track) => openedCollectionIds.has(track.id));
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
 
     const actions: TrackActions = {
         onEdit: setEditing,
-        onArtist: (artist) => showArtist(artist, true),
+        onArtist: showArtist,
         onAlbum: (track) => setOpenedCollection({
             ids: library.data.tracks.filter((item) => albumKey(item) === albumKey(track)).map((item) => item.id),
         }),
@@ -80,34 +83,7 @@ export function App() {
         locator.show(key);
     }
 
-    const handleMouseNavigation = useEffectEvent((ev: MouseEvent) => {
-        if (ev.button !== 3 && ev.button !== 4) return;
-        ev.preventDefault();
-        const dialogs = document.querySelectorAll('[data-slot="dialog-content"]');
-        const dialog = dialogs.item(dialogs.length - 1);
-        if (dialog) {
-            if (ev.button === 4) return;
-            dialog.querySelector<HTMLButtonElement>('[data-slot="dialog-close"]')?.click();
-            return;
-        }
-        if (ev.button === 3) goBack();
-        else goForward();
-    });
-
-    useEffect(() => {
-        const preventBrowserNavigation = (ev: MouseEvent) => {
-            if (ev.button === 3 || ev.button === 4) ev.preventDefault();
-        };
-        const back = (ev: MouseEvent) => handleMouseNavigation(ev);
-        window.addEventListener("mousedown", preventBrowserNavigation);
-        window.addEventListener("mouseup", back);
-        window.addEventListener("auxclick", preventBrowserNavigation);
-        return () => {
-            window.removeEventListener("mousedown", preventBrowserNavigation);
-            window.removeEventListener("mouseup", back);
-            window.removeEventListener("auxclick", preventBrowserNavigation);
-        };
-    }, []);
+    useMouseNavigation(goBack, goForward);
 
     const tagsSaved = async () => {
         await library.refresh();
@@ -297,6 +273,7 @@ export function App() {
                 onQueue={() => setShowQueue(!showQueue)}
             />
             {openedCollectionTracks.length > 0 && <TrackCollectionDialog
+                key={openedCollection?.artistName ?? albumKey(openedCollectionTracks[0])}
                 artistName={openedCollection?.artistName}
                 genres={genres}
                 actions={actions}

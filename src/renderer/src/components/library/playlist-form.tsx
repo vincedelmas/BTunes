@@ -29,20 +29,26 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
     async function save() {
         setSaving(true);
 
-        await Promise.resolve()
-            .then(async () => {
-                const details = { name, rule: rule || undefined };
+        try {
+            const details = { name, rule: rule || undefined };
+            let id: number;
 
-                if (playlist) {
-                    await rpc("playlist.update", { id: playlist.id, ...details });
-                    return playlist.id;
-                }
+            if (playlist) {
+                await rpc("playlist.update", { id: playlist.id, ...details });
+                id = playlist.id;
+            }
+            else {
+                id = await rpc("playlist.create", details);
+            }
 
-                return rpc("playlist.create", details);
-            })
-            .then(onSaved)
-            .catch(onError)
-            .finally(() => setSaving(false));
+            await onSaved(id);
+        }
+        catch (error) {
+            onError(error);
+        }
+        finally {
+            setSaving(false);
+        }
     }
 
     return (

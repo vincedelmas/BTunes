@@ -29,11 +29,11 @@ bun run dev
 - **Songs:** click headings to sort, drag headings to reorder, drag dividers to resize, and right-click headings to show or hide columns.
 - **Albums:** click a card to open its songs in the shared table; use the green play button to play the album. Ctrl/Shift-click or drag
   across empty space to select albums for batch editing.
-- **Now playing:** use the locator button beside the current song in the player to reveal it in Songs, Albums, or Artists.
+- **Now playing:** use the locator button beside Stop in the player to reveal it in Songs, Albums, or Artists.
 - **Artists:** click an album-artist card to browse its songs in the same table dialog as albums.
-- **Navigation:** Mouse 4 closes the current dialog or returns to the previous view and filters.
+- **Navigation:** Mouse 4 closes the current dialog or goes back; Mouse 5 goes forward. After clearing a search with X, Mouse 5 restores it. Ctrl+F focuses search.
 - **Selection:** Ctrl-click toggles songs, Shift-click selects a range, and Ctrl+A selects all filtered songs.
-- **Context menus:** right-click songs or albums for playback, queue, playlist, tag, and file actions.
+- **Context menus:** right-click songs or albums for playback, queue, playlist, tag, and file actions, or to go to their album or album artist.
 - **Playlists:** use **+** to create one; right-click a playlist to edit or delete it.
 - **Settings:** manage music folders and sidebar order. Refresh rescans files; startup also checks for offline changes and skips unchanged audio. After **Go to artist**, choose **All songs** to clear the filter.
 
