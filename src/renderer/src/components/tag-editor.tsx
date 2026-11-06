@@ -11,7 +11,7 @@ import type {Track} from "../../../shared/types/library";
 import {tagPatchSchema} from "../../../shared/schemas/tags";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import type {TagPatch, TagPreview} from "../../../shared/types/tags";
-import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
+import {ArrowLeft, ArrowRight, Check} from "lucide-react";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
@@ -133,25 +133,12 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                             }
                         </Badge>
                     </div>
-                    <ol
-                        className="tag-steps"
-                        aria-label="Editing progress"
-                    >
-                        <li aria-current={!preview ? "step" : undefined}>
-                            <span>1</span>Details
-                        </li>
-                        <li aria-current={preview ? "step" : undefined}>
-                            <span>2</span>Review
-                        </li>
-                    </ol>
                 </DialogHeader>
                 <div className="tag-editor-body">
                     <p className="tag-editor-hint">
                         {preview
                             ? "Review the changes before saving them to your audio files."
-                            : batch
-                                ? "Checked fields are applied to every selected song."
-                                : "Make your changes, then give them a quick review."
+                            : batch && "Checked fields are applied to every selected song."
                         }
                     </p>
 
@@ -180,39 +167,22 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     }
                 </div>
                 <DialogFooter className="tag-editor-footer">
-<span className="tag-recovery">
-                        <ShieldCheck/> Originals kept for recovery
-                    </span>
                     {preview ?
-                        <Button
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() => setPreview(undefined)}
-                        >
+                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}>
                             <ArrowLeft/> Details
                         </Button>
                         :
-                        <Button
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={onClose}
-                        >
+                        <Button variant="ghost" disabled={busy} onClick={onClose}>
                             Cancel
                         </Button>
                     }
                     {preview ?
-                        <Button
-                            disabled={busy || !preview.files.length}
-                            onClick={() => void save()}
-                        >
+                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}>
                             <Check/>
                             {busy ? "Saving…" : "Save to files"}
                         </Button>
                         :
-                        <Button
-                            disabled={busy || !enabled.size}
-                            onClick={() => void prepare()}
-                        >
+                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>
                             {busy ? "Preparing…" : "Preview changes"}
                             <ArrowRight/>
                         </Button>

@@ -192,8 +192,10 @@ app.on("browser-window-created", (_, win) => {
                 setSearch('Song 2299');
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
                 await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
-                setSearch('');
+                document.querySelector('[aria-label="Clear search"]').click();
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2301');
+                if(search.value || document.querySelector('[aria-label="Clear search"]')) throw new Error('Search was not cleared');
+                if(document.activeElement!==search) throw new Error('Search input should retain focus after clearing');
                 scroll.scrollTop = 0;
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 const first = document.querySelector('[data-track-id="1"]');

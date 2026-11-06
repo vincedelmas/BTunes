@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Input} from "@/components/ui/input";
+import {LibrarySearch} from "@/components/library/library-search";
 import {Badge} from "@/components/ui/badge";
 import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {QueuePanel} from "@/components/player/queue-panel";
 import {ArtistGrid} from "@/components/library/artist-grid";
 import {TrackTable} from "@/components/library/track-table";
 import {Alert, AlertDescription} from "@/components/ui/alert";
-import {ArrowLeft, Headphones, Search, Smartphone} from "lucide-react";
+import {ArrowLeft, Headphones, Smartphone} from "lucide-react";
 import {CollectionEmptyState} from "@/components/library/collection-empty-state";
 
 
@@ -127,15 +127,10 @@ export function App() {
                                 <Headphones size={20}/>
                                 <span>Music</span>
                             </div>
-                            <div className="search">
-                                <Search size={21} aria-hidden="true"/>
-                                <Input
-                                    value={search}
-                                    aria-label="Search your library"
-                                    placeholder="Search songs, artists, albums"
-                                    onChange={(ev) => setSearch(ev.target.value)}
-                                />
-                            </div>
+                            <LibrarySearch
+                                value={search}
+                                onChange={setSearch}
+                            />
                         </>
                     }
                 </header>
