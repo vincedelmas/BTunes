@@ -33,7 +33,7 @@ interface TagFormProps {
 
 export function TagForm({ genres, values, enabled, batch, busy, onChange, onToggle, onReset }: TagFormProps) {
     return (
-        <FieldGroup className="tag-fields grid grid-cols-[1fr_1fr] gap-5 [&_>_:first-child]:col-span-full">
+        <FieldGroup className="tag-fields grid grid-cols-2 gap-5">
             {tagFields.map((field) => {
                 const Icon = fieldIcons[field];
                 const changed = enabled.has(field);
@@ -41,12 +41,12 @@ export function TagForm({ genres, values, enabled, batch, busy, onChange, onTogg
                 return (
                     <Field
                         key={field}
-                        className={cn("tag-field gap-[9px] [&_input]:h-[42px] [&_input]:px-3 [&_input]:text-[13px]", changed && "tag-field-changed [&_input]:border-primary/40 [&_[data-slot=input-group]]:border-primary/40")}
+                        className={cn("tag-field gap-[9px] [&_input]:h-[42px] [&_input]:px-3 [&_input]:text-[13px]", field === "title" && "col-span-full", changed && "tag-field-changed [&_input]:border-primary/40 [&_[data-slot=input-group]]:border-primary/40")}
                     >
                         <div
-                            className="tag-field-label flex items-center justify-between h-[22px] [&_label]:flex [&_label]:items-center [&_label]:gap-2 [&_label]:text-[#bcbcbc] [&_label]:text-xs [&_label_svg]:w-[14px] [&_label_svg]:h-[14px] [&_label_svg]:text-[#888]">
-                            <FieldLabel htmlFor={"tag-" + field}>
-                                <Icon/>
+                            className="tag-field-label flex h-[22px] items-center justify-between">
+                            <FieldLabel className="flex items-center gap-2 text-xs text-[#bcbcbc]" htmlFor={"tag-" + field}>
+                                <Icon className="size-[14px] text-[#888]"/>
                                 {tagLabels[field]}
                             </FieldLabel>
                             {batch ?

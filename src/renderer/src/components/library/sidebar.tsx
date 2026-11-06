@@ -13,7 +13,6 @@ import type {SidebarLayout} from "@/types/sidebar";
 interface SidebarProps {
     view: string;
     layout: SidebarLayout;
-
     data: Snapshot;
     genres: string[];
     onSettings: () => void;
@@ -49,18 +48,19 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
     }
 
     return (
-        <aside className="sidebar bg-background rounded-lg flex flex-col pt-5 px-3 pb-3 min-h-0 [&_nav]:shrink-0">
+        <aside className="sidebar bg-background rounded-lg flex flex-col pt-5 px-3 pb-3 min-h-0">
             <div
-                className="brand flex items-center gap-[10px] mt-0 mx-[10px] mb-[22px] shrink-0 [&_>_img]:w-[34px] [&_>_img]:h-[34px] [&_>_span]:text-[28px] [&_>_span]:font-[850] [&_>_span]:tracking-[-1.8px]">
+                className="brand flex items-center gap-[10px] mt-0 mx-[10px] mb-[22px] shrink-0">
                 <img
+                    className="size-[34px]"
                     src="./icon.svg"
                     alt=""
                 />
-                <span>BTunes</span>
+                <span className="text-[28px] font-[850] tracking-[-1.8px]">BTunes</span>
             </div>
 
             <nav
-                className="flex flex-col gap-1"
+                className="flex shrink-0 flex-col gap-1"
                 aria-label="Library navigation"
             >
                 {layout.navigationIds.map((id) => {

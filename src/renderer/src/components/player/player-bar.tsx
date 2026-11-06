@@ -14,7 +14,6 @@ interface PlayerBarProps {
     player: PlayerState;
     onQueue: () => void;
     onReveal: () => void;
-
 }
 
 
@@ -34,7 +33,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
 
             <div className="transport w-[42%] max-w-[590px]">
                 <div
-                    className="transport-buttons flex justify-center items-center gap-[9px] mb-2 [&_>_button]:text-muted-foreground [&_>_.enabled]:text-primary [&_>_.play-toggle]:rounded-[50%] [&_>_.play-toggle]:bg-foreground [&_>_.play-toggle]:text-[#000] [&_>_.play-toggle]:w-[34px] [&_>_.play-toggle]:h-[34px]">
+                    className="transport-buttons flex justify-center items-center gap-[9px] mb-2 text-muted-foreground">
                     <Button
                         size="icon"
                         variant="ghost"
@@ -58,7 +57,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         size="icon"
                         variant="secondary"
                         disabled={!current}
-                        className="play-toggle"
+                        className="play-toggle size-[34px] rounded-full bg-foreground text-black hover:bg-foreground"
                         onClick={player.toggle}
                         aria-label={player.playing ? "Pause" : "Play"}
                     >
@@ -101,7 +100,6 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                         disabled={!current}
                         onClick={onReveal}
                     />
-
                 </div>
 
                 <PlaybackTimeline
@@ -111,7 +109,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                 />
             </div>
 
-            <div className="volume flex items-center gap-3 text-muted-foreground [&_input]:w-[90px] max-[1150px]:[&_input]:w-15">
+            <div className="volume flex items-center gap-3 text-muted-foreground">
                 <Button
                     size="icon"
                     variant="ghost"
@@ -125,7 +123,7 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     aria-hidden="true"
                 />
                 <input
-                    className="h-[3px] [accent-color:var(--primary)] cursor-pointer"
+                    className="h-[3px] w-[90px] cursor-pointer [accent-color:var(--primary)] max-[1150px]:w-15"
                     min="0"
                     max="1"
                     step="0.01"

@@ -213,9 +213,7 @@ export class ArtworkService {
             candidate.loading = this.downloadImage(candidate.url)
                 .then(async (image) => {
                     const data = await normalizeArtwork(image.data);
-                    return { data, hash: createHash("sha256").update(data).digest("hex") };
-                })
-                .then((artwork) => {
+                    const artwork = { data, hash: createHash("sha256").update(data).digest("hex") };
                     candidate.artwork = artwork;
                     return artwork;
                 })
