@@ -9,12 +9,12 @@ export const tracks = sqliteTable("tracks", {
     album: text().notNull(),
     genre: text().notNull(),
     year: integer().notNull(),
+    size: integer().notNull(),
     duration: real().notNull(),
-    favorite: integer().notNull().default(0),
     plays: integer().notNull().default(0),
+    favorite: integer().notNull().default(0),
     lastPlayed: integer().notNull().default(0),
     cover: text(),
-    size: integer().notNull(),
 }, (table) => [
     index("track_album").on(table.album, table.artist),
 ]);
@@ -27,18 +27,14 @@ export const folders = sqliteTable("folders", {
 
 export const playlists = sqliteTable("playlists", {
     id: integer().primaryKey(),
-    name: text().notNull(),
     rule: text(),
+    name: text().notNull(),
 });
 
 
 export const playlistTracks = sqliteTable("playlist_tracks", {
-    playlistId: integer()
-        .notNull()
-        .references(() => playlists.id, { onDelete: "cascade" }),
-    trackId: integer()
-        .notNull()
-        .references(() => tracks.id, { onDelete: "cascade" }),
+    trackId: integer().notNull().references(() => tracks.id, { onDelete: "cascade" }),
+    playlistId: integer().notNull().references(() => playlists.id, { onDelete: "cascade" }),
 }, (table) => [
     primaryKey({ columns: [table.playlistId, table.trackId] }),
 ]);

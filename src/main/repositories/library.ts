@@ -1,7 +1,7 @@
 import {resolve} from "node:path";
-import {and, eq, inArray, sql} from "drizzle-orm";
 import {DatabaseSync} from "node:sqlite";
 import {drizzle} from "drizzle-orm/node-sqlite";
+import {and, eq, inArray, sql} from "drizzle-orm";
 import {migrate} from "drizzle-orm/node-sqlite/migrator";
 import type {Snapshot, Track} from "../../shared/contracts";
 import {folders, playlists, playlistTracks, tracks} from "../database/schema.ts";
@@ -11,8 +11,8 @@ type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed">;
 
 
 export class LibraryRepository {
-    readonly db: DatabaseSync;
     revision = 0;
+    readonly db: DatabaseSync;
     private readonly queries: ReturnType<typeof drizzle>;
 
     constructor(file: string, migrationsFolder = resolve("drizzle")) {
@@ -32,16 +32,19 @@ export class LibraryRepository {
     snapshot(): Snapshot {
         return {
             revision: this.revision,
+
             tracks: this.queries
                 .select()
                 .from(tracks)
                 .orderBy(tracks.artist, tracks.album, tracks.title)
                 .all(),
+
             playlists: this.queries
                 .select()
                 .from(playlists)
                 .orderBy(playlists.name)
                 .all(),
+
             folders: this.queries
                 .select()
                 .from(folders)
@@ -66,6 +69,7 @@ export class LibraryRepository {
                 set: track,
                 target: tracks.path,
             }).run();
+
         this.revision++;
     }
 
@@ -75,6 +79,7 @@ export class LibraryRepository {
             .set({ favorite: sql`1 - ${tracks.favorite}` })
             .where(eq(tracks.id, id))
             .run();
+
         this.revision++;
     }
 
@@ -87,6 +92,7 @@ export class LibraryRepository {
             })
             .where(eq(tracks.id, id))
             .run();
+
         this.revision++;
     }
 
@@ -96,6 +102,7 @@ export class LibraryRepository {
             .values({ path })
             .onConflictDoNothing()
             .run();
+
         this.revision++;
     }
 
@@ -104,6 +111,7 @@ export class LibraryRepository {
             .delete(tracks)
             .where(eq(tracks.path, path))
             .run();
+
         this.revision++;
     }
 
@@ -115,34 +123,49 @@ export class LibraryRepository {
             .get()!.id;
 
         this.revision++;
+
         return result;
     }
 
     private requireClassicPlaylist(id: number) {
-        const playlist = this.queries.select().from(playlists).where(eq(playlists.id, id)).get();
-        if (!playlist || playlist.rule) throw new Error("Only classic playlists can be edited manually.");
+        const playlist = this.queries
+            .select()
+            .from(playlists)
+            .where(eq(playlists.id, id))
+            .get();
+
+        if (!playlist || playlist.rule) {
+            throw new Error("Only classic playlists can be edited manually.");
+        }
     }
 
     add(playlistId: number, input: number | number[]) {
         this.requireClassicPlaylist(playlistId);
         const ids = [...new Set(Array.isArray(input) ? input : [input])];
+
         if (!ids.length) return;
 
         this.queries.insert(playlistTracks)
             .values(ids.map((trackId) => ({ playlistId, trackId })))
-            .onConflictDoNothing().run();
+            .onConflictDoNothing()
+            .run();
+
         this.revision++;
     }
 
     removeFromPlaylist(playlistId: number, input: number | number[]) {
         this.requireClassicPlaylist(playlistId);
         const ids = [...new Set(Array.isArray(input) ? input : [input])];
+
         if (!ids.length) return;
 
-        this.queries.delete(playlistTracks).where(and(
-            eq(playlistTracks.playlistId, playlistId),
-            inArray(playlistTracks.trackId, ids),
-        )).run();
+        this.queries
+            .delete(playlistTracks)
+            .where(and(
+                eq(playlistTracks.playlistId, playlistId),
+                inArray(playlistTracks.trackId, ids),
+            )).run();
+
         this.revision++;
     }
 

@@ -19,11 +19,15 @@ Open **Settings → Add music folder** to index your collection. Click an album 
 ## Library and playback
 
 - Recursive import of MP3, FLAC, OGG, Opus, M4A, AAC, WAV, and AIFF files, including embedded artwork. Playback depends on Electron's supported codecs.
-- Album, artist, and song views, instant search, combined artist/genre filters, and sorting by artist, album, title, year, or play count.
+- Songs opens by default, with album and artist views alongside instant search and combined artist/genre filters. Filter menus use Base UI, with searchable artist/genre lists for larger collections.
 - Persistent play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
 - Play, pause, stop, previous/next, shuffle, queue repeat, seeking, and volume.
 - Folder watching while the app runs; the renderer checks a lightweight revision every five seconds and only downloads changed snapshots. Reimport a folder to reconcile changes made while the app was closed.
 - Possible duplicate detection using title, artist, and rounded duration. No files are automatically deleted.
+
+Click a song-table heading to sort by title, artist, album, genre, duration, year, or play count. Click again to reverse the direction; missing metadata stays first. Drag column dividers to resize them; widths are remembered on this device. Double-click a divider to reset its width, or focus it and use the arrow keys.
+
+After **Go to artist**, use **All songs** above the table to clear filters. Settings is a dedicated page; **Back to music** returns to your previous view and filters. The old circular-arrow control refreshed the library; it now lives in Settings as **Refresh library**. The decorative avatar has been removed.
 
 Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. Right-click a song or album to play it next, enqueue it, edit tags, add it to a classic playlist, show its folder, or copy its path. Select multiple songs before right-clicking to act on the selection. Classic playlist menus also offer **Remove from playlist**.
 
@@ -32,7 +36,7 @@ Create playlists with the **+** button in the sidebar. Choose a genre rule for a
 Supported write formats: **MP3, FLAC, and M4A**. Other formats remain readable and playable.
 
 1. Use a song's pencil button, an album's pencil button, or select songs and choose **Edit tags**.
-2. Edit title, artist, album, genre, or year. Changing a value automatically checks its field. Unchecked fields stay unchanged; mixed values are initially blank.
+2. Edit title, artist, album, genre, or year. Batch edits apply only checked fields; mixed values are initially blank. Single-song edits offer a reset button for each changed field.
 3. Choose **Preview changes** to review the exact before/after values for each file.
 4. Choose **Save to files** to apply the preview.
 
@@ -68,7 +72,7 @@ src/
       library/               Sidebar, album cards, song table
       player/                Playback bar and queue
       tag-editor.tsx         Single-song and batch editing dialog
-      settings-panel.tsx     Watched folder management
+      settings-page.tsx     Watched folder management
       virtual-grid.tsx       Shared virtualized card and queue layout
 tests/
   library.test.ts            Persistence and playlist behavior

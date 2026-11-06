@@ -29,8 +29,8 @@ const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,
 for (let index = 0; index < 2300; index++) {
     insert.run(index + 1, index ? join(music, "fixture-" + index + ".mp3") : source,
         index ? "Song " + String(index).padStart(4, "0") : "Silence",
-        "Fixture artist", "Album " + String(Math.floor(index / 10)).padStart(3, "0"),
-        index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, 10000);
+        index ? "Artist " + String(index % 30).padStart(2, "0") : "Fixture artist", "Album " + String(Math.floor(index / 10)).padStart(3, "0"),
+        index === 1 ? "Uncategorized" : index % 2 ? "Jazz" : "Ambient", 2000 + index % 25, 60, 10000);
 }
 database.prepare("INSERT INTO folders VALUES (?)").run(music);
 database.prepare("INSERT INTO playlists(name,rule) VALUES (?,?)").run("Road trip", null);
@@ -75,6 +75,10 @@ app.on("browser-window-created", (_, win) => {
                 const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const button = text => [...document.querySelectorAll('button')].find(item => item.textContent.trim() === text);
                 window.uiReview = { waitFor, frame, button };
+                await waitFor(() => document.querySelector('[data-track-id="1"]'));
+                if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
+                if(document.querySelector('.profile-avatar')) throw new Error('Decorative avatar remains');
+                button('Albums').click();
                 await waitFor(() => document.querySelectorAll('.album').length);
                 const albumNodes = document.querySelectorAll('.album').length;
                 if (albumNodes > 60) throw new Error("Albums are not virtualized");
@@ -88,6 +92,35 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
                 if (songNodes > 60) throw new Error("Song table is not virtualized");
+                for (const name of ['Title','Artist','Album','Genre','Duration','Year','Plays']) {
+                    const control=document.querySelector('[aria-label="Sort by '+name+'"]');
+                    if(!control) throw new Error('Missing sortable column '+name);
+                }
+                const genreSort=document.querySelector('[aria-label="Sort by Genre"]');
+                genreSort.click();
+                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='ascending');
+                await waitFor(()=>document.querySelector('[data-track-id]')?.dataset.trackId==='2');
+                genreSort.click();
+                await waitFor(()=>document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')==='descending');
+                if(document.querySelector('[data-track-id]').dataset.trackId!=='2') throw new Error('Missing genre must stay first');
+                document.querySelector('[aria-label="Sort by Title"]').click();
+                await waitFor(()=>document.querySelector('[data-track-id="1"]'));
+                const resize=document.querySelector('[aria-label="Resize Title column"]');
+                const width=Number(resize.getAttribute('aria-valuenow'));
+                resize.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+                await waitFor(()=>Number(resize.getAttribute('aria-valuenow'))===width+16);
+                const albumResize=document.querySelector('[aria-label="Resize Album column"]');
+                const albumWidth=Number(albumResize.getAttribute('aria-valuenow'));
+                const handle=albumResize.getBoundingClientRect();
+                albumResize.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,clientX:handle.x+4,clientY:handle.y+10,buttons:1}));
+                document.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:handle.x+44,clientY:handle.y+10,buttons:1}));
+                document.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,clientX:handle.x+44,clientY:handle.y+10}));
+                await waitFor(()=>Number(albumResize.getAttribute('aria-valuenow'))===albumWidth+40);
+                button('Artists').click();
+                await waitFor(()=>document.querySelector('.artist'));
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('[aria-label="Resize Title column"]'));
+                if(Number(document.querySelector('[aria-label="Resize Title column"]').getAttribute('aria-valuenow'))!==width+16) throw new Error('Column width did not persist');
                 const scroll = document.querySelector('.track-scroll');
                 scroll.scrollTop = scroll.scrollHeight;
                 await waitFor(() => document.querySelector('[data-track-id="2300"]'));
@@ -114,6 +147,40 @@ app.on("browser-window-created", (_, win) => {
                 return {songs:2300, mountedSongRows:songNodes, mountedAlbums:albumNodes};
             })()`, true);
             await capture("songs-context-menu");
+
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor}=window.uiReview;
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                await waitFor(()=>!document.querySelector('[role="menu"]'));
+                document.querySelector('[aria-label="Filter by genre"]').click();
+                await waitFor(()=>document.querySelector('[role="listbox"]'));
+            })()`, true);
+            await capture("genre-dropdown");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor}=window.uiReview;
+                [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Jazz')).click();
+                await waitFor(()=>document.querySelector('[aria-label="Clear genre filter"]'));
+                document.querySelector('[aria-label="Show all songs"]').click();
+                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2301');
+                const artistInput=document.querySelector('[aria-label="Filter by artist"]');
+                artistInput.focus();
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(artistInput,'Fixture');
+                artistInput.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'Fixture'}));
+                await waitFor(()=>document.querySelector('[role="option"]')?.textContent.includes('Fixture artist'));
+            })()`, true);
+            await capture("artist-dropdown");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor}=window.uiReview;
+                [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.includes('Fixture artist')).click();
+                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2');
+                document.querySelector('[aria-label="Show all songs"]').click();
+                await waitFor(()=>document.querySelector('[data-track-id="1"]'));
+                const first=document.querySelector('[data-track-id="1"]');
+                const rect=first.getBoundingClientRect();
+                first.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+200,clientY:rect.y+30}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+            })()`, true);
+
 
             const interactions = await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,frame,button} = window.uiReview;
@@ -166,11 +233,29 @@ app.on("browser-window-created", (_, win) => {
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
                 button('Settings').click();
-                await waitFor(()=>document.querySelector('[role="dialog"]'));
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
+                if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');
                 if(!button('Add music folder')) throw new Error("Settings does not expose folder management");
-                if(!document.querySelector('[role="dialog"]').textContent.includes('music')) throw new Error("Configured folder not shown");
+                if(!document.querySelector('.folder-list').textContent.includes('music')) throw new Error("Configured folder not shown");
             })()`, true);
             await capture("settings");
+
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button}=window.uiReview;
+                button('Back to music').click();
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Possible duplicates');
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('[data-track-id="1"]'));
+                const first=document.querySelector('[data-track-id="1"]');
+                const rect=first.getBoundingClientRect();
+                first.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:rect.x+200,clientY:rect.y+30}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Go to artist').click();
+                await waitFor(()=>document.querySelector('[aria-label="Show all songs"]'));
+                if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2') throw new Error('Artist filter did not apply');
+                document.querySelector('[aria-label="Show all songs"]').click();
+                await waitFor(()=>document.querySelector('.track-table').getAttribute('aria-rowcount')==='2301');
+            })()`, true);
 
             const report = {...results, ...interactions, screenshots: artifacts};
             writeFileSync(join(artifacts, "report.json"), JSON.stringify(report, null, 4));

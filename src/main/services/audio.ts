@@ -1,7 +1,8 @@
-import {createReadStream} from "node:fs";
-import {stat} from "node:fs/promises";
 import {extname} from "node:path";
 import {Readable} from "node:stream";
+import {stat} from "node:fs/promises";
+import {createReadStream} from "node:fs";
+
 
 const audioTypes: Record<string, string> = {
     ".mp3": "audio/mpeg",
@@ -14,12 +15,14 @@ const audioTypes: Record<string, string> = {
     ".aiff": "audio/aiff",
 };
 
+
 export async function serveAudio(path: string, request: Request): Promise<Response> {
     const file = await stat(path);
+
     const headers = new Headers({
         "Accept-Ranges": "bytes",
-        "Content-Type": audioTypes[extname(path).toLowerCase()] ?? "application/octet-stream",
         "Cache-Control": "no-store",
+        "Content-Type": audioTypes[extname(path).toLowerCase()] ?? "application/octet-stream",
     });
 
     if (request.method !== "GET" && request.method !== "HEAD") {
@@ -63,12 +66,11 @@ export async function serveAudio(path: string, request: Request): Promise<Respon
     }
 
     const stream = createReadStream(path, { start, end });
+
     const abort = () => stream.destroy();
+
     request.signal.addEventListener("abort", abort, { once: true });
     stream.once("close", () => request.signal.removeEventListener("abort", abort));
 
-    return new Response(Readable.toWeb(stream) as ReadableStream<Uint8Array>, {
-        status: range ? 206 : 200,
-        headers,
-    });
+    return new Response(Readable.toWeb(stream) as ReadableStream<Uint8Array>, { status: range ? 206 : 200, headers });
 }

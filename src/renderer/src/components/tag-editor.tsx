@@ -1,9 +1,8 @@
-import {useState} from "react";
-import {ArrowRight, Check, Pencil} from "lucide-react";
+import {useMemo, useState} from "react";
+import {ArrowLeft, ArrowRight, Check, ShieldCheck} from "lucide-react";
 import type {Track} from "../../../shared/contracts";
 import {
     tagFields,
-    tagLabels,
     tagPatchSchema,
     type TagPatch,
     type TagPreview,
@@ -16,8 +15,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
-import {Input} from "@/components/ui/input";
+import {TagForm} from "@/components/tag-form";
+import {TagPreviewList} from "@/components/tag-preview";
+import {Cover} from "@/components/cover";
+import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {rpc} from "@/lib/rpc";
@@ -32,17 +33,12 @@ export function TagEditor({
     onClose: () => void;
     onSaved: (message: string) => Promise<void>;
 }) {
-    const [values, setValues] = useState(
-        () =>
-            Object.fromEntries(
-                tagFields.map((field) => {
-                    const first = tracks[0][field];
-                    const common = tracks.every((track) => track[field] === first);
-
-                    return [field, common ? String(first || "") : ""];
-                }),
-            ) as Record<keyof TagPatch, string>,
-    );
+    const initialValues = useMemo(() => Object.fromEntries(tagFields.map((field) => {
+        const first = tracks[0][field];
+        const common = tracks.every((track) => track[field] === first);
+        return [field, common ? String(first || "") : ""];
+    })) as Record<keyof TagPatch, string>, [tracks]);
+    const [values, setValues] = useState(initialValues);
     const [enabled, setEnabled] = useState<Set<keyof TagPatch>>(new Set());
     const [preview, setPreview] = useState<TagPreview>();
     const [busy, setBusy] = useState(false);
@@ -108,119 +104,60 @@ export function TagEditor({
         }
     }
 
+    function toggle(field: keyof TagPatch, checked: boolean) {
+        setEnabled((previous) => {
+            const next = new Set(previous);
+            if (checked) next.add(field);
+            else next.delete(field);
+            return next;
+        });
+        setPreview(undefined);
+    }
+
+    function reset(field: keyof TagPatch) {
+        setValues((previous) => ({ ...previous, [field]: initialValues[field] }));
+        toggle(field, false);
+    }
+
+    const first = tracks[0];
+    const batch = tracks.length > 1;
+
     return (
-        <Dialog
-            open
-            onOpenChange={(open) => {
-                if (!open && !busy) onClose();
-            }}
-        >
+        <Dialog open onOpenChange={(open) => {
+            if (!open && !busy) onClose();
+        }}>
             <DialogContent showCloseButton={!busy} className="tag-editor">
-                <DialogHeader>
-                    <DialogTitle>
-                        <Pencil aria-hidden="true"/> Edit tags
-                    </DialogTitle>
-                    <DialogDescription>
-                        {tracks.length === 1
-                            ? tracks[0].title
-                            : tracks.length + " selected songs"}{" "}
-                        · MP3, FLAC, and M4A
-                    </DialogDescription>
+                <DialogHeader className="tag-editor-header">
+                    <div className="tag-summary">
+                        <Cover track={first}/>
+                        <div className="tag-summary-copy">
+                            <p className="eyebrow">SONG DETAILS</p>
+                            <DialogTitle>Edit tags</DialogTitle>
+                            <DialogDescription>{batch ? tracks.length + " selected songs" : first.title}</DialogDescription>
+                        </div>
+                        <Badge variant="secondary">{batch ? "Batch edit" : first.path.split(".").at(-1)?.toUpperCase()}</Badge>
+                    </div>
+                    <ol className="tag-steps" aria-label="Editing progress">
+                        <li aria-current={!preview ? "step" : undefined}><span>1</span>Details</li>
+                        <li aria-current={preview ? "step" : undefined}><span>2</span>Review</li>
+                    </ol>
                 </DialogHeader>
-
-                <p className="muted text-sm">
-                    Only checked fields will change. Audio is copied without re-encoding,
-                    and original files are backed up.
-                </p>
-
-                <FieldGroup className="tag-fields">
-                    {tagFields.map((field) => (
-                        <Field key={field}>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    aria-label={"Apply " + tagLabels[field]}
-                                    checked={enabled.has(field)}
-                                    disabled={busy}
-                                    onChange={(event) => {
-                                        setEnabled((previous) => {
-                                            const next = new Set(previous);
-                                            if (event.target.checked) next.add(field);
-                                            else next.delete(field);
-                                            return next;
-                                        });
-                                        setPreview(undefined);
-                                    }}
-                                />
-                                <FieldLabel htmlFor={"tag-" + field}>
-                                    {tagLabels[field]}
-                                </FieldLabel>
-                            </div>
-                            <Input
-                                id={"tag-" + field}
-                                type={field === "year" ? "number" : "text"}
-                                min={field === "year" ? 0 : undefined}
-                                max={field === "year" ? 9999 : undefined}
-                                value={values[field]}
-                                placeholder={
-                                    field === "year"
-                                        ? "Unknown year (0)"
-                                        : "Mixed values / unchanged"
-                                }
-                                disabled={busy}
-                                onChange={(event) => change(field, event.target.value)}
-                            />
-                        </Field>
-                    ))}
-                </FieldGroup>
-
-                {error && (
-                    <Alert variant="destructive">
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-
-                {preview && (
-                    <section className="tag-preview" aria-label="Tag change preview">
-                        <h3>
-                            {preview.files.length ? "Review changes" : "No changes to save"}
-                        </h3>
-                        {preview.files.map((file) => (
-                            <div className="preview-file" key={file.id}>
-                                <strong>{file.title}</strong>
-                                <small title={file.path}>{file.path}</small>
-                                {file.changes.map((change) => (
-                                    <div className="tag-change" key={change.field}>
-                                        <span>{tagLabels[change.field]}</span>
-                                        <span>{change.before || "Not set"}</span>
-                                        <ArrowRight aria-hidden="true"/>
-                                        <strong>{change.after || "Not set"}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        ))}
-                    </section>
-                )}
-
-                <DialogFooter>
-                    <Button variant="ghost" disabled={busy} onClick={onClose}>
-                        Cancel
-                    </Button>
+                <div className="tag-editor-body">
+                    <p className="tag-editor-hint">{preview ? "Review the changes before saving them to your audio files." : batch ? "Checked fields are applied to every selected song." : "Make your changes, then give them a quick review."}</p>
+                    {!preview ? (
+                        <TagForm values={values} enabled={enabled} batch={batch} busy={busy} onChange={change} onToggle={toggle} onReset={reset}/>
+                    ) : <TagPreviewList preview={preview}/>}
+                    {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+                </div>
+                <DialogFooter className="tag-editor-footer">
+                    <span className="tag-recovery"><ShieldCheck/>Originals kept for recovery</span>
                     {preview ? (
-                        <Button
-                            disabled={busy || !preview.files.length}
-                            onClick={() => void save()}
-                        >
-                            <Check/>
-                            {busy ? "Saving…" : "Save to files"}
-                        </Button>
+                        <Button variant="ghost" disabled={busy} onClick={() => setPreview(undefined)}><ArrowLeft/>Details</Button>
+                    ) : <Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>}
+                    {preview ? (
+                        <Button disabled={busy || !preview.files.length} onClick={() => void save()}><Check/>{busy ? "Saving…" : "Save to files"}</Button>
                     ) : (
-                        <Button
-                            disabled={busy || !enabled.size}
-                            onClick={() => void prepare()}
-                        >
-                            {busy ? "Preparing…" : "Preview changes"}
-                        </Button>
+                        <Button disabled={busy || !enabled.size} onClick={() => void prepare()}>{busy ? "Preparing…" : "Preview changes"}<ArrowRight/></Button>
                     )}
                 </DialogFooter>
             </DialogContent>

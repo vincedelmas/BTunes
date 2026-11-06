@@ -30,7 +30,7 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: {
     return (
         <ContextMenu>
             <ContextMenuTrigger render={children}/>
-            <ContextMenuContent>
+            <ContextMenuContent className="track-menu">
                 <ContextMenuGroup>
                     <ContextMenuLabel>{tracks.length === 1 ? first.title : tracks.length + " songs"}</ContextMenuLabel>
                     <ContextMenuItem onClick={() => actions.onPlay(first, tracks)}>
@@ -48,7 +48,7 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: {
                         <ContextMenuSub>
                             <ContextMenuSubTrigger>
                                 <ListPlus/>Add to playlist</ContextMenuSubTrigger>
-                            <ContextMenuSubContent>
+                            <ContextMenuSubContent className="track-menu">
                                 <ContextMenuGroup>
                                     {classicPlaylists.map((playlist) => (
                                         <ContextMenuItem key={playlist.id} onClick={() => actions.onAdd(playlist.id, tracks.map((track) => track.id))}>

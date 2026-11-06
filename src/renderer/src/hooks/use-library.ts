@@ -1,18 +1,19 @@
-import {useCallback, useEffect, useRef, useState} from "react";
-import type {Snapshot} from "../../../shared/contracts";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
+import type {Snapshot} from "../../../shared/contracts";
+import {useCallback, useEffect, useRef, useState} from "react";
+
 
 export function useLibrary() {
+    const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [notice, setNotice] = useState("");
     const [data, setData] = useState<Snapshot>({
         revision: 0,
         tracks: [],
         playlists: [],
         folders: [],
     });
-    const [error, setError] = useState("");
-    const [notice, setNotice] = useState("");
-    const [busy, setBusy] = useState(false);
 
     const revision = useRef<number | undefined>(undefined);
     const refreshing = useRef<Promise<void> | undefined>(undefined);
@@ -34,10 +35,7 @@ export function useLibrary() {
         return request;
     }, []);
 
-    const reportError = useCallback(
-        (error: unknown) => setError(getErrorMessage(error)),
-        [],
-    );
+    const reportError = useCallback((error: unknown) => setError(getErrorMessage(error)), []);
 
     useEffect(() => {
         void refresh().catch(reportError);
@@ -64,6 +62,7 @@ export function useLibrary() {
                 let message = result.imported + " songs indexed.";
                 if (result.errors.length)
                     message += " " + result.errors.length + " files skipped.";
+
                 setNotice(message);
                 await refresh();
             }
@@ -100,12 +99,12 @@ export function useLibrary() {
 
     return {
         data,
+        busy,
         error,
         notice,
-        busy,
+        refresh,
         setError,
         setNotice,
-        refresh,
         reportError,
         importFolder,
         addToPlaylist,

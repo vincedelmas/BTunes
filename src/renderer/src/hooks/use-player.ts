@@ -1,18 +1,20 @@
-import {useCallback, useEffect, useRef, useState} from "react";
-import type {Track} from "../../../shared/contracts";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
+import type {Track} from "../../../shared/contracts";
+import {useCallback, useEffect, useRef, useState} from "react";
+
 
 export function usePlayer(onError: (message: string) => void) {
-    const audio = useRef<HTMLAudioElement>(null);
-    const counted = useRef(false);
     const cursor = useRef(0);
+    const counted = useRef(false);
     const [current, setCurrent] = useState<Track>();
     const [queue, setQueue] = useState<Track[]>([]);
+    const [volume, setVolume] = useState(0.7);
+    const [repeat, setRepeat] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [shuffle, setShuffle] = useState(false);
-    const [repeat, setRepeat] = useState(false);
-    const [volume, setVolume] = useState(0.7);
+
+    const audio = useRef<HTMLAudioElement>(null);
 
     const report = useCallback((error: unknown) => onError(getErrorMessage(error)), [onError]);
 
@@ -113,5 +115,6 @@ export function usePlayer(onError: (message: string) => void) {
         start, next, stop, seek, toggle, updateTime, enqueue,
     };
 }
+
 
 export type PlayerState = ReturnType<typeof usePlayer>;

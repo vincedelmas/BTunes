@@ -1,5 +1,5 @@
 import {useDeferredValue, useEffect, useMemo, useState} from "react";
-import {ArrowDownUp, Headphones, Pencil, Play, RefreshCw, Search, Smartphone} from "lucide-react";
+import {ArrowLeft, Headphones, Pencil, Play, Search, Smartphone} from "lucide-react";
 import type {Track} from "../../shared/contracts";
 import {Sidebar} from "@/components/library/sidebar";
 import {AlbumGrid} from "@/components/library/album-grid";
@@ -10,9 +10,10 @@ import {CollectionEmptyState} from "@/components/library/collection-empty-state"
 import {PlayerBar} from "@/components/player/player-bar";
 import {QueuePanel} from "@/components/player/queue-panel";
 import {TagEditor} from "@/components/tag-editor";
-import {SettingsPanel} from "@/components/settings-panel";
+import {SettingsPage} from "@/components/settings-page";
+import {FilterBar} from "@/components/library/filter-bar";
+import {compareTracks, type TrackSort} from "../../shared/track-sorting";
 import {EmptyState} from "@/components/empty-state";
-import {FilterSelect} from "@/components/filter-select";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
@@ -31,26 +32,18 @@ const viewTitles: Record<string, string> = {
     android: "Devices",
 };
 
-const sortOptions = [
-    { value: "artist", label: "Artist" },
-    { value: "album", label: "Album" },
-    { value: "title", label: "Title" },
-    { value: "year", label: "Year" },
-    { value: "plays", label: "Play count" },
-];
-
 export function App() {
     const library = useLibrary();
     const player = usePlayer(library.setError);
-    const [view, setView] = useState("albums");
+    const [view, setView] = useState("tracks");
     const [search, setSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
     const [genre, setGenre] = useState("");
     const [artist, setArtist] = useState("");
-    const [sort, setSort] = useState("artist");
+    const [sort, setSort] = useState<TrackSort>({ field: "title", descending: false });
     const [playlistIds, setPlaylistIds] = useState<number[]>([]);
     const [showQueue, setShowQueue] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
+    const [returnView, setReturnView] = useState("tracks");
     const [selected, setSelected] = useState<number[]>([]);
     const [editing, setEditing] = useState<Track[]>();
 
@@ -94,14 +87,7 @@ export function App() {
             if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
 
             return true;
-        }).sort((first, second) => {
-            if (view === "history") return second.lastPlayed - first.lastPlayed;
-            if (sort === "year") return second.year - first.year;
-            if (sort === "plays") return second.plays - first.plays;
-
-            const field = sort as "artist" | "album" | "title";
-            return first[field].localeCompare(second[field]);
-        });
+        }).sort((first, second) => compareTracks(first, second, sort));
     }, [library.data.tracks, deferredSearch, genre, artist, view, playlistIds, sort]);
 
     const albums = useMemo(() => groupAlbums(tracks), [tracks]);
@@ -119,6 +105,17 @@ export function App() {
     }
 
     function navigate(nextView: string) {
+        if (nextView === view) return;
+
+        if (nextView === "settings") {
+            setReturnView(view);
+            setView(nextView);
+            return;
+        }
+
+        if (nextView === "history") setSort({ field: "lastPlayed", descending: true });
+        else if (sort.field === "lastPlayed") setSort({ field: "title", descending: false });
+
         setView(nextView);
         setSelected([]);
         setPlaylistIds([]);
@@ -127,6 +124,8 @@ export function App() {
 
     function showArtist(name: string) {
         navigate("tracks");
+        clearFilters();
+        setSelected([]);
         setArtist(name);
     }
 
@@ -155,7 +154,7 @@ export function App() {
                 hasFolders={Boolean(library.data.folders.length)}
                 hasFilters={Boolean(search || genre || artist)}
                 onClearFilters={clearFilters}
-                onSettings={() => setShowSettings(true)}
+                onSettings={() => navigate("settings")}
             />;
         }
 
@@ -163,77 +162,64 @@ export function App() {
         if (view === "artists") return <ArtistGrid tracks={tracks} onArtist={showArtist}/>;
 
         return <TrackTable tracks={tracks} playlists={library.data.playlists} currentId={current?.id}
-                           playing={player.playing} selected={selected} onSelect={setSelected} actions={actions}/>;
+                           sort={sort} onSort={setSort} playing={player.playing} selected={selected} onSelect={setSelected} actions={actions}/>;
     }
 
     return (
         <div className="app-shell">
             <Sidebar data={library.data} view={view} genres={genres} onNavigate={navigate}
-                     onSettings={() => setShowSettings(true)} onRefresh={library.refresh} onError={library.reportError}/>
+                     onSettings={() => navigate("settings")} onRefresh={library.refresh} onError={library.reportError}/>
             <main>
                 <header className="topbar">
-                    <div className="page-context">
-                        <Headphones size={20}/>
-                        <span>Music</span>
-                    </div>
-                    <div className="search">
-                        <Search size={21} aria-hidden="true"/>
-                        <Input aria-label="Search your library" placeholder="Search songs, artists, albums" value={search} onChange={(ev) => setSearch(ev.target.value)}/>
-                    </div>
-                    <Button variant="ghost" size="icon" aria-label="Refresh library" onClick={() => void library.refresh().catch(library.reportError)}>
-                        <RefreshCw/>
-                    </Button>
-                    <div className="profile-avatar" title="Local library">B</div>
+                    {view === "settings" ? <Button variant="ghost" onClick={() => setView(returnView)}><ArrowLeft/>Back to music</Button> : <>
+                        <div className="page-context"><Headphones size={20}/><span>Music</span></div>
+                        <div className="search">
+                            <Search size={21} aria-hidden="true"/>
+                            <Input aria-label="Search your library" placeholder="Search songs, artists, albums" value={search} onChange={(ev) => setSearch(ev.target.value)}/>
+                        </div>
+                    </>}
                 </header>
-                <div className="library-hero">
-                    <h1>{title}</h1>
-                    <p>{tracks.length} songs <span>•</span> {albums.length} albums</p>
-                </div>
-                <div className="content">
-                    {library.error && <Alert variant="destructive">
-                        <AlertDescription>{library.error}<Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
-                        </AlertDescription>
-                    </Alert>}
-                    {library.notice && <p role="status" className="notice">{library.notice}</p>}
-                    {view === "android" ? (
-                        <EmptyState icon={Smartphone} title="Take your music with you"
-                                    description="Compare your computer and phone, find missing songs, and sync over USB or KDE Connect.">
-                            <Badge variant="secondary">Coming next</Badge>
-                        </EmptyState>
-                    ) : (
-                        <>
-                            {!!tracks.length && <div className="collection-toolbar">
-                                <Button size="icon" className="collection-play" aria-label="Play visible songs" disabled={!tracks.length}
-                                        onClick={() => player.start(tracks[0], tracks)}>
-                                    <Play fill="currentColor"/>
-                                </Button>
-                                {!!selectedTracks.length && <Button variant="outline" onClick={() => setEditing(selectedTracks)}>
-                                    <Pencil/>Edit tags ({selectedTracks.length})</Button>}
-                            </div>}
-                            <div className="filters">
-                                <div className="flex gap-3">
-                                    <FilterSelect label="Filter by genre" placeholder="All genres" value={genre} options={genres.map((name) => ({ value: name, label: name }))}
-                                                  onChange={setGenre}/>
-                                    <FilterSelect label="Filter by artist" placeholder="All artists" value={artist} options={artists.map((name) => ({ value: name, label: name }))}
-                                                  onChange={setArtist}/>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <ArrowDownUp size={14}/>
-                                    <FilterSelect label="Sort songs" placeholder="Artist" value={sort} options={sortOptions} onChange={(value) => setSort(value || "artist")}/>
-                                </div>
-                            </div>
-                            <div className="collection-results">{renderCollection()}</div>
-                            {view === "duplicates" && !!tracks.length &&
-                                <p className="muted duplicate-note">Matches use title, artist, and rounded duration. No files are deleted.</p>}
-                        </>
-                    )}
-                </div>
+                {view === "settings" ? <SettingsPage folders={library.data.folders} busy={library.busy} songCount={library.data.tracks.length}
+                                                     notice={library.notice} error={library.error} onImport={() => void library.importFolder()}
+                                                     onRefresh={() => void library.refresh().then(() => library.setNotice("Library refreshed.")).catch(library.reportError)}/> : <>
+                    <div className="library-hero">
+                        <h1>{title}</h1>
+                        <p>{tracks.length} songs <span>•</span> {albums.length} albums</p>
+                    </div>
+                    <div className="content">
+                        {library.error && <Alert variant="destructive">
+                            <AlertDescription>{library.error}<Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
+                            </AlertDescription>
+                        </Alert>}
+                        {library.notice && <p role="status" className="notice">{library.notice}</p>}
+                        {view === "android" ? (
+                            <EmptyState icon={Smartphone} title="Take your music with you"
+                                        description="Compare your computer and phone, find missing songs, and sync over USB or KDE Connect.">
+                                <Badge variant="secondary">Coming next</Badge>
+                            </EmptyState>
+                        ) : (
+                            <>
+                                {!!tracks.length && <div className="collection-toolbar">
+                                    <Button size="icon" className="collection-play" aria-label="Play visible songs" disabled={!tracks.length}
+                                            onClick={() => player.start(tracks[0], tracks)}>
+                                        <Play fill="currentColor"/>
+                                    </Button>
+                                    {!!selectedTracks.length && <Button variant="outline" onClick={() => setEditing(selectedTracks)}>
+                                        <Pencil/>Edit tags ({selectedTracks.length})</Button>}
+                                </div>}
+                                <FilterBar genre={genre} artist={artist} search={search} genres={genres} artists={artists} sort={sort}
+                                           showSort={view === "albums" || view === "artists"} onGenre={setGenre} onArtist={setArtist} onSort={setSort} onClear={clearFilters}/>
+                                <div className="collection-results">{renderCollection()}</div>
+                                {view === "duplicates" && !!tracks.length &&
+                                    <p className="muted duplicate-note">Matches use title, artist, and rounded duration. No files are deleted.</p>}
+                            </>
+                        )}
+                    </div>
+                </>}
             </main>
             {showQueue && <QueuePanel player={player} onClose={() => setShowQueue(false)}/>}
             <PlayerBar player={player} current={current} onQueue={() => setShowQueue(!showQueue)}/>
             {editing && <TagEditor tracks={editing} onClose={() => setEditing(undefined)} onSaved={tagsSaved}/>}
-            {showSettings &&
-                <SettingsPanel folders={library.data.folders} busy={library.busy} onImport={() => void library.importFolder()} onClose={() => setShowSettings(false)}/>}
             <audio ref={player.audio} src={player.current ? "btunes://audio/" + player.current.id : undefined}
                    onPlay={() => player.setPlaying(true)} onPause={() => player.setPlaying(false)}
                    onTimeUpdate={player.updateTime} onEnded={() => player.next()}

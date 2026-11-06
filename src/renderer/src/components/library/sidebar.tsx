@@ -101,7 +101,7 @@ export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh,
                             id="playlist-name"
                             placeholder="My playlist"
                             value={name}
-                            onChange={(event) => setName(event.target.value)}
+                            onChange={(ev) => setName(ev.target.value)}
                             disabled={saving}
                         />
                     </Field>
@@ -145,7 +145,7 @@ export function Sidebar({ data, view, genres, onNavigate, onSettings, onRefresh,
             </div>
 
             <div className="sidebar-bottom">
-                <Button variant="ghost" className="nav-item" onClick={onSettings}>
+                <Button variant={view === "settings" ? "secondary" : "ghost"} aria-current={view === "settings" ? "page" : undefined} className="nav-item" onClick={onSettings}>
                     <Settings/>Settings</Button>
             </div>
         </aside>

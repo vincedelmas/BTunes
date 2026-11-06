@@ -6,26 +6,14 @@ import {LibraryRepository} from "../repositories/library";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
 
 
-const audioExtensions = new Set([
-    ".mp3",
-    ".flac",
-    ".ogg",
-    ".opus",
-    ".m4a",
-    ".aac",
-    ".wav",
-    ".aiff",
-]);
+const audioExtensions = new Set([".mp3", ".flac", ".ogg", ".opus", ".m4a", ".aac", ".wav", ".aiff"]);
 
 
 export class LibraryService {
     private watcher?: FSWatcher;
     private jobs = new Map<string, Promise<void>>();
 
-    constructor(
-        readonly repo: LibraryRepository,
-        readonly covers: string,
-    ) {
+    constructor(readonly repo: LibraryRepository, readonly covers: string) {
     }
 
     async index(path: string) {
@@ -111,7 +99,9 @@ export class LibraryService {
 
         // Prune stale entries only after dir was read successfully
         for (const track of this.repo.snapshot().tracks) {
-            if (!track.path.startsWith(folder + "/")) continue;
+            if (!track.path.startsWith(folder + "/")) {
+                continue;
+            }
 
             try {
                 await stat(track.path);

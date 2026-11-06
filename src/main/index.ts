@@ -1,24 +1,27 @@
-import {serveAudio} from "./services/audio";
-import {migrateLegacyUserData} from "./services/user-data";
 import {z} from "zod";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
 import {TagService} from "./services/tags";
+import {serveAudio} from "./services/audio";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
+import {migrateLegacyUserData} from "./services/user-data";
 import {type TagPatch, tagPatchSchema} from "../shared/tags";
 import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
 
 
 app.setName("BTunes");
 
+
 const applicationData = app.getPath("appData");
 const defaultUserData = join(applicationData, "BTunes");
 
-// Keep explicit profiles used by tests or custom launchers.
+
+// Keep explicit profiles used by tests or custom launchers
 if (app.getPath("userData") === join(applicationData, "btunes")) {
     app.setPath("userData", defaultUserData);
 }
+
 
 protocol.registerSchemesAsPrivileged([{
     scheme: "btunes",
@@ -50,11 +53,14 @@ app.whenReady().then(async () => {
     );
 
     const id = z.object({ id: z.number().int().positive() });
+
     const playlistMutation = z.union([
         z.object({ playlistId: z.number().int().positive(), trackId: z.number().int().positive() }).strict(),
         z.object({ playlistId: z.number().int().positive(), trackIds: z.array(z.number().int().positive()).min(1).max(10000) }).strict(),
     ]);
+
     type PlaylistMutation = z.infer<typeof playlistMutation>;
+
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"));
 

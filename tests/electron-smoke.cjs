@@ -77,8 +77,12 @@ app.on("browser-window-created", (_, win) => {
      while(!predicate()){if(Date.now()>end)throw new Error('UI condition timed out');await new Promise(resolve=>setTimeout(resolve,25))}
     };
     const findButton=(text)=>[...document.querySelectorAll('button')].find(button=>button.textContent.trim()===text);
+    if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must open by default');
+    findButton('Settings').click();
+    await waitFor(()=>document.querySelector('button[aria-label="Refresh library"]'));
     document.querySelector('button[aria-label="Refresh library"]').click();
-    findButton('Songs').click();
+    await waitFor(()=>document.querySelector('.library-stat strong')?.textContent==='1');
+    findButton('Back to music').click();
     await waitFor(()=>document.querySelector('button[aria-label="Edit tags for Silence"]'));
     document.querySelector('button[aria-label="Play Silence"]').click();
     await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
