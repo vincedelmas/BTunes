@@ -7,7 +7,6 @@ import type {RpcInput} from "../shared/types/rpc";
 import {ArtworkService} from "./services/artwork";
 import {LibraryService} from "./services/library";
 import {LibraryRepository} from "./repositories/library";
-import {migrateLegacyUserData} from "./services/user-data";
 import {app, BrowserWindow, dialog, ipcMain, net, protocol, shell} from "electron";
 
 
@@ -46,12 +45,6 @@ const pendingWrites = new Set<Promise<unknown>>();
 
 
 void app.whenReady().then(async () => {
-    if (app.getPath("userData") === defaultUserData) {
-        for (const legacyName of ["sillage", "Sillage"]) {
-            await migrateLegacyUserData(join(applicationData, legacyName), defaultUserData);
-        }
-    }
-
     const repo = new LibraryRepository(
         join(app.getPath("userData"), "library.sqlite"),
         app.isPackaged ? join(process.resourcesPath, "drizzle") : join(__dirname, "../../drizzle"),

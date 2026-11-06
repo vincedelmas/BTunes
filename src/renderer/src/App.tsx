@@ -1,11 +1,11 @@
 import {useItemReveal} from "@/hooks/use-item-reveal";
-import {albumKey} from "@/lib/music";
+import {albumKey, getAlbumArtist} from "@/lib/music";
 import {useEffect, useState} from "react";
 import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
 import {useLibrary} from "@/hooks/use-library";
 import {TagEditor} from "@/components/tag-editor";
-import {ArrowLeft, Smartphone} from "lucide-react";
+import {Smartphone} from "lucide-react";
 import {EmptyState} from "@/components/empty-state";
 import {Sidebar} from "@/components/library/sidebar";
 import {useCollection} from "@/hooks/use-collection";
@@ -39,7 +39,7 @@ export function App() {
     const { audio: audioRef } = player;
     const {
         view, search, artist, sort, selected, tracks, albums, genres, activePlaylist, title,
-        setSearch, setArtist, setSort, setSelected, navigate, showArtist, clearFilters, returnToMusic,
+        setSearch, setArtist, setSort, setSelected, navigate, showArtist, clearFilters,
     } = collection;
 
     useEffect(() => {
@@ -73,13 +73,12 @@ export function App() {
         clearFilters();
         let key: string | number = current.id;
         if (view === "albums") key = albumKey(current);
-        if (view === "artists") key = current.artist;
+        if (view === "artists") key = getAlbumArtist(current);
         locator.show(key);
     }
 
-    const tagsSaved = async (message: string) => {
+    const tagsSaved = async () => {
         await library.refresh();
-        library.setNotice(message);
     };
 
     const renderCollection = () => {
@@ -115,7 +114,7 @@ export function App() {
                     currentTrack={current}
                     reveal={locator.target}
                     onRevealed={locator.clear}
-                    onArtist={showArtist}
+                    onArtist={(name) => showArtist(name, true)}
                 />
             );
         }
@@ -154,28 +153,20 @@ export function App() {
             />
 
             <main className="isolate overflow-hidden min-w-0 rounded-lg bg-background flex flex-col">
-                <header
-                    className="topbar h-14 flex items-center gap-5 py-0 px-7 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)]
+                {view !== "settings" && (
+                    <header
+                        className="topbar h-14 flex items-center gap-5 py-0 px-7 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)]
                     z-[1] shrink-0 max-[1150px]:py-0 max-[1150px]:px-5"
-                >
-                    <LibrarySearch
-                        value={search}
-                        onChange={(value) => {
-                            if (view === "settings" || view === "android") navigate("tracks");
-                            setSearch(value);
-                        }}
-                    />
-                    {view === "settings" &&
-                        <Button
-                            variant="ghost"
-                            onClick={returnToMusic}
-                        >
-                            <ArrowLeft data-icon="inline-start"/>
-                            Back to music
-                        </Button>
-                    }
-                </header>
-
+                    >
+                        <LibrarySearch
+                            value={search}
+                            onChange={(value) => {
+                                if (view === "settings" || view === "android") navigate("tracks");
+                                setSearch(value);
+                            }}
+                        />
+                    </header>
+                )}
                 {view === "settings" ?
                     <SettingsPage
                         busy={library.busy}

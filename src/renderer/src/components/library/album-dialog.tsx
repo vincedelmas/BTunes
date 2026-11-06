@@ -23,7 +23,7 @@ interface AlbumDialogProps {
     onClose: () => void;
     playlists: Playlist[];
     actions: TrackActions;
-    onSaved: (message: string) => Promise<void>;
+    onSaved: () => Promise<void>;
 }
 
 

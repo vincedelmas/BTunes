@@ -3,7 +3,7 @@ import {useDeferredValue, useEffect, useState} from "react";
 import type {Snapshot} from "../../../shared/types/library";
 import type {TrackSort} from "../../../shared/types/track-sorting";
 import {compareTracks} from "../../../shared/track-sorting";
-import {duplicateKey, groupAlbums} from "@/lib/music";
+import {duplicateKey, groupAlbums, getAlbumArtist} from "@/lib/music";
 import {rpc} from "@/lib/rpc";
 import {usePreference} from "@/hooks/use-preference";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
@@ -22,6 +22,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const [search, setSearch] = useState("");
     const deferredSearch = useDeferredValue(search);
     const [artist, setArtist] = useState("");
+    const [albumArtistFilter, setAlbumArtistFilter] = useState(false);
     const [savedSort, setSavedSort] = usePreference<TrackSort>("btunes.song-sort.v1", trackSortSchema, { field: "title", descending: false });
     const [historySort, setHistorySort] = useState<TrackSort>({ field: "lastPlayed", descending: true });
     const sort = view === "history" ? historySort : savedSort;
@@ -32,7 +33,6 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     const [playlistIds, setPlaylistIds] = useState<number[]>([]);
-    const [returnView, setReturnView] = useState("tracks");
     const [selected, setSelected] = useState<number[]>([]);
 
     const genres = genreChoices(data.tracks.map((track) => track.genre));
@@ -66,7 +66,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     const tracks = data.tracks.filter((track) => {
         if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-        if (artist && track.artist !== artist) return false;
+        if (artist && (albumArtistFilter ? getAlbumArtist(track) : track.artist) !== artist) return false;
         if (view === "history" && !track.lastPlayed) return false;
         if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
         if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
@@ -82,19 +82,8 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         setArtist("");
     }
 
-    function returnToMusic() {
-        const missingPlaylist = returnView.startsWith("playlist:") && !data.playlists.some((playlist) => "playlist:" + playlist.id === returnView);
-        setView(missingPlaylist ? "tracks" : returnView);
-    }
-
     function navigate(nextView: string) {
         if (nextView === view) return;
-
-        if (nextView === "settings") {
-            setReturnView(view);
-            setView(nextView);
-            return;
-        }
 
         setView(nextView);
         setSelected([]);
@@ -102,17 +91,18 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         clearFilters();
     }
 
-    function showArtist(name: string) {
+    function showArtist(name: string, useAlbumArtist = false) {
         navigate("tracks");
         clearFilters();
         setSelected([]);
         setArtist(name);
+        setAlbumArtistFilter(useAlbumArtist);
     }
 
     return {
         view, search, artist, sort, selected, tracks, albums, genres,
         activePlaylist, title,
         setSearch, setArtist, setSort, setSelected,
-        navigate, showArtist, clearFilters, returnToMusic,
+        navigate, showArtist, clearFilters,
     };
 }

@@ -1,3 +1,4 @@
+import {getAlbumArtist} from "@/lib/music";
 import type {ItemReveal} from "@/types/reveal";
 import {NowPlayingBadge} from "@/components/player/now-playing-badge";
 import {Cover} from "@/components/cover";
@@ -18,13 +19,14 @@ export function ArtistGrid({ currentTrack, reveal, onRevealed, tracks, onArtist 
     const groups = new Map<string, { name: string; track: Track; count: number }>();
 
     for (const track of tracks) {
-        const artist = groups.get(track.artist);
+        const name = getAlbumArtist(track);
+        const artist = groups.get(name);
 
         if (artist) {
             artist.count++;
         }
         else {
-            groups.set(track.artist, { name: track.artist, track, count: 1 });
+            groups.set(name, { name, track, count: 1 });
         }
     }
 
@@ -40,7 +42,7 @@ export function ArtistGrid({ currentTrack, reveal, onRevealed, tracks, onArtist 
             renderItem={(artist) => (
                 <button
                     data-artist={artist.name}
-                    aria-current={currentTrack?.artist === artist.name ? true : undefined}
+                    aria-current={currentTrack && getAlbumArtist(currentTrack) === artist.name ? true : undefined}
                     className="artist w-full min-w-0 rounded-xl border border-transparent bg-transparent p-3 text-left hover:bg-card focus-visible:border-primary focus-visible:outline-none aria-current:border-primary/60 aria-current:bg-primary/5"
                     onClick={() => onArtist(artist.name)}
                 >
@@ -49,7 +51,7 @@ export function ArtistGrid({ currentTrack, reveal, onRevealed, tracks, onArtist 
                             large
                             track={artist.track}
                         />
-                        {currentTrack?.artist === artist.name && <NowPlayingBadge/>}
+                        {currentTrack && getAlbumArtist(currentTrack) === artist.name && <NowPlayingBadge/>}
                     </div>
                     <h2 className="truncate text-base font-bold">{artist.name}</h2>
                     <p className="mt-1 text-xs text-muted-foreground">Artist · {artist.count} songs</p>

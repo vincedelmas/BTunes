@@ -82,7 +82,7 @@ app.on("browser-window-created", (_, win) => {
     await waitFor(()=>document.querySelector('button[aria-label="Refresh library"]'));
     document.querySelector('button[aria-label="Refresh library"]').click();
     await waitFor(()=>document.querySelector('.library-stat strong')?.textContent==='1');
-    findButton('Back to music').click();
+    findButton('Songs').click();
     await waitFor(()=>document.querySelector('[data-track-id="'+indexed.tracks[0].id+'"]'));
     document.querySelector('button[aria-label="Play Silence"]').click();
     await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
@@ -109,7 +109,7 @@ app.on("browser-window-created", (_, win) => {
     const saved=await window.btunes.rpc('library.get',undefined);
     if(saved.tracks[0].title!=='Edited through UI')throw new Error('UI tag save failed');
     if(!audio.paused)throw new Error('Tag editing or a library refresh resumed paused playback');
-    if(document.querySelector('[role="status"]')?.textContent.trim()!=='Tags saved.')throw new Error('Save notice should be concise');
+    if(document.querySelector('[role="status"]')?.textContent.includes('Tags saved'))throw new Error('Tag saves must not insert a shifting notice');
     const font=getComputedStyle(document.body).fontFamily;
     if(!font.includes('Inter Variable'))throw new Error('Bundled font not applied');
     return {heading:document.querySelector('h1')?.textContent,playlist:next.playlists.length,title:saved.tracks[0].title};

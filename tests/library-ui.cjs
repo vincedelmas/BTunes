@@ -438,7 +438,7 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('.artist'));
                 viewport=document.querySelector('[aria-label="Artists"]');
                 viewport.scrollTop=viewport.scrollHeight;
-                await waitFor(()=>!visible(document.querySelector('.artist[aria-current="true"]'),viewport));
+                if(document.querySelectorAll('.artist').length!==1) throw new Error('Artists must group by album artist');
                 locate();
                 await waitFor(()=>visible(document.querySelector('.artist[aria-current="true"]'),viewport));
                 if(audio.paused!==paused || audio.currentTime<position) throw new Error('Revealing the playing item changed playback');
@@ -471,6 +471,7 @@ app.on("browser-window-created", (_, win) => {
                 button('Settings').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
                 if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');
+                if(document.querySelector('.topbar')) throw new Error('Settings should not show the library toolbar');
                 if(!button('Add music folder')) throw new Error("Settings does not expose folder management");
                 if(!document.querySelector('.folder-list').textContent.includes('music')) throw new Error("Configured folder not shown");
             })()`, true);
@@ -478,8 +479,8 @@ app.on("browser-window-created", (_, win) => {
 
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
-                button('Back to music').click();
-                await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('h1')?.textContent==='Songs');
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('[data-track-id="1"]'));
                 const first=document.querySelector('[data-track-id="1"]');
@@ -559,7 +560,7 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('nav .nav-item').textContent.trim()==='Albums');
                 drag(document.querySelector('[aria-label="Move Beta playlist"]'),document.querySelector('[aria-label="Playlists"] li'));
                 await waitFor(()=>document.querySelector('.playlists .nav-item').textContent.trim()==='Beta');
-                window.uiReview.button('Back to music').click();
+                window.uiReview.button('Songs').click();
                 await frame();
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {

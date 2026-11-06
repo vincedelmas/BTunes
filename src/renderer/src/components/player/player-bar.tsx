@@ -30,10 +30,6 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     <strong>{current?.title ?? "Find your next favorite"}</strong>
                     <small className="text-[11px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
                 </div>
-                <ShowPlayingButton
-                    disabled={!current}
-                    onClick={onReveal}
-                />
             </div>
 
             <div className="transport w-[42%] max-w-[590px]">
@@ -99,6 +95,11 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     >
                         <Square/>
                     </Button>
+                    <ShowPlayingButton
+                        disabled={!current}
+                        onClick={onReveal}
+                    />
+
                 </div>
 
                 <PlaybackTimeline

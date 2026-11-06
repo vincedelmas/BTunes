@@ -21,7 +21,7 @@ interface TagEditorProps {
     tracks: Track[];
     genres: string[];
     onClose: () => void;
-    onSaved: (message: string) => Promise<void>;
+    onSaved: () => Promise<void>;
 }
 
 
@@ -70,11 +70,8 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                 return rpc("tags.preview", { ids: tracks.map((track) => track.id), patch: validated.data, artworkId: artwork?.id });
             })
             .then((prepared) => rpc("tags.save", { token: prepared.token }))
-            .then(async (result) => {
-                let message = "No tag changes.";
-                if (result.updated === 1) message = "Tags saved.";
-                else if (result.updated > 1) message = "Tags saved for " + result.updated + " songs.";
-                await onSaved(message);
+            .then(async () => {
+                await onSaved();
                 onClose();
             }).catch((error: unknown) => {
                 setError(getErrorMessage(error));

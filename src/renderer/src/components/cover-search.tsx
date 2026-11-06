@@ -57,7 +57,10 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
     }
 
     return (
-        <section className="mt-6 flex items-center gap-4 rounded-xl border border-border bg-background p-4" aria-label="Album artwork">
+        <section
+            className="mt-6 flex items-center gap-4 rounded-xl border border-border bg-background p-4"
+            aria-label="Album artwork"
+        >
             <div className="shrink-0 [&_.cover]:size-16 [&_.cover]:rounded-lg">
                 <Cover
                     track={track}
@@ -71,15 +74,23 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                     {selected
                         ? "New cover selected · ready to save"
-                        : "Find a cover using the current tags"
+                        : "Find a new cover using a search"
                     }
                 </p>
             </div>
-            <Button variant="secondary" size="lg" disabled={disabled} onClick={findCovers}>
+            <Button
+                variant="secondary"
+                size="lg"
+                disabled={disabled}
+                onClick={findCovers}
+            >
                 <ImagePlus data-icon="inline-start"/>
                 {selected ? "Change cover" : "Find a cover"}
             </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog
+                open={open}
+                onOpenChange={setOpen}
+            >
                 <DialogContent
                     className="cover-picker flex h-[min(760px,88vh)] w-[calc(100vw-64px)] max-w-5xl flex-col gap-0
                     overflow-hidden p-0 sm:max-w-5xl"
@@ -138,13 +149,21 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                         </aside>
                         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                             <div className="flex shrink-0 items-center justify-between gap-3 px-5 py-3">
-                                <p className="text-xs text-muted-foreground" role="status">
+                                <p
+                                    className="text-xs text-muted-foreground"
+                                    role="status"
+                                >
                                     {busy
                                         ? "Finding artwork from your tags…"
                                         : results.length + (results.length === 1 ? " suggestion" : " suggestions")
                                     }
                                 </p>
-                                <Button variant="ghost" size="sm" disabled={busy} onClick={() => void search()}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={() => void search()}
+                                >
                                     <RefreshCw data-icon="inline-start"/>
                                     Search again
                                 </Button>
@@ -217,7 +236,10 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                         </div>
                     </div>
                     <DialogFooter className="m-0 shrink-0 rounded-none px-6 py-4">
-                        <Button variant="ghost" onClick={() => setOpen(false)}>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setOpen(false)}
+                        >
                             Cancel
                         </Button>
                         <Button
