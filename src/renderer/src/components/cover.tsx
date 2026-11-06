@@ -13,7 +13,7 @@ interface CoverProps {
 export function Cover({ track, large = false, source }: CoverProps) {
     return (
         <div
-            className={cn("cover size-[42px] rounded-sm bg-[#282828] flex items-center justify-center shrink-0 overflow-hidden text-[#aaa]", large && "cover-large w-full h-auto aspect-square [background:linear-gradient(145deg,_#384e45,_#192c25)]")}>
+            className={cn("cover size-[42px] rounded-md bg-secondary flex items-center justify-center shrink-0 overflow-hidden text-muted-foreground", large && "cover-large w-full h-auto aspect-square bg-linear-to-br from-secondary to-card")}>
             {source || track?.cover ?
                 <img
                     className="size-full object-cover"

@@ -131,7 +131,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                     <Button
                         size="icon-xs"
                         variant="ghost"
-                        className="track-row-play w-6 h-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 [&_svg]:w-[14px] [&_svg]:h-[14px]"
+                        className="track-row-play size-6 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 [&_svg]:w-[14px] [&_svg]:h-[14px]"
                         aria-label={"Play " + track.title}
                         onClick={() => actions.onPlay(track)}
                     >
@@ -145,9 +145,9 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
             );
         }
         if (columnId === "duration") return formatTime(track.duration);
-        if (columnId === "albumArtist" && !track.albumArtist) return <span className="text-foreground">—</span>;
-        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-foreground">No genre</span>;
-        if (columnId === "year" && !track.year) return <span className="missing-tag text-foreground">—</span>;
+        if (columnId === "albumArtist" && !track.albumArtist) return <span className="text-muted-foreground">—</span>;
+        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-muted-foreground">No genre</span>;
+        if (columnId === "year" && !track.year) return <span className="missing-tag text-muted-foreground">—</span>;
 
         return track[columnId as TrackSortField];
     }
@@ -229,7 +229,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     data-track-id={track.id}
                                     aria-rowindex={row.index + 2}
                                     aria-selected={selectedIds.has(track.id)}
-                                    className={cn("group h-9 hover:bg-white/6 aria-selected:bg-secondary", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
+                                    className={cn("group h-9 border-border/30 hover:bg-secondary/60 aria-selected:bg-primary/10", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
                                     tabIndex={0}
                                     onClick={(ev) => {
                                         if (!(ev.target as HTMLElement).closest("button")) selection.select(track.id, ev);
@@ -245,7 +245,7 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     {visibleColumns.map((column) => (
                                         <TableCell
                                             key={column.id}
-                                            className="min-w-0 truncate px-2 py-1 text-[13px] text-foreground"
+                                            className="min-w-0 truncate px-2 py-1 text-sm text-muted-foreground tabular-nums"
                                             data-column={column.id}
                                         >
                                             {renderCell(track, column.id)}

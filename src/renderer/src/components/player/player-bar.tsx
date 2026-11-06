@@ -11,23 +11,24 @@ import {ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward,
 
 interface PlayerBarProps {
     current?: Track;
+    queueOpen: boolean;
     player: PlayerState;
     onQueue: () => void;
     onReveal: () => void;
 }
 
 
-export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps) {
+export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: PlayerBarProps) {
     return (
-        <footer className="player-bar col-span-full flex items-center justify-between bg-black py-[10px] px-[15px] gap-5">
+        <footer className="player-bar col-span-full flex items-center justify-between border-t border-border/60 bg-background/80 py-3 px-4 gap-5">
             <div
-                className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-[64px]">
+                className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-14 [&_.cover]:rounded-lg">
                 <Cover
                     track={current}
                 />
                 <div className="min-w-0 flex-1 truncate">
-                    <strong className="block truncate text-[15px] font-medium">{current?.title ?? "Nothing playing"}</strong>
-                    <small className="mt-1 block truncate text-sm text-muted-foreground">{current?.artist ?? "Choose a song from your library"}</small>
+                    <strong className="block truncate text-sm font-semibold">{current?.title ?? "Nothing playing"}</strong>
+                    <small className="mt-1 block truncate text-xs text-muted-foreground">{current?.artist ?? "Choose a song from your library"}</small>
                 </div>
             </div>
 
@@ -57,9 +58,9 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     </Button>
                     <Button
                         size="icon"
-                        variant="secondary"
+                        variant="default"
                         disabled={!current}
-                        className="play-toggle size-[34px] rounded-full bg-foreground text-black hover:bg-foreground"
+                        className="play-toggle size-10 rounded-full"
                         onClick={player.toggle}
                         aria-label={player.playing ? "Pause" : "Play"}
                         title={player.playing ? "Pause" : "Play"}
@@ -119,6 +120,8 @@ export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps
                     size="icon"
                     variant="ghost"
                     aria-label="Show queue"
+                    aria-pressed={queueOpen}
+                    className={cn(queueOpen && "text-primary bg-primary/10")}
                     title="Show queue"
                     onClick={onQueue}
                 >

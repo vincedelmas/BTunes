@@ -24,10 +24,10 @@ interface SettingsPageProps {
 
 export function SettingsPage({ tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
     return (
-        <div className="settings-page min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-6">
+        <div className="settings-page min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-8">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
                 <header className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+                    <h1 className="text-3xl font-semibold tracking-[-0.035em]">Settings</h1>
                     <p className="text-sm text-muted-foreground">Manage your library, downloads, and navigation.</p>
                 </header>
                 {error && <Alert variant="destructive">

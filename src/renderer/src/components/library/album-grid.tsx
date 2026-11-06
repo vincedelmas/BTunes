@@ -61,7 +61,7 @@ export function AlbumGrid({ currentTrack, reveal, onRevealed, albums, playlists,
                             aria-label={"Open album " + track.album + " by " + getAlbumArtist(track)}
                             aria-selected={isSelected}
                             aria-current={currentTrack && key === albumKey(currentTrack) ? true : undefined}
-                            className={cn("album group relative min-w-0 cursor-pointer select-none rounded-xl border border-transparent p-3 hover:bg-card focus-visible:border-primary focus-visible:outline-none", isSelected && "border-primary/60 bg-primary/5")}
+                            className={cn("album group relative min-w-0 cursor-pointer select-none rounded-xl border border-transparent p-3 transition-colors hover:bg-card focus-visible:border-primary focus-visible:outline-none", isSelected && "border-primary/60 bg-primary/5")}
                             onClick={(ev) => {
                                 if ((ev.target as HTMLElement).closest("button")) return;
                                 selection.select(key, ev);

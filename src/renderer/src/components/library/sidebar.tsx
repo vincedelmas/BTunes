@@ -48,7 +48,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
     }
 
     return (
-        <aside className="sidebar bg-background rounded-lg flex flex-col pt-5 px-3 pb-3 min-h-0">
+        <aside className="sidebar bg-background/60 rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
             <div
                 className="brand flex items-center gap-3 mt-0 mx-3 mb-6 shrink-0">
                 <img
@@ -56,7 +56,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                     src="./icon.svg"
                     alt=""
                 />
-                <span className="text-2xl font-bold tracking-tight">BTunes</span>
+                <span className="text-xl font-semibold tracking-[-0.04em]">BTunes</span>
             </div>
 
             <nav
@@ -68,7 +68,7 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                     return (
                         <Button
                             key={id}
-                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
+                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary"
                             onClick={() => onNavigate(id)}
                             variant={view === id ? "secondary" : "ghost"}
                             aria-current={view === id ? "page" : undefined}
@@ -80,8 +80,8 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 })}
             </nav>
 
-            <div className="playlist-heading flex items-center justify-between pl-3 mt-[18px] mx-0 mb-[6px] shrink-0">
-                <p className="eyebrow text-xs font-semibold text-muted-foreground m-0">Playlists</p>
+            <div className="playlist-heading flex items-center justify-between border-t border-border/60 pl-3 pt-4 mt-5 mx-0 mb-2 shrink-0">
+                <p className="eyebrow text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground m-0">Playlists</p>
                 <Button
                     size="icon"
                     variant="ghost"
@@ -171,11 +171,11 @@ export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, on
                 </DialogContent>
             </Dialog>}
 
-            <div className="sidebar-bottom mt-auto pt-4 px-2 pb-0 flex flex-col gap-[14px] shrink-0">
+            <div className="sidebar-bottom mt-auto border-t border-border/60 pt-3 flex flex-col gap-3 shrink-0">
                 <Button
                     variant={view === "settings" ? "secondary" : "ghost"}
                     aria-current={view === "settings" ? "page" : undefined}
-                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
+                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary"
                     onClick={onSettings}
                 >
                     <Settings data-icon="inline-start"/>

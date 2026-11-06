@@ -153,7 +153,7 @@ export function App() {
 
     return (
         <div
-            className="app-shell grid grid-cols-[248px_minmax(0,_1fr)] grid-rows-[minmax(0,_1fr)_98px] h-[100vh] gap-2 pt-2 px-2 pb-0
+            className="app-shell grid grid-cols-[232px_minmax(0,_1fr)] grid-rows-[minmax(0,_1fr)_98px] h-[100vh] gap-2 pt-2 px-2 pb-0
             overflow-hidden max-[1150px]:grid-cols-[210px_minmax(0,_1fr)]"
         >
             <Sidebar
@@ -167,10 +167,10 @@ export function App() {
                 onSettings={() => showSettings()}
             />
 
-            <main className="isolate overflow-hidden min-w-0 rounded-lg bg-background flex flex-col">
+            <main className="isolate overflow-hidden min-w-0 rounded-xl border border-border/50 bg-background flex flex-col">
                 {view !== "settings" && (
                     <header
-                        className="topbar h-14 flex items-center gap-5 py-0 px-6 sticky top-0 bg-[#121212f2] backdrop-[blur(20px)]
+                        className="topbar h-16 flex items-center gap-5 py-0 px-6 sticky top-0 bg-background
                     z-[1] shrink-0 max-[1150px]:py-0"
                     >
                         <LibrarySearch
@@ -201,8 +201,8 @@ export function App() {
                     />
                     :
                     <>
-                        <div className="library-hero shrink-0 border-b border-border/40 bg-linear-to-r from-primary/8 via-card/60 to-card/60 px-6 py-3.5">
-                            <h1 className="mb-1.5 text-3xl leading-tight font-bold tracking-tight">
+                        <div className="library-hero shrink-0 border-b border-border/60 bg-linear-to-r from-primary/6 to-transparent px-6 pt-3 pb-5">
+                            <h1 className="mb-2 text-3xl leading-tight font-semibold tracking-[-0.035em]">
                                 {title}
                             </h1>
                             {view === "android" || view === "downloads" ?
@@ -215,7 +215,7 @@ export function App() {
                                 />
                             }
                         </div>
-                        <div className="content py-3 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
+                        <div className="content py-4 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
                             {library.error &&
                                 <Alert variant="destructive">
                                     <AlertDescription>
@@ -289,6 +289,7 @@ export function App() {
                 player={player}
                 current={current}
                 onReveal={revealPlaying}
+                queueOpen={showQueue}
                 onQueue={() => setShowQueue(!showQueue)}
             />
             {openedCollectionTracks.length > 0 && <TrackCollectionDialog

@@ -19,14 +19,14 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
             <ContextMenuTrigger
                 render={
                     <Button
-                        className="nav-item w-full justify-start gap-[14px] h-[42px] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
+                        className="nav-item w-full justify-start gap-3 h-10 aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                         onClick={onNavigate}
                         variant={active ? "secondary" : "ghost"}
                         aria-current={active ? "page" : undefined}
                     />
                 }
             >
-                <ListMusic/>
+                <ListMusic data-icon="inline-start"/>
                 <span className="truncate">
                     {playlist.name}
                 </span>
