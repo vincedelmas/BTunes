@@ -150,6 +150,23 @@ app.on('browser-window-created', (_, win) => {
     await window.downloaderWaitFor(()=>button('Review & save'));
     const library=await window.btunes.rpc('library.get',undefined);
     if(library.tracks.length)throw new Error('Unreviewed song was published');
+   })()`);
+            for (const width of [900, 1440]) {
+                win.setSize(width, 700);
+                await win.webContents.executeJavaScript(`(async()=>{
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    const row=document.querySelector('.download-row');
+    const badge=row.querySelector('[data-slot="badge"]').getBoundingClientRect();
+    const action=row.querySelector('button').getBoundingClientRect();
+    const message=row.querySelector('[title]').getBoundingClientRect();
+    if(badge.right+8>action.left || message.right+8>action.left)throw new Error('Download status overlaps its action');
+    if(row.scrollWidth>row.clientWidth)throw new Error('Download row overflows horizontally');
+   })()`);
+            }
+            writeFileSync(join(artifacts, 'download-ready.png'), (await win.webContents.capturePage()).toPNG());
+            win.setSize(1000, 700);
+            await win.webContents.executeJavaScript(`(async()=>{
+    const button=(label)=>[...document.querySelectorAll('button')].find(item=>item.textContent.trim()===label);
     button('Review & save').click();
     await window.downloaderWaitFor(()=>document.getElementById('tag-album'));
     if(document.getElementById('tag-album').value!=='Fixture Album')throw new Error('Online metadata was not applied');

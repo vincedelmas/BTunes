@@ -47,17 +47,19 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
                 <p className="mt-1 truncate text-xs text-muted-foreground">{item.artist || item.name}</p>
             </div>
             <div className="min-w-0 max-w-[35%] text-right">
-                <Badge variant={variant}>
+                <Badge variant={variant} className="max-w-full">
                     {working && <LoaderCircle className="animate-spin"/>}
-                    {label}
-                    {item.status === "downloading" && " · " + item.progress.toFixed(0) + "%"}
+                    <span className="truncate">
+                        {label}
+                        {item.status === "downloading" && " · " + item.progress.toFixed(0) + "%"}
+                    </span>
                 </Badge>
                 {item.message && <p
                     className="mt-1 truncate text-[11px] text-muted-foreground"
                     title={item.message}
                 >{item.message}</p>}
             </div>
-            <div className="flex w-28 shrink-0 justify-end">
+            <div className="flex min-w-36 shrink-0 justify-end">
                 {item.status === "review" && <Button
                     size="sm"
                     variant="outline"
