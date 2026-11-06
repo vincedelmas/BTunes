@@ -1,3 +1,4 @@
+import {ShowPlayingButton} from "@/components/player/show-playing-button";
 import {cn} from "@/lib/utils";
 import {PlaybackTimeline} from "@/components/player/playback-timeline";
 import {Cover} from "@/components/cover";
@@ -12,11 +13,12 @@ interface PlayerBarProps {
     current?: Track;
     player: PlayerState;
     onQueue: () => void;
+    onReveal: () => void;
 
 }
 
 
-export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
+export function PlayerBar({ player, current, onQueue, onReveal }: PlayerBarProps) {
     return (
         <footer className="player-bar col-span-full flex items-center justify-between bg-[#000] py-[10px] px-[15px] gap-5">
             <div
@@ -24,10 +26,14 @@ export function PlayerBar({ player, current, onQueue }: PlayerBarProps) {
                 <Cover
                     track={current}
                 />
-                <div className="truncate">
+                <div className="min-w-0 flex-1 truncate">
                     <strong>{current?.title ?? "Find your next favorite"}</strong>
                     <small className="text-[11px] text-muted-foreground">{current?.artist ?? "Play something from your library"}</small>
                 </div>
+                <ShowPlayingButton
+                    disabled={!current}
+                    onClick={onReveal}
+                />
             </div>
 
             <div className="transport w-[42%] max-w-[590px]">

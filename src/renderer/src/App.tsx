@@ -1,3 +1,5 @@
+import {useItemReveal} from "@/hooks/use-item-reveal";
+import {albumKey} from "@/lib/music";
 import {useEffect, useState} from "react";
 import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
@@ -26,6 +28,7 @@ import {CollectionEmptyState} from "@/components/library/collection-empty-state"
 
 export function App() {
     const library = useLibrary();
+    const locator = useItemReveal();
     const player = usePlayer(library.setError);
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
@@ -60,6 +63,20 @@ export function App() {
             : undefined,
     };
 
+    function revealPlaying() {
+        if (!current) return;
+
+        const cardView = view === "albums" || view === "artists";
+        const outsideLibrary = view === "settings" || view === "android";
+        if (outsideLibrary || (!cardView && !tracks.some((track) => track.id === current.id))) navigate("tracks");
+
+        clearFilters();
+        let key: string | number = current.id;
+        if (view === "albums") key = albumKey(current);
+        if (view === "artists") key = current.artist;
+        locator.show(key);
+    }
+
     const tagsSaved = async (message: string) => {
         await library.refresh();
         library.setNotice(message);
@@ -80,6 +97,9 @@ export function App() {
         if (view === "albums") {
             return (
                 <AlbumGrid
+                    currentTrack={current}
+                    reveal={locator.target}
+                    onRevealed={locator.clear}
                     albums={albums}
                     actions={actions}
                     playlists={library.data.playlists}
@@ -92,6 +112,9 @@ export function App() {
             return (
                 <ArtistGrid
                     tracks={tracks}
+                    currentTrack={current}
+                    reveal={locator.target}
+                    onRevealed={locator.clear}
                     onArtist={showArtist}
                 />
             );
@@ -99,6 +122,8 @@ export function App() {
 
         return (
             <TrackTable
+                reveal={locator.target}
+                onRevealed={locator.clear}
                 sort={sort}
                 tracks={tracks}
                 onSort={setSort}
@@ -174,7 +199,7 @@ export function App() {
                             </h1>
                             {view === "android" ?
                                 <p className="text-xs text-muted-foreground">
-                                    Your phone, your music · Android sync
+                                    Android sync
                                 </p>
                                 :
                                 <LibraryStats
@@ -187,19 +212,24 @@ export function App() {
                                 <Alert variant="destructive">
                                     <AlertDescription>
                                         {library.error}
-                                        <Button variant="ghost" size="sm" onClick={() => library.setError("")}>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => library.setError("")}
+                                        >
                                             Dismiss
                                         </Button>
                                     </AlertDescription>
                                 </Alert>
                             }
-
                             {library.notice &&
-                                <p role="status" className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto">
+                                <p
+                                    role="status"
+                                    className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto"
+                                >
                                     {library.notice}
                                 </p>
                             }
-
                             {view === "android" ?
                                 <EmptyState
                                     icon={Smartphone}
@@ -237,9 +267,11 @@ export function App() {
             <PlayerBar
                 player={player}
                 current={current}
+                onReveal={revealPlaying}
                 onQueue={() => setShowQueue(!showQueue)}
             />
             {openedAlbumTracks.length > 0 && <AlbumDialog
+                genres={genres}
                 actions={actions}
                 onSaved={tagsSaved}
                 currentId={current?.id}
@@ -250,6 +282,7 @@ export function App() {
             />}
             {editing &&
                 <TagEditor
+                    genres={genres}
                     key={editing.map((track) => track.id).join(",")}
                     tracks={editing}
                     onSaved={tagsSaved}

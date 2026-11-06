@@ -318,3 +318,25 @@ void test("album artist and a new embedded cover apply to every selected file wi
         await f.close();
     }
 });
+
+void test("saving a genre reuses the spelling already present in the library", async () => {
+    const f = await fixture();
+
+    try {
+        const reference = await f.create("flac");
+        const target = await f.create("mp3");
+        const first = await f.service.preview([reference.id], { genre: "Pop" });
+        await f.service.save(first.token);
+
+        const prepared = await f.service.preview([target.id], { genre: "pOp" });
+        assert.equal(prepared.files[0].changes[0].after, "Pop");
+        await f.service.save(prepared.token);
+
+        assert.equal((await parseFile(target.path)).common.genre?.[0], "Pop");
+        assert.equal(f.repo.get(target.id)?.genre, "Pop");
+        assert.equal(f.repo.snapshot().tracks.some((track) => track.genre === "pOp"), false);
+    }
+    finally {
+        await f.close();
+    }
+});

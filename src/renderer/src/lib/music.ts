@@ -37,11 +37,6 @@ export const groupAlbums = (tracks: Track[]) => {
 };
 
 
-export const uniqueValues = (tracks: Track[], field: "artist" | "genre") => {
-    return [...new Set(tracks.map((track) => track[field]))].sort();
-}
-
-
 export const getErrorMessage = (error: unknown) => {
     return error instanceof Error ? error.message : String(error);
 }

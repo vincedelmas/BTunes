@@ -1,3 +1,4 @@
+import {genreKey} from "../../shared/genres.ts";
 import {resolve} from "node:path";
 import {DatabaseSync} from "node:sqlite";
 import {drizzle} from "drizzle-orm/node-sqlite";
@@ -197,12 +198,12 @@ export class LibraryRepository {
         }
 
         if (playlist.rule) {
-            const genre = playlist.rule.toLocaleLowerCase();
+            const genre = genreKey(playlist.rule);
 
             return this.queries
                 .select({ id: tracks.id, genre: tracks.genre })
                 .from(tracks).all()
-                .filter((track) => track.genre.toLocaleLowerCase() === genre)
+                .filter((track) => genreKey(track.genre) === genre)
                 .map((track) => track.id);
         }
 

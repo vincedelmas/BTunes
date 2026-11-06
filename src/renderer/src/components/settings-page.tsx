@@ -1,16 +1,13 @@
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
+import type {SidebarLayout} from "@/types/sidebar";
 import {Folder, FolderPlus, RefreshCw} from "lucide-react";
+import type {Playlist} from "../../../shared/types/library";
+import {SidebarOrderSettings} from "@/components/sidebar-order-settings";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 
 
-import type {Playlist} from "../../../shared/types/library";
-import type {SidebarLayout} from "@/types/sidebar";
-import {SidebarOrderSettings} from "@/components/sidebar-order-settings";
-
 interface SettingsPageProps {
-    sidebarLayout: SidebarLayout;
-    playlists: Playlist[];
     busy: boolean;
     error: string;
     notice: string;
@@ -18,6 +15,8 @@ interface SettingsPageProps {
     songCount: number;
     onImport: () => void;
     onRefresh: () => void;
+    playlists: Playlist[];
+    sidebarLayout: SidebarLayout;
 }
 
 
@@ -34,7 +33,6 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     A home for your music. Set it up your way.
                 </p>
             </div>
-
             {notice &&
                 <p
                     role="status"
@@ -43,7 +41,6 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     {notice}
                 </p>
             }
-
             {error &&
                 <p
                     role="alert"
@@ -52,7 +49,6 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                     {error}
                 </p>
             }
-
             <Card className="settings-card max-w-220 mb-5 bg-[#191919] border border-[#ffffff0c] rounded-[14px]">
                 <CardHeader>
                     <div className="settings-section-title flex items-center justify-between gap-5">
@@ -88,7 +84,8 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                             )}
                         </ul>
                         :
-                        <div className="settings-no-folders flex items-center gap-[14px] p-4 bg-[#ffffff04] border border-[#ffffff09] rounded-[10px]">
+                        <div className="settings-no-folders flex items-center gap-[14px] p-4 bg-[#ffffff04] border
+                        border-[#ffffff09] rounded-[10px]">
                             <Folder/>
                             <p>No folders yet. Add one to start your collection.</p>
                         </div>
@@ -100,10 +97,7 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                         onClick={onImport}
                     >
                         <FolderPlus/>
-                        {busy
-                            ? "Indexing…"
-                            : "Add music folder"
-                        }
+                        {busy ? "Indexing…" : "Add music folder"}
                     </Button>
                 </CardFooter>
             </Card>
@@ -113,14 +107,16 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                         Library
                     </CardTitle>
                     <CardDescription>
-                        Your index updates automatically. Refresh it here whenever you need to.
+                        Updated automatically. Refresh it here whenever you need to.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div
-                        className="library-stat flex items-baseline gap-3 [&_strong]:text-[32px] [&_strong]:tracking-[-1px] [&_strong]:font-bold [&_span]:text-muted-foreground [&_span]:text-xs">
+                        className="library-stat flex items-baseline gap-3 [&_strong]:text-[32px] [&_strong]:tracking-[-1px]
+                        [&_strong]:font-bold [&_span]:text-muted-foreground [&_span]:text-xs"
+                    >
                         <strong>{songCount.toLocaleString("en")}</strong>
-                        <span>indexed songs</span>
+                        <span>songs</span>
                     </div>
                 </CardContent>
                 <CardFooter>
@@ -134,8 +130,8 @@ export function SettingsPage({ folders, busy, songCount, notice, error, onImport
                 </CardFooter>
             </Card>
             <SidebarOrderSettings
-                layout={sidebarLayout}
                 playlists={playlists}
+                layout={sidebarLayout}
             />
         </div>
     );

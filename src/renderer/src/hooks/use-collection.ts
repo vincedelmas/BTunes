@@ -1,8 +1,9 @@
+import {genreChoices} from "../../../shared/genres";
 import {useDeferredValue, useEffect, useState} from "react";
 import type {Snapshot} from "../../../shared/types/library";
 import type {TrackSort} from "../../../shared/types/track-sorting";
 import {compareTracks} from "../../../shared/track-sorting";
-import {duplicateKey, groupAlbums, uniqueValues} from "@/lib/music";
+import {duplicateKey, groupAlbums} from "@/lib/music";
 import {rpc} from "@/lib/rpc";
 import {usePreference} from "@/hooks/use-preference";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
@@ -34,7 +35,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const [returnView, setReturnView] = useState("tracks");
     const [selected, setSelected] = useState<number[]>([]);
 
-    const genres = uniqueValues(data.tracks, "genre");
+    const genres = genreChoices(data.tracks.map((track) => track.genre));
     const activePlaylist = data.playlists.find((playlist) => "playlist:" + playlist.id === view);
 
     useEffect(() => {

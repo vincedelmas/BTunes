@@ -1,3 +1,5 @@
+import {useItemReveal} from "@/hooks/use-item-reveal";
+import {ShowPlayingButton} from "@/components/player/show-playing-button";
 import {useState} from "react";
 import {Cover} from "@/components/cover";
 import {Pencil, Play} from "lucide-react";
@@ -15,6 +17,7 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 
 interface AlbumDialogProps {
     tracks: Track[];
+    genres: string[];
     playing: boolean;
     currentId?: number;
     onClose: () => void;
@@ -24,9 +27,10 @@ interface AlbumDialogProps {
 }
 
 
-export function AlbumDialog({ tracks, playlists, actions, currentId, playing, onClose, onSaved }: AlbumDialogProps) {
+export function AlbumDialog({ genres, tracks, playlists, actions, currentId, playing, onClose, onSaved }: AlbumDialogProps) {
     const [editing, setEditing] = useState<Track[]>();
     const [selected, setSelected] = useState<number[]>([]);
+    const locator = useItemReveal();
     const [sort, setSort] = useState<TrackSort>({ field: "title", descending: false });
 
     const first = tracks[0];
@@ -80,19 +84,29 @@ export function AlbumDialog({ tracks, playlists, actions, currentId, playing, on
                 </DialogHeader>
                 <div className="flex shrink-0 items-center gap-2 border-b border-border px-5 py-3">
                     <Button onClick={() => actions.onPlay(orderedTracks[0], orderedTracks)}>
-                        <Play data-icon="inline-start" fill="currentColor"/>
+                        <Play
+                            data-icon="inline-start"
+                            fill="currentColor"
+                        />
                         Play album
                     </Button>
-                    <Button variant="secondary" onClick={() => setEditing(selectedTracks.length ? selectedTracks : tracks)}>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setEditing(selectedTracks.length ? selectedTracks : tracks)}
+                    >
                         <Pencil data-icon="inline-start"/>
                         {selectedTracks.length ? "Edit selected songs" : "Edit album tags"}
                     </Button>
 
-                    {selectedTracks.length > 0 &&
-                        <p className="ml-auto text-xs text-muted-foreground">
-                            {selectedTracks.length} selected
-                        </p>
-                    }
+                    <div className="ml-auto flex items-center gap-3">
+                        {selectedTracks.length > 0 && <p className="text-xs text-muted-foreground">{selectedTracks.length} selected</p>}
+                        <ShowPlayingButton
+                            disabled={!tracks.some((track) => track.id === currentId)}
+                            onClick={() => {
+                                if (currentId) locator.show(currentId);
+                            }}
+                        />
+                    </div>
                 </div>
                 <div className="min-h-0 flex-1 px-4 pb-4">
                     <TrackTable
@@ -102,6 +116,8 @@ export function AlbumDialog({ tracks, playlists, actions, currentId, playing, on
                         selected={selected}
                         playlists={playlists}
                         currentId={currentId}
+                        reveal={locator.target}
+                        onRevealed={locator.clear}
                         tracks={orderedTracks}
                         actions={albumActions}
                         onSelect={setSelected}
@@ -109,6 +125,7 @@ export function AlbumDialog({ tracks, playlists, actions, currentId, playing, on
                 </div>
                 {editing &&
                     <TagEditor
+                        genres={genres}
                         tracks={editing}
                         onSaved={onSaved}
                         onClose={() => setEditing(undefined)}

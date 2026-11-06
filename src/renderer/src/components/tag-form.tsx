@@ -1,3 +1,4 @@
+import {GenreInput} from "@/components/genre-input";
 import {cn} from "@/lib/utils";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -19,6 +20,7 @@ const fieldIcons = {
 
 
 interface TagFormProps {
+    genres: string[];
     busy: boolean;
     batch: boolean;
     enabled: Set<keyof TagPatch>;
@@ -29,7 +31,7 @@ interface TagFormProps {
 }
 
 
-export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onReset }: TagFormProps) {
+export function TagForm({ genres, values, enabled, batch, busy, onChange, onToggle, onReset }: TagFormProps) {
     return (
         <FieldGroup className="tag-fields grid grid-cols-[1fr_1fr] gap-5 [&_>_:first-child]:col-span-full">
             {tagFields.map((field) => {
@@ -39,7 +41,7 @@ export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onRe
                 return (
                     <Field
                         key={field}
-                        className={cn("tag-field gap-[9px] [&_input]:h-[42px] [&_input]:px-3 [&_input]:rounded-lg [&_input]:bg-[#121212] [&_input]:text-[13px] [&_input]:border-[#3a3a3a]", changed && "tag-field-changed [&_input]:border-[#1ed76066]")}
+                        className={cn("tag-field gap-[9px] [&_input]:h-[42px] [&_input]:px-3 [&_input]:text-[13px]", changed && "tag-field-changed [&_input]:border-primary/40 [&_[data-slot=input-group]]:border-primary/40")}
                     >
                         <div
                             className="tag-field-label flex items-center justify-between h-[22px] [&_label]:flex [&_label]:items-center [&_label]:gap-2 [&_label]:text-[#bcbcbc] [&_label]:text-xs [&_label_svg]:w-[14px] [&_label_svg]:h-[14px] [&_label_svg]:text-[#888]">
@@ -67,16 +69,26 @@ export function TagForm({ values, enabled, batch, busy, onChange, onToggle, onRe
                                 </Button>
                             }
                         </div>
-                        <Input
-                            id={"tag-" + field}
-                            type={field === "year" ? "number" : "text"}
-                            min={field === "year" ? 0 : undefined}
-                            max={field === "year" ? 9999 : undefined}
-                            value={values[field]}
-                            placeholder={batch ? "Mixed values" : "Not set"}
+                        {field === "genre" ? <GenreInput
+                            id="tag-genre"
+                            value={values.genre}
+                            genres={genres}
                             disabled={busy}
-                            onChange={(ev) => onChange(field, ev.target.value)}
-                        />
+                            placeholder={batch ? "Mixed values" : "Choose or add a genre"}
+                            onChange={(value) => onChange("genre", value)}
+                        /> : (
+                            <Input
+                                className="border-[#3a3a3a] bg-background"
+                                id={"tag-" + field}
+                                type={field === "year" ? "number" : "text"}
+                                min={field === "year" ? 0 : undefined}
+                                max={field === "year" ? 9999 : undefined}
+                                value={values[field]}
+                                placeholder={batch ? "Mixed values" : "Not set"}
+                                disabled={busy}
+                                onChange={(ev) => onChange(field, ev.target.value)}
+                            />
+                        )}
                     </Field>
                 );
             })}

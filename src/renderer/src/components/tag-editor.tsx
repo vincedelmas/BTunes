@@ -19,12 +19,13 @@ import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, Di
 
 interface TagEditorProps {
     tracks: Track[];
+    genres: string[];
     onClose: () => void;
     onSaved: (message: string) => Promise<void>;
 }
 
 
-export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
+export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) {
     const initialValues = Object.fromEntries(tagFields.map((field) => {
         const first = tracks[0][field];
         const common = tracks.every((track) => track[field] === first);
@@ -138,6 +139,7 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                 </DialogHeader>
                 <div className="tag-editor-body min-h-0 overflow-auto pt-[18px] px-7 pb-7">
                     <TagForm
+                        genres={genres}
                         busy={busy}
                         batch={batch}
                         values={values}
@@ -150,7 +152,6 @@ export function TagEditor({ tracks, onClose, onSaved }: TagEditorProps) {
                     <CoverSearch
                         query={coverSearchQuery(first.title, values)}
                         track={first}
-                        trackCount={tracks.length}
                         selected={artwork}
                         disabled={busy}
                         onSelect={setArtwork}

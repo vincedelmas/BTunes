@@ -1,3 +1,4 @@
+import type {ItemReveal} from "@/types/reveal";
 import {useMarqueeSelection} from "@/hooks/use-marquee-selection";
 import type {GridSelection} from "@/types/selection";
 import {useCallback, useEffect, useRef, useState} from "react";
@@ -13,10 +14,12 @@ interface VirtualGridProps<T> {
     itemHeight?: number;
     maxColumns?: number;
     label: string;
+    reveal?: ItemReveal;
+    onRevealed?: () => void;
 }
 
 
-export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label, selection }: VirtualGridProps<T>) {
+export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180, itemHeight, maxColumns = Infinity, label, selection, reveal, onRevealed }: VirtualGridProps<T>) {
     "use no memo"; // TanStack Virtual measurements must be read on every virtualizer update.
 
     const container = useRef<HTMLDivElement>(null);
@@ -48,6 +51,14 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
     });
 
     useEffect(() => virtualizer.measure(), [rowHeight, columns, virtualizer]);
+
+    const revealIndex = reveal ? items.findIndex((item) => getKey(item) === reveal.key) : -1;
+
+    useEffect(() => {
+        if (revealIndex < 0 || !width) return;
+        virtualizer.scrollToIndex(Math.floor(revealIndex / columns), { align: "center" });
+        onRevealed?.();
+    }, [reveal?.request, revealIndex, columns, width, virtualizer, onRevealed]);
 
     return (
         <div

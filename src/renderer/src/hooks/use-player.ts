@@ -1,3 +1,5 @@
+import {usePreference} from "@/hooks/use-preference";
+import {volumeSchema} from "../../../shared/schemas/preferences";
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "@/lib/music";
 import type {Track} from "../../../shared/types/library";
@@ -9,7 +11,7 @@ export function usePlayer(onError: (message: string) => void) {
     const counted = useRef(false);
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const [queue, setQueue] = useState<Track[]>([]);
-    const [volume, setVolume] = useState(0.7);
+    const [volume, setVolume] = usePreference("btunes.volume.v1", volumeSchema, 0.7);
     const [repeat, setRepeat] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [shuffle, setShuffle] = useState(false);

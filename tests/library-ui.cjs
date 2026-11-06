@@ -87,7 +87,13 @@ app.on("browser-window-created", (_, win) => {
                 };
                 const frame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const button = text => [...document.querySelectorAll('button')].find(item => item.textContent.trim() === text);
-                window.uiReview = { waitFor, frame, button };
+                const visible=(item,viewport)=>{
+                    if(!item || !viewport) return false;
+                    const bounds=item.getBoundingClientRect();
+                    const container=viewport.getBoundingClientRect();
+                    return bounds.top>=container.top-1 && bounds.bottom<=container.bottom+1;
+                };
+                window.uiReview = { waitFor, frame, button, visible };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 const searchInput=document.querySelector('[aria-label="Search your library"]');
                 searchInput.focus();
@@ -126,6 +132,9 @@ app.on("browser-window-created", (_, win) => {
                 main.style.width='';
                 await frame();
                 if(document.querySelector('.track-scroll').scrollWidth>document.querySelector('.track-scroll').clientWidth+1) throw new Error('Songs table has horizontal overflow');
+                const titleColor=getComputedStyle(document.querySelector('.track-cell strong')).color;
+                const artistColor=getComputedStyle(document.querySelector('td[data-column="artist"]')).color;
+                if(titleColor!==artistColor) throw new Error('Song metadata should be as white as the title');
                 if(document.querySelector('.track-table .cover')) throw new Error('Song rows should not show cover art');
                 if(document.querySelector('[data-track-id]').getBoundingClientRect().height>36.5) throw new Error('Song rows are not compact');
                 const songNodes = document.querySelectorAll('[data-track-id]').length;
@@ -241,6 +250,7 @@ app.on("browser-window-created", (_, win) => {
                 cards[3].dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}));
                 await waitFor(()=>document.querySelectorAll('.album[aria-selected="true"]').length===3);
                 if(document.querySelector('.album-dialog')) throw new Error('Modifier selection should not open an album');
+                if(document.querySelector('[aria-label="Selected albums"]')) throw new Error('Album selection bar should be removed');
                 const chosen=document.querySelector('.album[aria-selected="true"]');
                 const chosenRect=chosen.getBoundingClientRect();
                 chosen.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:chosenRect.x+20,clientY:chosenRect.y+20}));
@@ -250,7 +260,7 @@ app.on("browser-window-created", (_, win) => {
                 if(!document.querySelector('.tag-editor').textContent.includes('30 selected songs')) throw new Error('Album batch edit did not include every selected song');
                 window.uiReview.button('Cancel').click();
                 await waitFor(()=>!document.querySelector('.tag-editor'));
-                document.querySelector('[aria-label="Clear album selection"]').click();
+                document.querySelector('[aria-label="Albums"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
                 await waitFor(()=>!document.querySelector('.album[aria-selected="true"]'));
                 document.querySelector('.album').click();
                 await waitFor(()=>document.querySelector('.album-dialog [data-track-id]'));
@@ -273,7 +283,7 @@ app.on("browser-window-created", (_, win) => {
                 const {waitFor}=window.uiReview;
                 document.querySelector('.album-dialog [data-slot="dialog-close"]').click();
                 await waitFor(()=>!document.querySelector('.album-dialog'));
-                document.querySelector('[aria-label="Clear album selection"]').click();
+                document.querySelector('[aria-label="Albums"]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
                 await waitFor(()=>!document.querySelector('.album[aria-selected="true"]'));
             })()`, true);
             const marqueeBounds = await win.webContents.executeJavaScript(`(() => {
@@ -352,6 +362,24 @@ app.on("browser-window-created", (_, win) => {
                 if(document.querySelector('.tag-editor').textContent.includes('Preview changes')) throw new Error('Tag editor still shows a preview step');
                 if(!document.getElementById('tag-albumArtist')) throw new Error('Album artist field is missing');
             })()`, true);
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,frame}=window.uiReview;
+                const input=document.getElementById('tag-genre');
+                if(input.getAttribute('role')!=='combobox') throw new Error('Genre should be an editable combobox');
+                input.focus();
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'jAZz');
+                input.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'jAZz'}));
+                await waitFor(()=>document.querySelector('[role="option"]')?.textContent.includes('Jazz'));
+                document.querySelector('[role="option"]').click();
+                await waitFor(()=>input.value==='Jazz');
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'New custom genre');
+                input.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:'New custom genre'}));
+                document.getElementById('tag-year').focus();
+                await frame();
+                if(input.value!=='New custom genre') throw new Error('Custom genres must remain editable');
+                document.querySelector('[aria-label="Reset Genre"]').click();
+                await waitFor(()=>input.value==='Ambient');
+            })()`, true);
             await capture("tag-editor-playing");
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor, button}=window.uiReview;
@@ -378,6 +406,55 @@ app.on("browser-window-created", (_, win) => {
                 const {waitFor,button}=window.uiReview;
                 button('Cancel').click();
                 await waitFor(()=>!document.querySelector('[role="dialog"]'));
+            })()`, true);
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button,visible}=window.uiReview;
+                const audio=document.querySelector('audio');
+                const paused=audio.paused;
+                const position=audio.currentTime;
+                const locate=()=>document.querySelector('.player-bar [aria-label="Show playing song"]').click();
+                let viewport=document.querySelector('.track-scroll');
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>!visible(document.querySelector('[data-track-id="1"]'),viewport));
+                locate();
+                await waitFor(()=>visible(document.querySelector('[data-track-id="1"]'),viewport));
+                if(document.querySelector('[data-track-id="1"]').getAttribute('aria-selected')!=='true') throw new Error('Located song should be selected');
+                button('Albums').click();
+                await waitFor(()=>document.querySelector('.album'));
+                viewport=document.querySelector('[aria-label="Albums"]');
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>!visible(document.querySelector('.album[aria-current="true"]'),viewport));
+                locate();
+                await waitFor(()=>visible(document.querySelector('.album[aria-current="true"]'),viewport));
+                if(document.querySelector('.album[aria-current="true"]').getAttribute('aria-selected')!=='true') throw new Error('Located album should be selected');
+                if(document.querySelector('[aria-label="Selected albums"]')) throw new Error('Album selection toolbar remains');
+                document.querySelector('.album[aria-current="true"]').click();
+                await waitFor(()=>document.querySelector('.album-dialog'));
+                document.querySelector('.album-dialog [aria-label="Show playing song"]').click();
+                await waitFor(()=>document.querySelector('.album-dialog [data-track-id="1"][aria-selected="true"]'));
+                document.querySelector('.album-dialog [data-slot="dialog-close"]').click();
+                await waitFor(()=>!document.querySelector('.album-dialog'));
+                button('Artists').click();
+                await waitFor(()=>document.querySelector('.artist'));
+                viewport=document.querySelector('[aria-label="Artists"]');
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>!visible(document.querySelector('.artist[aria-current="true"]'),viewport));
+                locate();
+                await waitFor(()=>visible(document.querySelector('.artist[aria-current="true"]'),viewport));
+                if(audio.paused!==paused || audio.currentTime<position) throw new Error('Revealing the playing item changed playback');
+            })()`, true);
+            await capture("playing-artist");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button,visible}=window.uiReview;
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('.track-table'));
+                const search=document.querySelector('[aria-label="Search your library"]');
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(search,'Song 2299');
+                search.dispatchEvent(new Event('input',{bubbles:true}));
+                await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                document.querySelector('.player-bar [aria-label="Show playing song"]').click();
+                await waitFor(()=>!search.value && visible(document.querySelector('[data-track-id="1"]'),document.querySelector('.track-scroll')));
+                if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Reveal should clear filters hiding the playing song');
                 button('Possible duplicates').click();
                 await waitFor(()=>document.querySelector('[data-slot="empty-title"]')?.textContent==='No duplicates');
                 const empty=document.querySelector('[data-slot="empty"]').textContent;
@@ -485,6 +562,13 @@ app.on("browser-window-created", (_, win) => {
                 window.uiReview.button('Back to music').click();
                 await frame();
             })()`, true);
+            await win.webContents.executeJavaScript(`(async () => {
+                const volume=document.querySelector('[aria-label="Volume"]');
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(volume,'0.23');
+                volume.dispatchEvent(new Event('input',{bubbles:true}));
+                await window.uiReview.waitFor(()=>document.querySelector('audio').volume===0.23);
+                await window.uiReview.waitFor(()=>JSON.parse(localStorage.getItem('btunes.volume.v1'))===0.23);
+            })()`, true);
             win.webContents.session.flushStorageData();
             await new Promise(resolve => {
                 win.webContents.once('did-finish-load', resolve);
@@ -496,6 +580,7 @@ app.on("browser-window-created", (_, win) => {
                     if(performance.now()>deadline) throw new Error('Reload did not restore library');
                     await new Promise(resolve=>setTimeout(resolve,20));
                 }
+                if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || document.querySelector('audio').volume!==0.23) throw new Error('Volume did not persist after reopening');
                 if(document.querySelector('th[data-column="genre"]').getAttribute('aria-sort')!=='descending') throw new Error('Sort did not persist after reload');
                 if(document.querySelectorAll('th')[1].dataset.column!=='genre') throw new Error('Column order did not persist after reload');
                 if(document.querySelector('nav .nav-item').textContent.trim()!=='Albums') throw new Error('Sidebar order did not persist after reload');

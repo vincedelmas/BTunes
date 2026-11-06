@@ -35,7 +35,7 @@ export function FilterBar({ artist, search, onArtist, onClear }: FilterBarProps)
                 {artist}
                 <X data-icon="inline-end"/>
             </Button>}
-            {search && <span className="text-xs text-muted-foreground">Search: “{search}”</span>}
+            {search && <span className="text-xs text-muted-foreground">Search: "{search}"</span>}
         </div>
     );
 }

@@ -15,14 +15,13 @@ import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, Di
 interface CoverSearchProps {
     query: string;
     track: Track;
-    trackCount: number;
     selected?: ArtworkCandidate;
     disabled: boolean;
     onSelect: (candidate: ArtworkCandidate | undefined) => void;
 }
 
 
-export function CoverSearch({ query, track, trackCount, selected, disabled, onSelect }: CoverSearchProps) {
+export function CoverSearch({ query, track, selected, disabled, onSelect }: CoverSearchProps) {
     const searchId = useRef(0);
     const [results, setResults] = useState<ArtworkCandidate[]>([]);
     const [pending, setPending] = useState<ArtworkCandidate>();
@@ -102,18 +101,24 @@ export function CoverSearch({ query, track, trackCount, selected, disabled, onSe
                                     source={pending?.thumbnail}
                                 />
                             </div>
-                            {pending && <div className="min-w-0">
-                                <h3 className="truncate text-sm font-semibold">{pending.album}</h3>
-                                <p className="mt-1 truncate text-xs text-muted-foreground">{pending.artist}</p>
-                            </div>}
-                            {pending && <div className="flex items-center gap-3 border-t border-border pt-4">
-                                <div className="shrink-0 [&_.cover]:size-10">
-                                    <Cover track={track}/>
+                            {pending &&
+                                <div className="min-w-0">
+                                    <h3 className="truncate text-sm font-semibold">
+                                        {pending.album}
+                                    </h3>
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                        {pending.artist}
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Current cover</p>
-                            </div>}
-                            <p className="text-xs leading-relaxed text-muted-foreground">The chosen cover will be embedded
-                                in {trackCount === 1 ? "this song" : "all " + trackCount + " selected songs"} when you save.</p>
+                            }
+                            {pending &&
+                                <div className="flex items-center gap-3 border-t border-border pt-4">
+                                    <div className="shrink-0 [&_.cover]:size-10">
+                                        <Cover track={track}/>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Current cover</p>
+                                </div>
+                            }
                             <Button
                                 variant="outline"
                                 className="mt-auto"

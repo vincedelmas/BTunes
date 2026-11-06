@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import {readPreference, writePreference, normalizeOrder, moveItem} from "../src/renderer/src/lib/preferences.ts";
-import {trackSortSchema} from "../src/shared/schemas/preferences.ts";
+import {trackSortSchema, volumeSchema} from "../src/shared/schemas/preferences.ts";
 
 void test("preferences persist valid sort values and reject corrupt or obsolete data", () => {
     const storage = new Map<string, string>();
@@ -17,6 +17,12 @@ void test("preferences persist valid sort values and reject corrupt or obsolete 
     try {
         writePreference("sort", { field: "genre", descending: true });
         assert.deepEqual(readPreference("sort", trackSortSchema, fallback), { field: "genre", descending: true });
+        writePreference("volume", 0.23);
+        assert.equal(readPreference("volume", volumeSchema, 0.7), 0.23);
+        writePreference("volume", 0);
+        assert.equal(readPreference("volume", volumeSchema, 0.7), 0);
+        storage.set("volume", "1.5");
+        assert.equal(readPreference("volume", volumeSchema, 0.7), 0.7);
         storage.set("sort", '{"field":"removed","descending":true}');
         assert.deepEqual(readPreference("sort", trackSortSchema, fallback), fallback);
         storage.set("sort", "broken JSON");

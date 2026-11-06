@@ -15,7 +15,7 @@ export function LibraryStats({ tracks, className }: LibraryStatsProps) {
 
     return (
         <p className={cn("library-stats flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}>
-            <span>
+<span>
                 {tracks.length} {tracks.length === 1 ? "song" : "songs"}
             </span>
             <span aria-hidden="true">·</span>

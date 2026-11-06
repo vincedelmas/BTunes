@@ -1,3 +1,4 @@
+import {genreChoices, resolveGenre} from "../../shared/genres.ts";
 import {promisify} from "node:util";
 import {readTags} from "./metadata.ts";
 import {parseFile} from "music-metadata";
@@ -63,6 +64,11 @@ export class TagService {
     async preview(ids: number[], input: TagPatch, artwork?: EmbeddedArtwork): Promise<TagPreview> {
         const files: PlannedFile[] = [];
         const patch = tagPatchFieldsSchema.parse(input);
+        if (patch.genre) {
+            const genres = genreChoices(this.library.repo.snapshot().tracks.map((track) => track.genre));
+            patch.genre = resolveGenre(patch.genre, genres);
+        }
+
         const preview: TagPreview = { token: randomUUID(), files: [] };
 
         if (!Object.keys(patch).length && !artwork) {
@@ -189,7 +195,7 @@ export class TagService {
 
                 const written = await parseFile(temporary);
                 const writtenValues = readTags(written);
-                
+
                 for (const field of tagFields) {
                     if (patch[field] !== undefined && writtenValues[field] !== patch[field]) {
                         throw new Error(`Could not verify written ${field} tag. Original file not replaced.`);

@@ -1,3 +1,4 @@
+import type {ItemReveal} from "@/types/reveal";
 import {useListSelection} from "@/hooks/use-list-selection";
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useVirtualizer} from "@tanstack/react-virtual";
@@ -53,6 +54,8 @@ function readColumnVisibility(): ColumnVisibilityState {
 
 interface TrackTableProps {
     tracks: Track[];
+    reveal?: ItemReveal;
+    onRevealed?: () => void;
     playlists: Playlist[];
     currentId?: number;
     playing: boolean;
@@ -63,7 +66,7 @@ interface TrackTableProps {
     actions: TrackActions;
 }
 
-export const TrackTable = memo(function TrackTable({ tracks, playlists, currentId, playing, selected, sort, onSort, onSelect, actions }: TrackTableProps) {
+export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks, playlists, currentId, playing, selected, sort, onSort, onSelect, actions }: TrackTableProps) {
     "use no memo"; // TanStack Virtual measurements and column resizing update through mutable library state.
 
     const container = useRef<HTMLDivElement>(null);
@@ -112,6 +115,15 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
 
     const visibleColumns = table.getVisibleLeafColumns();
 
+    const revealIndex = reveal ? tracks.findIndex((track) => track.id === reveal.key) : -1;
+
+    useEffect(() => {
+        if (revealIndex < 0) return;
+        virtualizer.scrollToIndex(revealIndex, { align: "center" });
+        onSelect([tracks[revealIndex].id]);
+        onRevealed?.();
+    }, [reveal?.request, revealIndex, tracks, virtualizer, onSelect, onRevealed]);
+
     function renderCell(track: Track, columnId: string) {
         if (columnId === "title") {
             return (
@@ -133,9 +145,9 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
             );
         }
         if (columnId === "duration") return formatTime(track.duration);
-        if (columnId === "albumArtist" && !track.albumArtist) return <span className="text-muted-foreground">—</span>;
-        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-[#777]">No genre</span>;
-        if (columnId === "year" && !track.year) return <span className="missing-tag text-[#777]">—</span>;
+        if (columnId === "albumArtist" && !track.albumArtist) return <span className="text-foreground">—</span>;
+        if (columnId === "genre" && (!track.genre || track.genre === "Uncategorized")) return <span className="missing-tag text-foreground">No genre</span>;
+        if (columnId === "year" && !track.year) return <span className="missing-tag text-foreground">—</span>;
 
         return track[columnId as TrackSortField];
     }
@@ -233,7 +245,7 @@ export const TrackTable = memo(function TrackTable({ tracks, playlists, currentI
                                     {visibleColumns.map((column) => (
                                         <TableCell
                                             key={column.id}
-                                            className="min-w-0 truncate px-2 py-1 text-xs text-muted-foreground"
+                                            className="min-w-0 truncate px-2 py-1 text-xs text-foreground"
                                             data-column={column.id}
                                         >
                                             {renderCell(track, column.id)}
