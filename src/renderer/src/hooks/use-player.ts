@@ -22,7 +22,11 @@ export function usePlayer(onError: (message: string) => void) {
     const report = (error: unknown) => onError(getErrorMessage(error));
 
     const play = () => {
-        void audio.current?.play().catch(report);
+        void audio.current?.play().catch((error: unknown) => {
+            // Switching tracks or pressing Stop can interrupt a pending browser play request.
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            report(error);
+        });
     };
 
     const seek = (seconds: number) => {
@@ -121,13 +125,16 @@ export function usePlayer(onError: (message: string) => void) {
     };
 
     function updateTime() {
-        const seconds = audio.current?.currentTime ?? 0;
+        const media = audio.current;
+        if (!currentTrack || counted.current || !media || media.paused || media.seeking) return;
+
+        const duration = Number.isFinite(media.duration) && media.duration > 0 ? media.duration : currentTrack.duration;
+        if (!Number.isFinite(duration) || duration <= 0) return;
+        if (media.currentTime < Math.min(30, duration * 0.5)) return;
 
         // Progress belongs to the timeline, never to the library's React tree.
-        if (currentTrack && !counted.current && seconds >= Math.min(30, currentTrack.duration * 0.5)) {
-            counted.current = true;
-            void rpc("track.played", { id: currentTrack.id }).catch(report);
-        }
+        counted.current = true;
+        void rpc("track.played", { id: currentTrack.id }).catch(report);
     }
 
     function toggle() {

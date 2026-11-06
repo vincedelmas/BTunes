@@ -104,8 +104,17 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         if (restoredView !== view) setPlaylistIds([]);
     }
 
+    function takeDifferentLocation(stack: CollectionLocation[]) {
+        const current = currentLocation();
+        while (stack.length) {
+            const next = stack.pop()!;
+            if (next.view !== current.view || next.search !== current.search || next.artist !== current.artist) return next;
+        }
+        return undefined;
+    }
+
     function goBack() {
-        const previous = history.current.pop();
+        const previous = takeDifferentLocation(history.current);
         if (!previous) return;
 
         future.current.push(currentLocation());
@@ -113,7 +122,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     function goForward() {
-        const next = future.current.pop();
+        const next = takeDifferentLocation(future.current);
         if (!next) return;
 
         history.current.push(currentLocation());

@@ -1,6 +1,6 @@
 import {constants} from "node:fs";
 import {copyFile, lstat, realpath, rm, stat, unlink} from "node:fs/promises";
-import {basename, dirname, extname, join, resolve} from "node:path";
+import {basename, dirname, extname, join} from "node:path";
 import {isAudioFile} from "../../shared/audio-files.ts";
 import type {FileImportChoice, FileImportResult} from "../../shared/types/file-import.ts";
 import type {LibraryService} from "./library.ts";
@@ -67,16 +67,23 @@ export class FileImportService {
                     }
                     await unlink(source);
                     sourceRemoved = true;
-                    await this.library.remove(resolve(source));
                 }
                 result.imported++;
+                if (sourceRemoved) await this.library.remove(source);
             }
             catch (error) {
+                let message = error instanceof Error ? error.message : String(error);
                 if (destination && !sourceRemoved) {
-                    await rm(destination, { force: true });
-                    await this.library.remove(destination);
+                    try {
+                        await rm(destination, { force: true });
+                        await this.library.remove(destination);
+                    }
+                    catch (cleanupError) {
+                        const detail = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+                        message += " Could not finish import cleanup: " + detail;
+                    }
                 }
-                result.errors.push({ path, message: error instanceof Error ? error.message : String(error) });
+                result.errors.push({ path, message });
             }
         }
         return result;

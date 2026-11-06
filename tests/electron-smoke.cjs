@@ -93,6 +93,21 @@ app.on("browser-window-created", (_, win) => {
     await waitFor(()=>document.querySelector('.library-stat strong')?.textContent==='1');
     findButton('Songs').click();
     await waitFor(()=>document.querySelector('[data-track-id="'+indexed.tracks[0].id+'"]'));
+    const originalPlay=HTMLMediaElement.prototype.play;
+    try {
+        HTMLMediaElement.prototype.play=()=>Promise.reject(new DOMException('Playback was interrupted.','AbortError'));
+        document.querySelector('button[aria-label="Play Silence"]').click();
+        await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
+        await new Promise(resolve=>setTimeout(resolve,50));
+        if(document.querySelector('.content [role="alert"]')?.textContent.includes('Playback was interrupted')) throw new Error('Normal playback interruption produced an error banner');
+        audio.currentTime=40;
+        await waitFor(()=>!audio.seeking);
+        audio.dispatchEvent(new Event('timeupdate'));
+        if((await window.btunes.rpc('library.get',undefined)).tracks[0].plays!==0) throw new Error('Seeking while paused must not record a play');
+    }
+    finally {
+        HTMLMediaElement.prototype.play=originalPlay;
+    }
     document.querySelector('button[aria-label="Play Silence"]').click();
     await waitFor(()=>!document.querySelector('input[aria-label="Playback position"]').disabled);
     const seekInput=document.querySelector('input[aria-label="Playback position"]');

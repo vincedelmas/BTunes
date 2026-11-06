@@ -71,3 +71,42 @@ void test("failed indexing keeps a move source and removes its incomplete librar
         await rm(root, { recursive: true, force: true });
     }
 });
+
+void test("a failed import cleanup does not abort the remaining dropped files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-drop-cleanup-"));
+    const music = join(root, "music");
+    await mkdir(music);
+    const repo = new LibraryRepository(":memory:");
+    repo.folder(music);
+    const first = join(root, "First.mp3");
+    const second = join(root, "Second.mp3");
+    await writeFile(first, "first original");
+    await writeFile(second, "second original");
+    const importer = new FileImportService({
+        repo,
+        index: async (path) => {
+            if (path.endsWith("First.mp3")) throw new Error("Invalid audio");
+        },
+        remove: async () => {
+            throw new Error("Cleanup database failure");
+        },
+    });
+    try {
+        const result = await importer.import([first, second], { folder: music, operation: "copy" });
+        assert.equal(result.imported, 1);
+        assert.equal(result.errors.length, 1);
+        assert.match(result.errors[0].message, /Invalid audio/);
+        assert.match(result.errors[0].message, /Cleanup database failure/);
+        assert.equal(await readFile(first, "utf8"), "first original");
+        assert.equal(await readFile(join(music, "Second.mp3"), "utf8"), "second original");
+        const moved = await importer.import([second], { folder: music, operation: "move" });
+        assert.equal(moved.imported, 1, "A completed move remains counted if the database cleanup fails");
+        assert.equal(moved.errors.length, 1);
+        await assert.rejects(stat(second), { code: "ENOENT" });
+        assert.equal(await readFile(join(music, "Second (2).mp3"), "utf8"), "second original");
+    }
+    finally {
+        repo.db.close();
+        await rm(root, { recursive: true, force: true });
+    }
+});

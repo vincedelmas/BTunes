@@ -8,12 +8,14 @@ const artistTitleKey = (artist: string, title: string) => "artist:" + musicKey(a
 const albumTitleKey = (artist: string, album: string, title: string) => "album:" + musicKey(artist) + ":" + musicKey(album) + ":" + musicKey(title);
 
 function phoneKeys(file: DeviceFile, root: string) {
-    const keys = ["file:" + filenameKey(file.name)];
+    const keys: string[] = [];
     const stem = basename(file.name, extname(file.name));
     const titles = new Set([stem, stem.replace(/^(?:\d{1,3}[\s._-]+)+/, "")]);
     const folders = posix.relative(root, posix.dirname(file.path)).split("/").filter(Boolean);
     const artist = folders[0];
     const album = folders[1];
+    // Artist/album folders identify a recording more precisely than a shared filename.
+    if (folders.length < 2) keys.push("file:" + filenameKey(file.name));
 
     for (const title of titles) {
         keys.push("credit:" + musicKey(title));
@@ -24,15 +26,17 @@ function phoneKeys(file: DeviceFile, root: string) {
 }
 
 function trackKeys(track: Track) {
-    const keys = ["file:" + filenameKey(basename(track.path))];
+    const strong = ["file:" + filenameKey(basename(track.path))];
+    const weak: string[] = [];
     const artists = new Set([track.albumArtist || track.artist, track.artist]);
+
     for (const artist of artists) {
-        keys.push(albumTitleKey(artist, track.album, track.title));
-        keys.push(artistTitleKey(artist, track.title));
-        keys.push("credit:" + musicKey(artist + track.title));
-        keys.push("credit:" + musicKey(artist + track.album + track.title));
+        strong.push(albumTitleKey(artist, track.album, track.title));
+        strong.push("credit:" + musicKey(artist + track.album + track.title));
+        weak.push(artistTitleKey(artist, track.title));
+        weak.push("credit:" + musicKey(artist + track.title));
     }
-    return keys;
+    return { strong, weak };
 }
 
 export function compareDeviceMusic(tracks: Track[], phoneFiles: DeviceFile[], root: string) {
@@ -46,27 +50,28 @@ export function compareDeviceMusic(tracks: Track[], phoneFiles: DeviceFile[], ro
         }
     }
 
-    const missing: Track[] = [];
-    const filenames = new Map<string, Track[]>();
-    let present = 0;
-    let different = 0;
+    const nameCounts = new Map<string, number>();
     for (const track of tracks) {
-        const matches = new Set(trackKeys(track).flatMap((key) => phoneIndex.get(key) ?? []));
-        for (const file of matches) matched.add(file);
-        if ([...matches].some((file) => file.size === track.size)) present++;
-        else if (matches.size) different++;
-        else {
-            const key = filenameKey(basename(track.path));
-            const conflicts = filenames.get(key) ?? [];
-            conflicts.push(track);
-            filenames.set(key, conflicts);
-        }
+        const name = filenameKey(basename(track.path));
+        nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
     }
 
-    for (const versions of filenames.values()) {
+    const missing: Track[] = [];
+    let present = 0;
+    let different = 0;
+
+    for (const track of tracks) {
+        const keys = trackKeys(track);
+        const strong = new Set(keys.strong.flatMap((key) => phoneIndex.get(key) ?? []));
+        const weak = new Set(keys.weak.flatMap((key) => phoneIndex.get(key) ?? []));
+        for (const file of [...strong, ...weak]) matched.add(file);
+
         // A flat destination cannot safely distinguish two PC files with the same name.
-        if (versions.length > 1) different += versions.length;
-        else missing.push(versions[0]);
+        if ((nameCounts.get(filenameKey(basename(track.path))) ?? 0) > 1) different++;
+        else if ([...strong].some((file) => file.size === track.size)) present++;
+        else if (strong.size || weak.size) different++;
+        else missing.push(track);
     }
+
     return { missing, present, different, phoneOnly: phoneFiles.filter((file) => !matched.has(file)).length };
 }

@@ -3,8 +3,7 @@ import {basename, posix} from "node:path";
 import {stat} from "node:fs/promises";
 import {isAudioFile} from "../../shared/audio-files.ts";
 import type {DeviceFile, DeviceSyncState} from "../../shared/types/devices.ts";
-import type {Track} from "../../shared/types/library.ts";
-import type {DeviceTransport} from "../types/devices.ts";
+import type {DeviceSyncPlan, DeviceTransport} from "../types/devices.ts";
 import type {LibraryRepository} from "../repositories/library.ts";
 
 export class DeviceSyncService {
@@ -13,7 +12,7 @@ export class DeviceSyncService {
     private state: DeviceSyncState = { phase: "idle", completed: 0, total: 0, current: "", errors: [] };
     private task?: Promise<void>;
     private cancelled = false;
-    private plan?: { storageId: string; path: string; tracks: Track[] };
+    private plan?: DeviceSyncPlan;
 
     constructor(repo: Pick<LibraryRepository, "snapshot">, transport: DeviceTransport) {
         this.repo = repo;
@@ -96,6 +95,10 @@ export class DeviceSyncService {
                     throw new Error("A file appeared on the phone. Compare again: " + track.title);
                 }
                 await this.transport.copy(plan.storageId, track.path, destination);
+                const after = await stat(track.path);
+                if (after.dev !== source.dev || after.ino !== source.ino || after.size !== source.size || after.mtimeMs !== source.mtimeMs) {
+                    throw new Error("A source file changed during the copy. Compare again: " + track.title);
+                }
                 const written = await this.transport.metadata(plan.storageId, destination);
                 if (!written || written.size !== source.size) throw new Error("Could not verify the transferred file: " + track.title);
                 this.state.completed++;

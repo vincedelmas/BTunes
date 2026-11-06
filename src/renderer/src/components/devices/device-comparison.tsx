@@ -76,9 +76,6 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                             <p className="mt-3 text-xs text-muted-foreground">And {comparison.missing - comparison.preview.length} more songs.</p>}
                     </div>
                 ) : null}
-                {comparison &&
-                    <p className="text-xs leading-relaxed text-muted-foreground">Only missing songs are copied. Matches use filenames, artist/album folder names, and sizes.
-                        Existing phone files stay in place; different versions are left for review.</p>}
                 {state.phase === "complete" &&
                     <p
                         role="status"

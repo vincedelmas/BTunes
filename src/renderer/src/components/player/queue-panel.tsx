@@ -44,9 +44,9 @@ export function QueuePanel({ player, onClose }: QueuePanelProps) {
                     >
                         <Cover track={track}/>
                         <span className="min-w-0 truncate">
-{track.title}
+                            <span className="block truncate">{track.title}</span>
                             <small className="mt-1 block truncate text-[11px] text-muted-foreground">{track.artist}</small>
-</span>
+                        </span>
                     </button>
                 )}
             />

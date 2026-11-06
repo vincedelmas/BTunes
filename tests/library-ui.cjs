@@ -456,6 +456,14 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('h1').textContent==='Albums');
                 window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
                 await waitFor(()=>document.querySelector('h1').textContent==='Songs' && document.querySelector('[aria-label="Search your library"]').value==='Song 2299');
+                document.querySelector('[aria-label="Clear search"]').click();
+                await waitFor(()=>!search.value);
+                window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('h1').textContent==='Artists');
+                window.dispatchEvent(new MouseEvent('mouseup',{button:4,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('h1').textContent==='Songs' && !search.value);
+                window.dispatchEvent(new MouseEvent('mouseup',{button:4,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('[aria-label="Search your library"]').value==='Song 2299');
                 document.querySelector('.player-bar [aria-label="Show playing song"]').click();
                 await waitFor(()=>!search.value && visible(document.querySelector('[data-track-id="1"]'),document.querySelector('.track-scroll')));
                 if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Reveal should clear filters hiding the playing song');

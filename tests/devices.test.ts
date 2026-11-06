@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm, stat} from "node:fs/promises";
+import {mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm, stat, utimes} from "node:fs/promises";
 import {setImmediate} from "node:timers/promises";
 import {join, basename} from "node:path";
 import {tmpdir} from "node:os";
@@ -146,6 +146,17 @@ void test("phone matching recognizes numbered artist/album folders without copyi
         const changed = compareDeviceMusic(repo.snapshot().tracks, [{ ...phone[0], size: 400 }], "/Music");
         assert.equal(changed.different, 1);
         assert.equal(changed.missing.length, 0, "A possible different version must not be copied as a second song");
+        const alternateAlbum = compareDeviceMusic(repo.snapshot().tracks, [{ ...phone[0], path: "/Music/2Cellos/Live album/01 - Highway To Hell.mp3" }], "/Music");
+        assert.equal(alternateAlbum.present, 0, "Artist and title alone must not confirm an alternate album as identical");
+        assert.equal(alternateAlbum.different, 1);
+
+        repo.upsert({ path: "/pc/one/Intro.mp3", title: "Intro", artist: "First artist", album: "First album", genre: "Rock", year: 0, duration: 120, cover: null, size: 500 });
+        repo.upsert({ path: "/pc/two/Intro.mp3", title: "Intro", artist: "Second artist", album: "Second album", genre: "Rock", year: 0, duration: 120, cover: null, size: 500 });
+        const collision = compareDeviceMusic(repo.snapshot().tracks.filter((track) => track.title === "Intro"), [
+            { name: "Intro.mp3", path: "/Music/Intro.mp3", size: 500, directory: false },
+        ], "/Music");
+        assert.equal(collision.present, 0, "One phone file cannot confirm two ambiguous PC songs");
+        assert.equal(collision.different, 2);
     }
     finally {
         repo.db.close();
@@ -195,6 +206,53 @@ void test("stopping USB sync finishes the current copy and leaves subsequent son
     }
     finally {
         release();
+        await sync.close();
+        repo.db.close();
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+void test("USB sync detects a same-size source modification during copying", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-sync-source-"));
+    const repo = new LibraryRepository(":memory:");
+    const source = join(root, "Song.mp3");
+    await writeFile(source, "before");
+    const original = await stat(source);
+    repo.upsert({
+        path: source,
+        title: "Song",
+        artist: "Fixture",
+        album: "Album",
+        genre: "Rock",
+        year: 0,
+        duration: 1,
+        cover: null,
+        size: original.size,
+        modifiedAt: original.mtimeMs
+    });
+    let copied = false;
+    const transport: DeviceTransport = {
+        devices: async () => [{ id: "phone", name: "Phone", storages: [{ id: storageId, name: "Internal", freeBytes: 1000 }] }],
+        files: async () => [],
+        metadata: async () => copied ? { name: "Song.mp3", path: "/Music/Song.mp3", size: original.size, directory: false } : undefined,
+        mkdir: async () => undefined,
+        copy: async () => {
+            await writeFile(source, "after!");
+            await utimes(source, original.atime, new Date(original.mtimeMs + 1000));
+            copied = true;
+        },
+    };
+    const sync = new DeviceSyncService(repo, transport);
+    try {
+        sync.compare(storageId, "/Music");
+        await settle(sync);
+        sync.sync();
+        await settle(sync);
+        assert.equal(sync.status().phase, "error");
+        assert.match(sync.status().errors[0], /source file changed/);
+        assert.equal(sync.status().completed, 0);
+    }
+    finally {
         await sync.close();
         repo.db.close();
         await rm(root, { recursive: true, force: true });
