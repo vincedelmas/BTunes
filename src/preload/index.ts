@@ -1,4 +1,6 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { Rpc } from '../shared/contracts'
-const rpc: Rpc = (method,input)=>ipcRenderer.invoke('rpc',method,input)
-contextBridge.exposeInMainWorld('sillage',{rpc})
+import type {Rpc} from "../shared/contracts";
+import {contextBridge, ipcRenderer} from "electron";
+
+
+const rpc: Rpc = (method, input) => ipcRenderer.invoke("rpc", method, input);
+contextBridge.exposeInMainWorld("btunes", { rpc });

@@ -1,72 +1,144 @@
-# Sillage
+# BTunes
 
-Votre collection musicale locale dans une application Electron. Première version de travail, conçue pour Linux / CachyOS. Nom et direction graphique provisoires : fond forêt sombre, typographie éditoriale et accent cuivre.
+A local music library and player for Linux, built with Electron, React, TypeScript, Tailwind, shadcn/ui (Nova with Base UI), and SQLite through Drizzle ORM. Bun manages the project.
 
-## Démarrer
+The interface uses Spotify-inspired black panels, green playback controls, album cards, rounded search, and bundled Inter typography. It does not include Spotify's proprietary font or assets.
 
-Prérequis : Bun et Node.js récent (Node 22.18+ pour les tests TypeScript ; testé avec Node 26). Aucun serveur ni compte requis.
+## Getting started
+
+Prerequisites: Bun, a recent Node.js version (22.18+ for TypeScript tests), and FFmpeg for tag writing. On CachyOS, install FFmpeg with `sudo pacman -S ffmpeg` if needed.
 
 ```sh
-cd /home/vince/Desktop/code-projects/sillage
+cd /home/vince/Desktop/code-projects/BTunes
 bun install
 bun run dev
 ```
 
-Cliquez sur **Ajouter un dossier** pour indexer votre collection. Aucun morceau de démonstration n'est ajouté. Les playlists se créent avec le bouton + dans la barre latérale. Choisissez un genre à la création pour une playlist automatique. Dans la vue Morceaux, le menu « + Playlist » ajoute un titre à une playlist classique. Cliquer sur un album lance sa lecture ; double-cliquer sur une ligne lance le morceau.
+Choose **Add music folder** to index your collection. Click an album to play it, or use the play button beside a song. No sample music is added to your library.
 
-## Disponible
+## Library and playback
 
-- Import récursif : MP3, FLAC, OGG, Opus, M4A, AAC, WAV, AIFF. Lecture des métadonnées et des pochettes intégrées. La lecture dépend des codecs fournis par Electron.
-- Vues albums, artistes et morceaux. Recherche immédiate et filtres combinables artiste / genre. Tri artiste, album, titre, année ou écoutes.
-- SQLite persistante : favoris, nombre d'écoutes, dernière écoute, dossiers, playlists classiques et playlists automatiques par genre.
-- Lecture, pause, arrêt, précédent / suivant, aléatoire, répétition de la file, déplacement dans le morceau et volume.
-- File de lecture consultable ; historique basé sur la dernière écoute. Une écoute est comptée après 30 secondes ou la moitié d'un titre court.
-- Surveillance des ajouts, changements et suppressions de fichiers pendant que l'app tourne. Actualisation de l'interface toutes les 5 secondes.
-- Réimport d'un dossier pour réconcilier les changements survenus hors de l'application. Les favoris et écoutes sont conservés.
-- Doublons **possibles** par titre + artiste + durée arrondie. Aucun effacement automatique.
+- Recursive import of MP3, FLAC, OGG, Opus, M4A, AAC, WAV, and AIFF files, including embedded artwork. Playback depends on Electron's supported codecs.
+- Album, artist, and song views, instant search, combined artist/genre filters, and sorting by artist, album, title, year, or play count.
+- Persistent favorites, play counts, latest-played history, classic playlists, and automatic playlists based on a genre.
+- Play, pause, stop, previous/next, shuffle, queue repeat, seeking, and volume.
+- Folder watching while the app runs; the renderer refreshes every five seconds. Reimport a folder to reconcile changes made while the app was closed.
+- Possible duplicate detection using title, artist, and rounded duration. No files are automatically deleted.
+
+Create playlists with the **+** button in the sidebar. Choose a genre rule for an automatic playlist. In the Songs view, use **+ Playlist** to add a song to a classic playlist.
+
+## Editing tags
+
+Supported write formats: **MP3, FLAC, and M4A**. Other formats remain readable and playable.
+
+1. Use a song's pencil button, an album's pencil button, or select songs and choose **Edit tags**.
+2. Edit title, artist, album, genre, or year. Changing a value automatically checks its field. Unchecked fields stay unchanged; mixed values are initially blank.
+3. Choose **Preview changes** to review the exact before/after values for each file.
+4. Choose **Save to files** to apply the preview.
+
+Edits support up to 100 songs at a time. Text fields require a nonempty value; set the year to 0 to remove it. Embedded artwork is retained but cannot yet be replaced through the editor.
+
+The writer runs FFmpeg with stream copying, following its [metadata and stream-copy options](https://www.ffmpeg.org/ffmpeg.html). It prepares all output files beside their sources, verifies requested tags and artwork, and replaces each source with a rename. A SHA-256 fingerprint rejects files that changed after preview. Previews expire after ten minutes.
+
+Original copies are retained in `<userData>/tag-backups/<preview-token>/`, with a manifest mapping track IDs to source paths. Failed batch operations attempt to restore all replaced files from those backups. Keep backups until you have checked your edits; there is no backup cleanup or in-app undo yet. Symbolic links and files with multiple hard links cannot be edited.
+
+Audio streams are not re-encoded. FFmpeg remuxes the container, so format-specific metadata it cannot represent may be normalized or omitted; retained original files provide recovery. Tests verify audio packet hashes, artwork, and common untouched tags for the supported formats.
 
 ## Architecture
 
 ```text
 src/
   main/
-    index.ts                 Fenêtre Electron, protocole local et dispatch RPC
-    repositories/library.ts  SQLite, schéma initial et requêtes paramétrées
-    services/library.ts      Indexation et surveillance
-  preload/index.ts           Pont isolé : une méthode rpc()
-  shared/contracts.ts        Contrats TypeScript des méthodes RPC
+    index.ts                 Electron window, protocol, validated RPC routes
+    repositories/library.ts  Typed Drizzle repository queries
+    database/schema.ts       Drizzle SQLite tables and indexes
+    services/library.ts      Indexing and file watching
+    services/tags.ts         Tag previews, writes, backups, and rollback
+  preload/index.ts           Isolated bridge exposing one rpc() method
+  shared/
+    contracts.ts             Typed RPC contracts
+    tags.ts                  Shared tag fields, validation, and preview types
   renderer/src/
-    App.tsx                  Interface et lecteur
-    components/ui/           Composants shadcn/ui
-    style.css                Tokens et composition visuelle
+    App.tsx                  Application composition and view selection
+    hooks/                   Library and playback behavior
+    lib/                     Shared music utilities, RPC client, class names
+    components/
+      ui/                    Reusable shadcn/ui primitives
+      library/               Sidebar, album cards, song table
+      player/                Playback bar and queue
+      tag-editor.tsx         Single-song and batch editing dialog
 tests/
-  library.test.ts            Conservation des données et règles de playlists
-  electron-smoke.cjs         React + RPC + import WAV + protocole audio
+  library.test.ts            Persistence and playlist behavior
+  tags.test.ts               Format round trips, audio/artwork preservation, rollback
+  electron-smoke.cjs         React, RPC, import, audio protocol, and tag editor interaction
 ```
 
-React ne reçoit ni accès à Node ni accès arbitraire au disque. Un seul canal Electron `rpc` transporte les méthodes typées, validées avec Zod côté principal. Le protocole `sillage://audio/<id>` résout uniquement les morceaux indexés ; les pochettes sont servies par leur empreinte SHA-256. Ce protocole suit le mécanisme [protocol.handle d'Electron](https://www.electronjs.org/docs/latest/api/protocol).
+React has no Node.js or arbitrary filesystem access. One `rpc` channel carries typed methods, with Zod validation in the main process. The local audio protocol resolves only indexed track IDs. Drizzle uses the Node SQLite module embedded in Electron; no third-party native database addon is needed.
 
-SQLite utilise le module natif de Node embarqué dans Electron, sans addon C++ tiers à recompiler. Bun gère les dépendances et les commandes ; le backend tourne dans le processus Node d'Electron.
+Application data is stored under `app.getPath('userData')`, usually `~/.config/BTunes`: `library.sqlite`, `covers/`, and `tag-backups/`.
 
-Les données résident dans `app.getPath('userData')` (habituellement `~/.config/sillage`) : `library.sqlite` et `covers/`. Les fichiers musicaux sont seulement lus. Aucun tag ni nom de fichier n'est modifié.
+## Development
 
-## Vérification
+Read [AGENTS.md](./AGENTS.md) for English-language, readability, component reuse, and utility reuse conventions.
 
 ```sh
-bun run test            # tests des repositories
-bun run build           # TypeScript + bundles principal, preload et React
-bun run test:electron   # test Electron headless avec profil et WAV temporaires
-bun run package         # dossier Linux exécutable dans dist/
+bun run knip            # find unused files, exports, and dependencies
+bun run db:generate     # generate a versioned migration after changing schema.ts
+bun run test            # repository and filesystem tag-writing tests
+bun run build           # TypeScript and production bundles
+bun run test:electron   # headless integration test with an isolated temporary profile
+bun run package         # unpacked Linux executable in dist/
 ```
 
-Le test Electron rejette volontairement un identifiant négatif ; le message Zod dans sa sortie est attendu. L'empaquetage est configuré mais n'a pas encore été validé.
+The Electron test intentionally submits an invalid track ID; its Zod error output is expected. Tests create temporary audio fixtures and never edit your collection. Packaging is configured but has not been validated.
 
-## Suite du produit
+## Still to build
 
-1. **Métadonnées** : éditeur individuel et par lots, aperçu des différences, sauvegarde réelle dans les formats pris en charge, pochettes intégrées. Écriture transactionnelle via fichier temporaire, sauvegarde et restauration en cas d'erreur. MusicBrainz : identification explicite et comparaison avant application. Renommage : aperçu, gestion des collisions et possibilité d'annuler.
-2. **Playlists avancées** : règles combinées (genre, année, écoutes, favoris), export M3U relatif pour téléphone, édition / suppression / ordre manuel, historique d'événements complet et file persistante.
-3. **Android** : manifeste PC / téléphone, comparaison des chemins relatifs, tailles et empreintes, liste des morceaux manquants puis plan de copie. D'abord dossier monté accessible en écriture ; ensuite MTP / USB et KDE Connect avec détection des outils CachyOS disponibles. Pas de suppression implicite côté téléphone.
-4. **Bibliothèque à grande échelle** : recherche SQL indexée et pagination, virtualisation des listes, extraction des métadonnées dans un worker, progression et annulation d'import.
-5. **Finitions Linux** : touches multimédias, MPRIS, icône, packaging AppImage et intégration bureau.
+- Embedded artwork replacement, additional tag fields and formats, MusicBrainz lookup, and previewed automatic renaming.
+- Combined smart-playlist rules, relative M3U phone exports, playlist editing/deletion/manual ordering, complete play-event history, and persistent queue/settings.
+- Android comparison and missing-song detection, mounted-folder transfers, then MTP/USB and KDE Connect.
+- Large-library pagination, indexed SQL search, virtualized lists, background metadata extraction, progress, and cancellation.
+- MPRIS, media keys, desktop icon, and validated AppImage packaging.
 
-Limites actuelles : l'import s'exécute dans le processus principal, toute la bibliothèque est chargée dans React, les tris ne sont pas encore configurables en plusieurs clés. Les tags sont lus mais pas éditables. Pas encore de synchronisation Android, de récupération MusicBrainz ni d'export téléphone. La file et les réglages du lecteur ne survivent pas à une fermeture. Une suppression de dossier entier et les modifications faites app fermée demandent un réimport. Les liens symboliques ne sont pas parcourus lors de l'import initial.
+The current app loads the library into React and indexes files in the main process. Folder removal and changes while the app is closed require a reimport. Initial scans skip symbolic links.
+
+## Database migrations and code checks
+
+Drizzle ORM and Drizzle Kit are pinned to **1.0.0-rc.5**, because the official
+`drizzle-orm/node-sqlite` adapter currently ships on the RC channel. The application
+continues to use Electron's built-in SQLite runtime.
+
+Migrations live in `drizzle/` and run automatically when the repository opens.
+The initial migration is deliberately idempotent so an existing BTunes library
+can be adopted without recreating tables or losing data. Later schema changes
+must use a new generated migration; do not rewrite migrations already shipped.
+The Linux package includes migration SQL as an application resource. Migration
+generation is a development operation; users never need Drizzle Kit.
+
+Run `bun run knip` to check unused application code and dependencies. Knip's
+electron-vite plugin discovers the main process, preload, and renderer; the
+configuration adds test entry points and CSS imports. Unused exports/types in
+generated shadcn primitives are intentionally retained for their component APIs.
+Application files and dependencies remain checked.
+
+UI primitives use `base-nova` in `components.json`. Keep Base UI's `render`
+composition API when extending them; do not introduce Radix's `asChild` API.
+The application keeps its existing Inter font and black/green theme.
+
+## Formatting
+
+Use WebStorm's **Reformat Code** and **Optimize Imports** actions, including the
+configured actions on save. The repository uses four-space indentation through
+`.editorconfig`. Prettier is not installed or used.
+
+The WebStorm command-line formatter can apply the IDE's code style when available.
+Import optimization remains an IDE action; the CLI formatter does not run it.
+
+## Renaming from Sillage
+
+On first launch, BTunes copies an existing Sillage library from
+`~/.config/sillage` (or `~/.config/Sillage`) into `~/.config/BTunes`,
+including cached artwork and original-file tag backups. SQLite's backup API
+includes committed WAL data. The original directory is retained.
+An existing BTunes database is never overwritten. Close older running instances
+before launching the renamed app so new plays and edits use the new library.

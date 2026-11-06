@@ -1,78 +1,415 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Disc3, Library, Heart, History, Smartphone, FolderPlus, Play, Pause, Square, SkipBack, SkipForward, Shuffle, Repeat, Volume2, ListMusic, Plus, ArrowDownUp, Music2, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import type { Snapshot, Track } from '../../shared/contracts'
-import { cn } from '@/lib/utils'
-const rpc = window.sillage.rpc
-const clock=(s:number)=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')
-function Cover({track,large=false}:{track?:Track;large?:boolean}) {
- return <div className={cn('cover',large && 'cover-large')}>{track?.cover ? <img src={'sillage://cover/'+track.cover} alt="Pochette"/> : <Disc3/>}</div>
-}
+import {EmptyState} from "@/components/empty-state";
+import {useEffect, useMemo, useState} from "react";
+import {
+    ArrowDownUp,
+    Disc3,
+    FolderPlus,
+    Headphones,
+    Pencil,
+    Play,
+    RefreshCw,
+    Search,
+    Smartphone,
+} from "lucide-react";
+import type {Track} from "../../shared/contracts";
+import {Sidebar} from "@/components/library/sidebar";
+import {AlbumGrid} from "@/components/library/album-grid";
+import {TrackTable} from "@/components/library/track-table";
+import {PlayerBar} from "@/components/player/player-bar";
+import {QueuePanel} from "@/components/player/queue-panel";
+import {TagEditor} from "@/components/tag-editor";
+import {Cover} from "@/components/cover";
+import {FilterSelect} from "@/components/filter-select";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {useLibrary} from "@/hooks/use-library";
+import {usePlayer} from "@/hooks/use-player";
+import {duplicateKey, groupAlbums, uniqueValues} from "@/lib/music";
+import {rpc} from "@/lib/rpc";
+
+const viewTitles: Record<string, string> = {
+    albums: "Your albums",
+    tracks: "All songs",
+    artists: "Your artists",
+    favorites: "Liked songs",
+    history: "Recently played",
+    duplicates: "Possible duplicates",
+    android: "Your devices",
+};
+
+const sortOptions = [
+    { value: "artist", label: "Artist" },
+    { value: "album", label: "Album" },
+    { value: "title", label: "Title" },
+    { value: "year", label: "Year" },
+    { value: "plays", label: "Play count" },
+];
+
 export function App() {
- const [data,setData]=useState<Snapshot>({tracks:[],playlists:[],folders:[]})
- const [view,setView]=useState('albums'),[search,setSearch]=useState(''),[genre,setGenre]=useState(''),[artist,setArtist]=useState(''),[sort,setSort]=useState('artist')
- const [error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
- const [current,setCurrent]=useState<Track>(),[queue,setQueue]=useState<Track[]>([]),[playing,setPlaying]=useState(false)
- const [shuffle,setShuffle]=useState(false),[repeat,setRepeat]=useState(false),[position,setPosition]=useState(0),[volume,setVolume]=useState(.7)
- const [playlistIds,setPlaylistIds]=useState<number[]>([]),[playlistName,setPlaylistName]=useState(''),[rule,setRule]=useState(''),[creating,setCreating]=useState(false)
- const [showQueue,setShowQueue]=useState(false)
- const audio=useRef<HTMLAudioElement>(null),counted=useRef(false)
- const refresh=()=>rpc('library.get',undefined).then(setData).catch(e=>setError(String(e)))
- useEffect(()=>{void refresh();const timer=setInterval(()=>void refresh(),5000);return()=>clearInterval(timer)},[])
- useEffect(()=>{if(view.startsWith('playlist:')) void rpc('playlist.tracks',{id:Number(view.split(':')[1])}).then(setPlaylistIds).catch(e=>setError(String(e)))},[view,data])
- useEffect(()=>{if(audio.current) audio.current.volume=volume},[volume])
- const genres=[...new Set(data.tracks.map(t=>t.genre))].sort()
- const artists=[...new Set(data.tracks.map(t=>t.artist))].sort()
- const tracks=useMemo(()=>{
-  const duplicateKeys=new Map<string,number>()
-  data.tracks.forEach(t=>{const key=(t.title+'|'+t.artist+'|'+Math.round(t.duration)).toLowerCase();duplicateKeys.set(key,(duplicateKeys.get(key)||0)+1)})
-  return data.tracks.filter(t=>
-   (!search || (t.title+' '+t.artist+' '+t.album).toLocaleLowerCase().includes(search.toLocaleLowerCase())) &&
-   (!genre || t.genre===genre) && (!artist || t.artist===artist) &&
-   (view!=='favorites' || !!t.favorite) && (view!=='history' || t.lastPlayed>0) &&
-   (!view.startsWith('playlist:') || playlistIds.includes(t.id)) &&
-   (view!=='duplicates' || (duplicateKeys.get((t.title+'|'+t.artist+'|'+Math.round(t.duration)).toLowerCase())||0)>1)
-  ).sort((a,b)=>view==='history'?b.lastPlayed-a.lastPlayed:sort==='year'?b.year-a.year:sort==='plays'?b.plays-a.plays:String(a[sort as 'artist'|'album'|'title']).localeCompare(String(b[sort as 'artist'|'album'|'title'])))
- },[data,search,genre,artist,view,playlistIds,sort])
- const albums=useMemo(()=>Object.values(tracks.reduce<Record<string,Track[]>>((a,t)=>{const key=t.artist+'\0'+t.album;(a[key]??=[]).push(t);return a},{})),[tracks])
- const start=(track:Track,list:Track[]=tracks)=>{setQueue(list);setCurrent(track);setPosition(0);counted.current=false}
- useEffect(()=>{if(current && audio.current) void audio.current.play().catch(e=>{setPlaying(false);setError('Lecture impossible : '+e.message)})},[current])
- const next=(direction=1)=>{
-  if(!current || !queue.length) return
-  const i=queue.findIndex(t=>t.id===current.id)
-  let index=shuffle?Math.floor(Math.random()*queue.length):i+direction
-  if(index>=queue.length || index<0) {if(!repeat){setPlaying(false);return} index=(index+queue.length)%queue.length}
-  if(queue[index].id===current.id && audio.current){audio.current.currentTime=0;counted.current=false;void audio.current.play().catch(e=>setError(String(e)))}
-  else start(queue[index],queue)
- }
- const importFolder=async()=>{setBusy(true);setError('');try{const result=await rpc('library.import',undefined);if(result){setNotice(result.imported+' morceaux indexés'+(result.errors.length?' · '+result.errors.length+' fichiers ignorés':''));await refresh()}}catch(e){setError(String(e))}finally{setBusy(false)}}
- const favorite=async(t:Track)=>{try{await rpc('track.favorite',{id:t.id});await refresh()}catch(e){setError(String(e))}}
- const createPlaylist=async()=>{try{const id=await rpc('playlist.create',{name:playlistName,rule:rule||undefined});setCreating(false);setPlaylistName('');setRule('');await refresh();setView('playlist:'+id)}catch(e){setError(String(e))}}
- const titles:Record<string,string>={albums:'Vos albums',tracks:'Tous les morceaux',artists:'Les artistes',favorites:'Les favoris',history:'Dernières écoutes',duplicates:'Doublons possibles',android:'Votre musique, en voyage'}
- const title=titles[view]||data.playlists.find(p=>'playlist:'+p.id===view)?.name||'Playlist'
- const nav=[{id:'albums',label:'Albums',icon:Disc3},{id:'tracks',label:'Morceaux',icon:Music2},{id:'artists',label:'Artistes',icon:Library},{id:'favorites',label:'Favoris',icon:Heart},{id:'history',label:'Historique',icon:History},{id:'duplicates',label:'Doublons possibles',icon:ListMusic},{id:'android',label:'Android',icon:Smartphone}]
- return <div className="app-shell">
-  <aside className="sidebar"><div className="brand"><Disc3/><span>sillage<span className="brand-dot">.</span></span></div><p className="eyebrow">VOTRE COLLECTION</p>
-  <nav>{nav.map(n=><Button key={n.id} variant={view===n.id?'secondary':'ghost'} className="nav-item" onClick={()=>setView(n.id)}><n.icon data-icon="inline-start"/>{n.label}{n.id==='favorites' && <span className="nav-count">{data.tracks.filter(t=>t.favorite).length}</span>}</Button>)}</nav>
-  <div className="playlist-heading"><p className="eyebrow">PLAYLISTS</p><Button variant="ghost" size="icon" aria-label="Créer une playlist" onClick={()=>setCreating(!creating)}><Plus/></Button></div>
-  {creating && <div className="playlist-form"><Input aria-label="Nom de la playlist" placeholder="Nom de la playlist" value={playlistName} onChange={e=>setPlaylistName(e.target.value)}/><select aria-label="Règle automatique par genre" value={rule} onChange={e=>setRule(e.target.value)}><option value="">Playlist classique</option>{genres.map(g=><option key={g}>{g}</option>)}</select><Button size="sm" disabled={!playlistName.trim()} onClick={()=>void createPlaylist()}>Créer</Button></div>}
-  <div className="playlists">{data.playlists.map(p=><Button key={p.id} variant={view==='playlist:'+p.id?'secondary':'ghost'} className="nav-item" onClick={()=>setView('playlist:'+p.id)}><ListMusic/>{p.name}{p.rule && <span title="Automatique">✦</span>}</Button>)}</div>
-  <div className="sidebar-bottom"><div className="local-status"><span/> Bibliothèque locale</div><small>{data.folders.length} dossier(s) surveillé(s)</small><Button variant="outline" disabled={busy} onClick={()=>void importFolder()}><FolderPlus/>{busy?'Indexation…':'Ajouter un dossier'}</Button></div></aside>
-  <main><header><span className="breadcrumb">Ma musique <span>/ {title}</span></span><div className="search"><Input aria-label="Rechercher dans la bibliothèque" placeholder="Rechercher un titre, un artiste, un album…" value={search} onChange={e=>setSearch(e.target.value)}/></div><Button variant="ghost" size="icon" aria-label="Actualiser" onClick={()=>void refresh()}><RefreshCw/></Button></header>
-  <div className="content"><section className="intro"><div><p className="eyebrow">CHEZ VOUS. À VOUS.</p><h1>{title}<span className="brand-dot">.</span></h1><p className="muted">{tracks.length} morceaux · {albums.length} albums · {clock(tracks.reduce((a,t)=>a+t.duration,0))} de musique</p></div><Badge variant="outline">LOCAL & INDÉPENDANT</Badge></section>
-  {error && <div role="alert" className="error">{error}<Button variant="ghost" size="sm" onClick={()=>setError('')}>Fermer</Button></div>}
-  {notice && <p role="status" className="notice">{notice}</p>}
-  {view==='android'?<section className="empty"><Smartphone/><h2>Emportez votre collection.</h2><p>La synchronisation Android arrive dans la prochaine étape.</p><p className="muted">Comparaison PC / téléphone, aperçu des fichiers manquants,<br/>puis transfert USB et KDE Connect.</p><Badge variant="secondary">Module à développer</Badge></section>:<>
-  <div className="filters"><div className="flex gap-3"><select aria-label="Filtrer par genre" value={genre} onChange={e=>setGenre(e.target.value)}><option value="">Tous les genres</option>{genres.map(g=><option key={g}>{g}</option>)}</select><select aria-label="Filtrer par artiste" value={artist} onChange={e=>setArtist(e.target.value)}><option value="">Tous les artistes</option>{artists.map(a=><option key={a}>{a}</option>)}</select></div><div className="flex items-center gap-2"><ArrowDownUp size={14}/><select aria-label="Trier les morceaux" value={sort} onChange={e=>setSort(e.target.value)}><option value="artist">Artiste</option><option value="album">Album</option><option value="title">Titre</option><option value="year">Année</option><option value="plays">Écoutes</option></select></div></div>
-  {!tracks.length?<section className="empty"><Disc3/><h2>{data.tracks.length?'Aucun morceau ici.':'Une place pour toute votre musique.'}</h2><p>{data.tracks.length?'Ajustez vos filtres ou ajoutez des morceaux à cette playlist.':'Ajoutez votre dossier de musique. Vos albums, vos pochettes et vos tags trouveront leur place ici.'}</p><Button disabled={busy} onClick={()=>void importFolder()}><FolderPlus/>Ajouter un dossier</Button></section>:view==='albums'?<div className="album-grid">{albums.map(list=><button className="album" key={list[0].artist+'|'+list[0].album} onClick={()=>start(list[0],list)}><div className="artwork"><Cover track={list[0]} large/><span className="album-play"><Play size={20} fill="currentColor"/></span></div><strong>{list[0].album}</strong><span>{list[0].artist}</span><small>{list[0].year||'Année inconnue'} · {list.length} titres</small></button>)}</div>:view==='artists'?<div className="artist-grid">{artists.filter(a=>tracks.some(t=>t.artist===a)).map(a=><button key={a} className="artist" onClick={()=>{setArtist(a);setView('tracks')}}><Cover track={tracks.find(t=>t.artist===a)} large/><h2>{a}</h2><p>{tracks.filter(t=>t.artist===a).length} morceaux</p></button>)}</div>:<table><thead><tr><th>#</th><th>Titre</th><th>Album</th><th>Genre</th><th>Durée</th><th>Actions</th></tr></thead><tbody>{tracks.map((t,i)=><tr key={t.id} className={cn(current?.id===t.id && 'is-current')} onDoubleClick={()=>start(t)}><td><Button variant="ghost" size="icon" aria-label={'Lire '+t.title} onClick={()=>start(t)}>{current?.id===t.id && playing?<Volume2/>:<Play/>}</Button></td><td><div className="track-cell"><Cover track={t}/><div><strong>{t.title}</strong><small>{t.artist}</small></div></div></td><td>{t.album}</td><td>{t.genre}</td><td>{clock(t.duration)}</td><td><div className="flex gap-2"><Button variant="ghost" size="icon" aria-label={t.favorite?'Retirer des favoris':'Ajouter aux favoris'} onClick={()=>void favorite(t)}><Heart fill={t.favorite?'currentColor':'none'}/></Button><select aria-label={'Ajouter '+t.title+' à une playlist'} value="" onChange={e=>{void rpc('playlist.add',{playlistId:Number(e.target.value),trackId:t.id}).then(()=>setNotice('Morceau ajouté à la playlist')).then(refresh).catch(e=>setError(String(e)))}}><option value="">＋ Playlist</option>{data.playlists.filter(p=>!p.rule).map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></div></td></tr>)}</tbody></table>}
-  {view==='duplicates' && <p className="muted">Comparaison indicative par titre, artiste et durée arrondie. Aucun fichier supprimé.</p>}
-  </>}</div></main>
-  {showQueue && <aside className="queue"><div className="flex items-center justify-between"><h2>File d’attente</h2><Button variant="ghost" size="sm" onClick={()=>setShowQueue(false)}>Fermer</Button></div>{queue.length?queue.map((t,i)=><button key={t.id+':'+i} className={cn('queue-track',current?.id===t.id && 'is-current')} onClick={()=>start(t,queue)}><Cover track={t}/><span>{t.title}<small>{t.artist}</small></span></button>):<p className="muted">Lancez un album ou un morceau.</p>}</aside>}
-  <footer><div className="now-playing"><Cover track={current}/><div><strong>{current?.title||'Le prochain coup de cœur'}</strong><small>{current?.artist||'Votre collection vous attend'}</small></div>{current && <Button variant="ghost" size="icon" aria-label="Favori" onClick={()=>void favorite(current)}><Heart fill={data.tracks.find(t=>t.id===current.id)?.favorite?'currentColor':'none'}/></Button>}</div>
-  <div className="transport"><div className="transport-buttons"><Button variant="ghost" size="icon" aria-label="Aléatoire" aria-pressed={shuffle} onClick={()=>setShuffle(!shuffle)} className={cn(shuffle && 'enabled')}><Shuffle/></Button><Button variant="ghost" size="icon" aria-label="Précédent" disabled={!current} onClick={()=>next(-1)}><SkipBack/></Button><Button size="icon" aria-label={playing?'Pause':'Lecture'} disabled={!current} onClick={()=>{if(playing) audio.current?.pause();else void audio.current?.play().catch(e=>setError(String(e)))}}>{playing?<Pause/>:<Play/>}</Button><Button variant="ghost" size="icon" aria-label="Suivant" disabled={!current} onClick={()=>next()}><SkipForward/></Button><Button variant="ghost" size="icon" aria-label="Répéter la file" aria-pressed={repeat} onClick={()=>setRepeat(!repeat)} className={cn(repeat && 'enabled')}><Repeat/></Button><Button variant="ghost" size="icon" aria-label="Arrêter" disabled={!current} onClick={()=>{audio.current?.pause();if(audio.current) audio.current.currentTime=0;setPosition(0)}}><Square/></Button></div><div className="timeline"><span>{clock(position)}</span><input aria-label="Position de lecture" type="range" min="0" max={current?.duration||1} step=".1" value={position} onChange={e=>{if(audio.current) audio.current.currentTime=Number(e.target.value);setPosition(Number(e.target.value))}}/><span>{clock(current?.duration||0)}</span></div></div>
-  <div className="volume"><Button variant="ghost" size="icon" aria-label="File d’attente" onClick={()=>setShowQueue(!showQueue)}><ListMusic/></Button><Volume2 size={18}/><input aria-label="Volume" type="range" min="0" max="1" step=".01" value={volume} onChange={e=>setVolume(Number(e.target.value))}/></div></footer>
-  <audio ref={audio} src={current?'sillage://audio/'+current.id:undefined} onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)} onTimeUpdate={()=>{const time=audio.current?.currentTime||0;setPosition(time);if(current&&!counted.current&&time>=Math.min(30,current.duration*.5)){counted.current=true;void rpc('track.played',{id:current.id}).catch(e=>setError(String(e)))}}} onEnded={()=>next()} onError={()=>{if(current)setError('Ce fichier ne peut pas être lu. Il est peut-être absent ou son codec n’est pas pris en charge.')}}/>
- </div>
+    const library = useLibrary();
+    const player = usePlayer(library.setError);
+    const [view, setView] = useState("albums");
+    const [search, setSearch] = useState("");
+    const [genre, setGenre] = useState("");
+    const [artist, setArtist] = useState("");
+    const [sort, setSort] = useState("artist");
+    const [playlistIds, setPlaylistIds] = useState<number[]>([]);
+    const [showQueue, setShowQueue] = useState(false);
+    const [selected, setSelected] = useState<number[]>([]);
+    const [editing, setEditing] = useState<Track[]>();
+
+    const genres = useMemo(
+        () => uniqueValues(library.data.tracks, "genre"),
+        [library.data.tracks],
+    );
+    const artists = useMemo(
+        () => uniqueValues(library.data.tracks, "artist"),
+        [library.data.tracks],
+    );
+
+    useEffect(() => {
+        let active = true;
+        if (!view.startsWith("playlist:")) return;
+
+        void rpc("playlist.tracks", { id: Number(view.split(":")[1]) })
+            .then((ids) => {
+                if (active) setPlaylistIds(ids);
+            })
+            .catch(library.reportError);
+
+        return () => {
+            active = false;
+        };
+    }, [view, library.data, library.reportError]);
+
+    const tracks = useMemo(() => {
+        const duplicates = new Map<string, number>();
+
+        for (const track of library.data.tracks) {
+            const key = duplicateKey(track);
+            duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
+        }
+
+        return library.data.tracks
+            .filter((track) => {
+                const searchable = [track.title, track.artist, track.album]
+                    .join(" ")
+                    .toLocaleLowerCase();
+
+                if (search && !searchable.includes(search.toLocaleLowerCase()))
+                    return false;
+                if (genre && track.genre !== genre) return false;
+                if (artist && track.artist !== artist) return false;
+                if (view === "favorites" && !track.favorite) return false;
+                if (view === "history" && !track.lastPlayed) return false;
+                if (view.startsWith("playlist:") && !playlistIds.includes(track.id))
+                    return false;
+                if (
+                    view === "duplicates" &&
+                    (duplicates.get(duplicateKey(track)) ?? 0) < 2
+                )
+                    return false;
+
+                return true;
+            })
+            .sort((first, second) => {
+                if (view === "history") return second.lastPlayed - first.lastPlayed;
+                if (sort === "year") return second.year - first.year;
+                if (sort === "plays") return second.plays - first.plays;
+
+                const field = sort as "artist" | "album" | "title";
+                return first[field].localeCompare(second[field]);
+            });
+    }, [library.data.tracks, search, genre, artist, view, playlistIds, sort]);
+
+    const albums = useMemo(() => groupAlbums(tracks), [tracks]);
+    const title =
+        viewTitles[view] ??
+        library.data.playlists.find(
+            (playlist) => "playlist:" + playlist.id === view,
+        )?.name ??
+        "Playlist";
+    const current =
+        library.data.tracks.find((track) => track.id === player.current?.id) ??
+        player.current;
+    const selectedTracks = tracks.filter((track) => selected.includes(track.id));
+
+    function navigate(nextView: string) {
+        setView(nextView);
+        setSelected([]);
+        setPlaylistIds([]);
+        setArtist("");
+        setGenre("");
+    }
+
+    async function tagsSaved(message: string) {
+        await library.refresh();
+        library.setNotice(message);
+    }
+
+    function renderCollection() {
+        if (!tracks.length) {
+            return (
+                <EmptyState
+                    icon={Disc3}
+                    title={
+                        library.data.tracks.length
+                            ? "Nothing here yet"
+                            : "All your music. One place."
+                    }
+                    description={
+                        library.data.tracks.length
+                            ? "Try different filters or add songs to this playlist."
+                            : "Bring your favorite albums, hidden gems, and everything in between. Start with a music folder."
+                    }
+                >
+                    <Button
+                        disabled={library.busy}
+                        onClick={() => void library.importFolder()}
+                    >
+                        <FolderPlus/>
+                        Add music folder
+                    </Button>
+                </EmptyState>
+            );
+        }
+
+        if (view === "albums")
+            return (
+                <AlbumGrid albums={albums} onPlay={player.start} onEdit={setEditing}/>
+            );
+
+        if (view === "artists") {
+            return (
+                <div className="artist-grid">
+                    {uniqueValues(tracks, "artist").map((name) => (
+                        <button
+                            key={name}
+                            className="artist"
+                            onClick={() => {
+                                setArtist(name);
+                                setView("tracks");
+                            }}
+                        >
+                            <Cover
+                                track={tracks.find((track) => track.artist === name)}
+                                large
+                            />
+                            <h2>{name}</h2>
+                            <p>
+                                Artist ·{" "}
+                                {tracks.filter((track) => track.artist === name).length} songs
+                            </p>
+                        </button>
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <TrackTable
+                tracks={tracks}
+                playlists={library.data.playlists}
+                currentId={current?.id}
+                playing={player.playing}
+                selected={selected}
+                onSelect={setSelected}
+                onPlay={(track) => player.start(track, tracks)}
+                onFavorite={(track) => void library.favorite(track)}
+                onEdit={setEditing}
+                onAdd={(playlistId, trackId) =>
+                    void library.addToPlaylist(playlistId, trackId)
+                }
+            />
+        );
+    }
+
+    return (
+        <div className="app-shell">
+            <Sidebar
+                data={library.data}
+                view={view}
+                genres={genres}
+                busy={library.busy}
+                onNavigate={navigate}
+                onImport={() => void library.importFolder()}
+                onRefresh={library.refresh}
+                onError={library.reportError}
+            />
+
+            <main>
+                <header className="topbar">
+                    <div className="page-context">
+                        <Headphones size={20}/>
+                        <span>Your music</span>
+                    </div>
+                    <div className="search">
+                        <Search size={21} aria-hidden="true"/>
+                        <Input
+                            aria-label="Search your library"
+                            placeholder="What do you want to listen to?"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                        />
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Refresh library"
+                        onClick={() => void library.refresh().catch(library.reportError)}
+                    >
+                        <RefreshCw/>
+                    </Button>
+                    <div className="profile-avatar" title="Local library">
+                        B
+                    </div>
+                </header>
+
+                <div className="library-hero">
+                    <p className="eyebrow">Made of everything you love</p>
+                    <h1>{title}</h1>
+                    <p>
+                        {tracks.length} songs <span>•</span> {albums.length} albums{" "}
+                        <span>•</span> Always yours
+                    </p>
+                </div>
+
+                <div className="content">
+                    {library.error && (
+                        <Alert variant="destructive">
+                            <AlertDescription>
+                                {library.error}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => library.setError("")}
+                                >
+                                    Dismiss
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {library.notice && (
+                        <p role="status" className="notice">
+                            {library.notice}
+                        </p>
+                    )}
+
+                    {view === "android" ? (
+                        <EmptyState
+                            icon={Smartphone}
+                            title="Take your music with you"
+                            description="Compare your computer and phone, find missing songs, and sync over USB or KDE Connect."
+                        >
+                            <Badge variant="secondary">Coming next</Badge>
+                        </EmptyState>
+                    ) : (
+                        <>
+                            <div className="collection-toolbar">
+                                <Button
+                                    size="icon"
+                                    className="collection-play"
+                                    aria-label="Play visible songs"
+                                    disabled={!tracks.length}
+                                    onClick={() => player.start(tracks[0], tracks)}
+                                >
+                                    <Play fill="currentColor"/>
+                                </Button>
+                                <span className="muted">Your collection, without limits.</span>
+                                {!!selectedTracks.length && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setEditing(selectedTracks)}
+                                    >
+                                        <Pencil/>
+                                        Edit tags ({selectedTracks.length})
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div className="filters">
+                                <div className="flex gap-3">
+                                    <FilterSelect
+                                        label="Filter by genre"
+                                        placeholder="All genres"
+                                        value={genre}
+                                        options={genres.map((name) => ({
+                                            value: name,
+                                            label: name,
+                                        }))}
+                                        onChange={setGenre}
+                                    />
+                                    <FilterSelect
+                                        label="Filter by artist"
+                                        placeholder="All artists"
+                                        value={artist}
+                                        options={artists.map((name) => ({
+                                            value: name,
+                                            label: name,
+                                        }))}
+                                        onChange={setArtist}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <ArrowDownUp size={14}/>
+                                    <FilterSelect
+                                        label="Sort songs"
+                                        placeholder="Artist"
+                                        value={sort}
+                                        options={sortOptions}
+                                        onChange={(value) => setSort(value || "artist")}
+                                    />
+                                </div>
+                            </div>
+
+                            {renderCollection()}
+
+                            {view === "duplicates" && (
+                                <p className="muted">
+                                    Matches use title, artist, and rounded duration. No files are
+                                    deleted.
+                                </p>
+                            )}
+                        </>
+                    )}
+                </div>
+            </main>
+
+            {showQueue && (
+                <QueuePanel player={player} onClose={() => setShowQueue(false)}/>
+            )}
+            <PlayerBar
+                player={player}
+                current={current}
+                onFavorite={(track) => void library.favorite(track)}
+                onQueue={() => setShowQueue(!showQueue)}
+            />
+            {editing && (
+                <TagEditor
+                    tracks={editing}
+                    onClose={() => setEditing(undefined)}
+                    onSaved={tagsSaved}
+                />
+            )}
+
+            <audio
+                ref={player.audio}
+                src={
+                    player.current ? "btunes://audio/" + player.current.id : undefined
+                }
+                onPlay={() => player.setPlaying(true)}
+                onPause={() => player.setPlaying(false)}
+                onTimeUpdate={player.updateTime}
+                onEnded={() => player.next()}
+                onError={() => {
+                    if (player.current)
+                        library.setError(
+                            "Unable to play this file. It may be missing or use an unsupported codec.",
+                        );
+                }}
+            />
+        </div>
+    );
 }
