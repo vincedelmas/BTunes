@@ -102,6 +102,15 @@ app.on('browser-window-created', (_, win) => {
     await waitFor(()=>button('Downloads'));
     button('Downloads').click();
     await waitFor(()=>document.querySelector('.download-row')?.textContent.includes('Fixture Song'));
+    const search=document.querySelector('.sidebar [aria-label="Search your library"]');
+    if(!search)throw new Error('Sidebar search is missing');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(search,'Nothing matches');
+    search.dispatchEvent(new Event('input',{bubbles:true}));
+    await waitFor(()=>!document.querySelector('.download-row'));
+    if(document.querySelector('h1').textContent!=='Downloads')throw new Error('Download search navigated away');
+    document.querySelector('[aria-label="Clear search"]').click();
+    await waitFor(()=>document.querySelector('.download-row')?.textContent.includes('Fixture Song'));
+
     window.downloaderWaitFor=waitFor;
     document.querySelector('button[aria-label="Download settings"]').click();
     await waitFor(()=>document.querySelector('[role="tab"][aria-selected="true"]')?.textContent==='Downloads');
@@ -196,7 +205,7 @@ app.on('browser-window-created', (_, win) => {
     await window.downloaderWaitFor(()=>document.querySelector('.tag-editor'));
     if(button('Find a cover') || !button('Choose image'))throw new Error('Library editing must use local artwork, not online lookup');
    })()`);
-            console.log('Downloader UI passed: automatic online enrichment, review, embedded artwork, library publication, archive deduplication, local-only library editor.');
+            console.log('Downloader UI passed: automatic online enrichment, review, embedded artwork, library publication, archive deduplication, library editor.');
             finish(0);
         } catch (error) {
             console.error(error);

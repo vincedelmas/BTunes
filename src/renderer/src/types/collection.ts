@@ -1,3 +1,9 @@
+import type {useCollection} from "@/hooks/use-collection";
+
+
+export type CollectionState = ReturnType<typeof useCollection>;
+
+
 export interface CollectionLocation {
     view: string;
     search: string;

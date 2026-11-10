@@ -1,12 +1,13 @@
-import {rpc} from "@/lib/rpc";
 import {useState} from "react";
+import {Settings} from "lucide-react";
+import {cn} from "@/lib/utils";
 import {Button} from "@/components/ui/button";
-import type {Playlist, Snapshot} from "../../../../shared/types/library";
-import {PlaylistForm} from "@/components/library/playlist-form";
-import {PlaylistItem} from "@/components/library/playlist-item";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
-import {ListMusic, Settings, Plus} from "lucide-react";
-import {navigationItems} from "@/lib/sidebar-navigation";
+import {PlaylistBrowser} from "@/components/library/playlist-browser";
+import {SidebarNowPlaying} from "@/components/player/sidebar-now-playing";
+import {navigationGroups, navigationItems} from "@/lib/sidebar-navigation";
+import type {Snapshot, Track} from "../../../../shared/types/library";
+import type {TrackActions} from "@/types/track-actions";
+import {LibrarySearch} from "@/components/library/library-search";
 import type {SidebarLayout} from "@/types/sidebar";
 
 
@@ -15,6 +16,14 @@ interface SidebarProps {
     layout: SidebarLayout;
     data: Snapshot;
     genres: string[];
+    current?: Track;
+    search: string;
+    onSearch: (value: string) => void;
+    onClearSearch: () => void;
+    actions: TrackActions;
+    artworkExpanded: boolean;
+    onArtworkToggle: () => void;
+    onReveal: () => void;
     onSettings: () => void;
     onRefresh: () => Promise<void>;
     onError: (error: unknown) => void;
@@ -22,166 +31,85 @@ interface SidebarProps {
 }
 
 
-export function Sidebar({ data, view, layout, genres, onNavigate, onSettings, onRefresh, onError }: SidebarProps) {
-    const [creating, setCreating] = useState(false);
-    const [editing, setEditing] = useState<Playlist>();
-    const [deleting, setDeleting] = useState<Playlist>();
-    const [removing, setRemoving] = useState(false);
-
-    async function deletePlaylist() {
-        if (!deleting) return;
-        setRemoving(true);
-
-        try {
-            await rpc("playlist.delete", { id: deleting.id });
-            if (view === "playlist:" + deleting.id) onNavigate("tracks");
-
-            await onRefresh();
-            setDeleting(undefined);
-        }
-        catch (error) {
-            onError(error);
-        }
-        finally {
-            setRemoving(false);
-        }
-    }
+export function Sidebar({ data, view, layout, genres, current, artworkExpanded, onArtworkToggle, onReveal, onNavigate, onSettings, onRefresh, onError, search, onSearch, onClearSearch, actions }: SidebarProps) {
+    const [playlistsOpen, setPlaylistsOpen] = useState(false);
 
     return (
-        <aside className="sidebar bg-canvas rounded-xl flex flex-col pt-6 px-3 pb-3 min-h-0">
-            <div
-                className="brand flex items-center gap-3 mt-0 mx-3 mb-6 shrink-0">
-                <img
-                    className="size-8 grayscale"
-                    src="./icon.svg"
-                    alt=""
-                />
-                <span className="text-xl font-semibold tracking-[-0.04em]">BTunes</span>
-            </div>
-
-            <nav
-                className="flex shrink-0 flex-col gap-1"
-                aria-label="Library navigation"
-            >
-                {layout.navigationIds.map((id) => {
-                    const item = navigationItems.find((entry) => entry.id === id)!;
-                    return (
-                        <Button
-                            key={id}
-                            className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
-                            onClick={() => onNavigate(id)}
-                            variant={view === id ? "secondary" : "ghost"}
-                            aria-current={view === id ? "page" : undefined}
-                        >
-                            <item.icon data-icon="inline-start"/>
-                            {item.label}
-                        </Button>
-                    );
-                })}
-            </nav>
-
-            <div className="playlist-heading flex items-center justify-between border-t border-border/60 pl-3 pt-4 mt-5 mx-0 mb-2 shrink-0">
-                <p className="eyebrow text-xs uppercase tracking-[0.12em] font-semibold text-muted-foreground m-0">Playlists</p>
+        <aside className="sidebar flex min-h-0 flex-col rounded-xl bg-canvas px-3 pb-2 pt-4">
+            <div className="brand mx-2 mb-4 flex shrink-0 items-center gap-2.5">
+                <img className="size-8" src="./icon.svg" alt=""/>
+                <span className="text-xl font-semibold tracking-tight">BTunes</span>
                 <Button
-                    size="icon"
                     variant="ghost"
-                    aria-label="Create playlist"
-                    onClick={() => setCreating(!creating)}
-                >
-                    <Plus/>
-                </Button>
-            </div>
-
-            <div className="playlists overflow-auto flex-1 min-h-0">
-                {layout.playlistIds.map((id) => {
-                    const playlist = data.playlists.find((entry) => String(entry.id) === id)!;
-                    return (
-                        <PlaylistItem
-                            key={id}
-                            playlist={playlist}
-                            active={view === "playlist:" + id}
-                            onNavigate={() => onNavigate("playlist:" + id)}
-                            onEdit={() => setEditing(playlist)}
-                            onDelete={() => setDeleting(playlist)}
-                        />
-                    );
-                })}
-            </div>
-
-            {(creating || editing) && (
-                <Dialog
-                    open
-                    onOpenChange={(open) => {
-                        if (open) return;
-                        setCreating(false);
-                        setEditing(undefined);
-                    }}
-                >
-                    <DialogContent className="playlist-dialog gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-                        <DialogHeader className="bg-linear-to-br from-primary/10 to-card px-7 py-6">
-                            <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <ListMusic className="size-6"/>
-                            </div>
-                            <DialogTitle className="text-2xl font-bold">{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
-                            <DialogDescription>Set a name and choose whether to add songs manually or by genre.</DialogDescription>
-                        </DialogHeader>
-                        <PlaylistForm
-                            key={editing?.id ?? "new"}
-                            playlist={editing}
-                            genres={genres}
-                            onCancel={() => {
-                                setCreating(false);
-                                setEditing(undefined);
-                            }}
-                            onError={onError}
-                            onSaved={async (id) => {
-                                await onRefresh();
-                                if (creating) onNavigate("playlist:" + id);
-                                setCreating(false);
-                                setEditing(undefined);
-                            }}
-                        />
-                    </DialogContent>
-                </Dialog>
-            )}
-
-            {deleting && <Dialog
-                open
-                onOpenChange={(open) => {
-                    if (!open && !removing) setDeleting(undefined);
-                }}
-            >
-                <DialogContent showCloseButton={!removing}>
-                    <DialogHeader>
-                        <DialogTitle>Delete playlist?</DialogTitle>
-                        <DialogDescription>Remove “{deleting.name}”? Your songs and audio files stay in the library.</DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            disabled={removing}
-                            onClick={() => setDeleting(undefined)}
-                        >Cancel</Button>
-                        <Button
-                            variant="destructive"
-                            disabled={removing}
-                            onClick={() => void deletePlaylist()}
-                        >{removing ? "Deleting…" : "Delete playlist"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>}
-
-            <div className="sidebar-bottom mt-auto border-t border-border/60 pt-3 flex flex-col gap-3 shrink-0">
-                <Button
-                    variant={view === "settings" ? "secondary" : "ghost"}
+                    size="icon-sm"
+                    className="ml-auto"
+                    aria-label="Settings"
+                    title="Settings"
                     aria-current={view === "settings" ? "page" : undefined}
-                    className="nav-item w-full justify-start gap-3 h-10 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
                     onClick={onSettings}
                 >
-                    <Settings data-icon="inline-start"/>
-                    Settings
+                    <Settings className={cn(view === "settings" && "text-primary")}/>
+                    <span className="sr-only">Settings</span>
                 </Button>
             </div>
+            <div className="mb-3 shrink-0">
+                <LibrarySearch
+                    value={search}
+                    onChange={onSearch}
+                    onClear={onClearSearch}
+                    placeholder={view === "settings" ? "Search disabled" : "Search this page"}
+                    disabled={view === "settings"}
+                />
+            </div>
+            {playlistsOpen ? <PlaylistBrowser
+                view={view}
+                playlists={data.playlists}
+                layout={layout}
+                genres={genres}
+                onBack={() => setPlaylistsOpen(false)}
+                onNavigate={onNavigate}
+                onRefresh={onRefresh}
+                onError={onError}
+            /> : <div className="min-h-0 flex-1 overflow-y-auto">
+                <nav
+                    className="flex shrink-0 flex-col gap-1"
+                    aria-label="Library navigation"
+                >
+                    {navigationGroups.map((group) => (
+                        <div key={group.id} className={cn("flex flex-col gap-1", group.id !== "library" && "mt-3")}>
+                            {group.id !== "library" && <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{group.label}</p>}
+                            {layout.navigationIds.map((id) => navigationItems.find((item) => item.id === id)!)
+                                .filter((item) => item.group === group.id)
+                                .map((item) => {
+                                    const active = item.id === "playlists" ? view.startsWith("playlist:") : view === item.id;
+
+                                    return (
+                                        <Button
+                                            key={item.id}
+                                            className="nav-item h-9 w-full justify-start gap-3 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
+                                            onClick={() => item.id === "playlists" ? setPlaylistsOpen(true) : onNavigate(item.id)}
+                                            variant={active ? "secondary" : "ghost"}
+                                            aria-current={active ? "page" : undefined}
+                                            aria-label={item.id === "playlists" ? "Open playlists" : undefined}
+                                        >
+                                            <item.icon data-icon="inline-start" className={item.tone}/>
+                                            {item.label}
+                                            {item.id === "playlists" && <span className="ml-auto text-xs text-muted-foreground">{data.playlists.length}</span>}
+                                        </Button>
+                                    );
+                                })}
+                        </div>
+                    ))}
+                </nav>
+            </div>}
+            <SidebarNowPlaying
+                current={current}
+                actions={actions}
+                playlists={data.playlists}
+                expanded={artworkExpanded}
+                onToggle={onArtworkToggle}
+                onReveal={onReveal}
+            />
         </aside>
     );
 }

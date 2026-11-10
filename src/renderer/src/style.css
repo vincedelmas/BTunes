@@ -44,7 +44,9 @@
     --color-accent: var(--accent);
     --color-accent-foreground: var(--foreground);
     --color-destructive: #f49b9b;
-    --color-warning: #e4be79;
+    --color-warning: var(--primary);
+    --color-info: var(--info);
+    --color-success: var(--success);
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--primary);
@@ -56,22 +58,24 @@
     --radius: 8px;
     color-scheme: dark;
     /* Near-black foundations; raised surfaces carry the visual hierarchy. */
-    --canvas: #060708;
-    --background: #0c0e11;
-    --card: #15171b;
-    --popover: #1e2127;
-    --control: #101216;
+    --canvas: #040506;
+    --background: #080a0c;
+    --card: #0e1013;
+    --popover: #121519;
+    --control: #080a0d;
     --foreground: #f3f4f6;
     --content: #c7cdd8;
-    --primary: #f0d5a3;
+    --primary: #ffb547;
     --primary-foreground: #211d15;
-    --secondary: #252a33;
-    --accent: #2d333e;
-    --selection: #342b20;
-    --selection-foreground: #f8e8cd;
+    --secondary: #1a1e24;
+    --accent: #222831;
+    --selection: #34281a;
+    --selection-foreground: #ffe0ac;
     --muted-foreground: #a3aab8;
+    --info: #4ed8c2;
+    --success: #4ed8c2;
     /* Structural separators stay quiet; control outlines remain identifiable. */
-    --border: #343a46;
+    --border: #2a303a;
     --input: #707988;
     font-family: "Inter Variable", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -106,6 +110,31 @@ button:disabled {
 }
 
 @layer base {
+    input[type="range"] {
+        appearance: none;
+        background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(to right, var(--primary) var(--range-fill, 0%), var(--border) var(--range-fill, 0%));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 10px;
+        height: 10px;
+        margin-top: -3.5px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--primary);
+    }
+
+    input[type="range"]:disabled::-webkit-slider-thumb {
+        background: var(--muted-foreground);
+    }
+
     :where(button, a, input, select, textarea, [tabindex]):focus-visible {
         outline: 2px solid var(--primary);
         outline-offset: 2px;

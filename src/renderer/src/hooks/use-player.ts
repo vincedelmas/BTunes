@@ -39,7 +39,7 @@ export function usePlayer(onError: (message: string) => void) {
     const start = (track: Track, tracks: Track[], index?: number) => {
         const nextIndex = index ?? tracks.findIndex((item) => item.id === track.id);
         cursor.current = Math.max(0, nextIndex);
-        setQueue([...tracks]);
+        if (tracks !== queue) setQueue([...tracks]);
         counted.current = false;
 
         if (currentTrack?.id === track.id) {

@@ -8,6 +8,7 @@ import {Play, Volume2} from "lucide-react";
 import type {Playlist, Track} from "../../../../shared/types/library";
 import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import {Button} from "@/components/ui/button";
+import {Cover} from "@/components/cover";
 import {Table, TableBody, TableCell, TableHeader, TableRow} from "@/components/ui/table";
 import {TrackContextMenu} from "@/components/library/track-context-menu";
 import type {TrackActions} from "@/types/track-actions";
@@ -45,10 +46,10 @@ function readColumnSizes(): ColumnSizingState {
 function readColumnVisibility(): ColumnVisibilityState {
     try {
         const stored = JSON.parse(localStorage.getItem(visibilityKey) ?? "{}");
-        return Object.fromEntries(columns.map((column) => [column.id, column.id === "title" || (stored?.[column.id] ?? column.id !== "albumArtist")]));
+        return Object.fromEntries(columns.map((column) => [column.id, column.id === "title" || (stored?.[column.id] ?? (column.id !== "albumArtist" && column.id !== "artwork"))]));
     }
     catch {
-        return {};
+        return { albumArtist: false, artwork: false };
     }
 }
 
@@ -65,6 +66,7 @@ interface TrackTableProps {
     onSelect: Dispatch<SetStateAction<number[]>>;
     actions: TrackActions;
 }
+
 
 export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks, playlists, currentId, playing, selected, sort, onSort, onSelect, actions }: TrackTableProps) {
     "use no memo"; // TanStack Virtual measurements and column resizing update through mutable library state.
@@ -99,14 +101,19 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
         if (container.current) container.current.scrollTop = 0;
     }, [sort.field, sort.descending]);
 
+    const rowHeight = table.getColumn("artwork")?.getIsVisible() ? 48 : 36;
     const virtualizer = useVirtualizer({
         count: tracks.length,
         getScrollElement: () => container.current,
-        estimateSize: () => 36,
+        estimateSize: () => rowHeight,
         getItemKey,
         overscan: 8,
         scrollPaddingStart: 36,
     });
+    useEffect(() => {
+        virtualizer.measure();
+    }, [virtualizer, rowHeight]);
+
     const rows = virtualizer.getVirtualItems();
     const paddingTop = rows[0]?.start ?? 0;
     const paddingBottom = rows.length ? virtualizer.getTotalSize() - rows[rows.length - 1].end : 0;
@@ -120,11 +127,17 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
     useEffect(() => {
         if (revealIndex < 0) return;
         virtualizer.scrollToIndex(revealIndex, { align: "center" });
-        onSelect([tracks[revealIndex].id]);
+        if (reveal?.select !== false) onSelect([tracks[revealIndex].id]);
         onRevealed?.();
-    }, [reveal?.request, revealIndex, tracks, virtualizer, onSelect, onRevealed]);
+    }, [reveal?.request, reveal?.select, revealIndex, tracks, virtualizer, onSelect, onRevealed]);
 
     function renderCell(track: Track, columnId: string) {
+        if (columnId === "artwork") {
+            return <div className="flex justify-center [&_.cover]:size-9 [&_.cover]:rounded [&_.cover_svg]:size-4">
+                <Cover track={track}/>
+            </div>;
+        }
+
         if (columnId === "title") {
             return (
                 <div className="track-cell flex items-center gap-3 min-w-0 [&_strong]:text-foreground [&_strong]:font-medium [&_strong]:text-[13px] [&_strong]:min-w-0">
@@ -229,7 +242,8 @@ export const TrackTable = memo(function TrackTable({ reveal, onRevealed, tracks,
                                     data-track-id={track.id}
                                     aria-rowindex={row.index + 2}
                                     aria-selected={selectedIds.has(track.id)}
-                                    className={cn("group h-9 border-border/60 hover:bg-accent aria-selected:bg-selection aria-selected:shadow-[inset_3px_0_0_var(--primary)]", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
+                                    style={{ height: rowHeight }}
+                                    className={cn("group border-border/60 hover:bg-accent aria-selected:bg-selection aria-selected:shadow-[inset_3px_0_0_var(--primary)]", currentId === track.id && "is-current text-primary [&_.track-cell_strong]:text-primary [&_.track-row-play]:opacity-100")}
                                     tabIndex={0}
                                     onClick={(ev) => {
                                         if (!(ev.target as HTMLElement).closest("button")) selection.select(track.id, ev);

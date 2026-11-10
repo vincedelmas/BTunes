@@ -18,11 +18,12 @@ interface CoverSearchProps {
     query: string;
     disabled: boolean;
     selected?: ArtworkCandidate;
+    triggerOnly?: boolean;
     onSelect: (candidate: ArtworkCandidate | undefined) => void;
 }
 
 
-export function CoverSearch({ query, track, selected, disabled, onSelect }: CoverSearchProps) {
+export function CoverSearch({ query, track, selected, disabled, onSelect, triggerOnly = false }: CoverSearchProps) {
     const searchId = useRef(0);
     const [error, setError] = useState("");
     const [busy, setBusy] = useState(false);
@@ -57,36 +58,29 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
     }
 
     return (
-        <section
-            className="mt-6 flex items-center gap-4 rounded-xl border border-border bg-background p-4"
-            aria-label="Album artwork"
-        >
-            <div className="shrink-0 [&_.cover]:size-16 [&_.cover]:rounded-lg">
-                <Cover
-                    track={track}
-                    source={selected?.thumbnail}
-                />
-            </div>
-            <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold">
-                    Album artwork
-                </h3>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {selected
-                        ? "Cover selected · embedded when saved"
-                        : "Search using this song’s tags"
-                    }
-                </p>
-            </div>
-            <Button
-                variant="secondary"
-                size="lg"
-                disabled={disabled}
-                onClick={findCovers}
+        <>
+            {!triggerOnly && <section
+                className="mt-5 flex items-center gap-4 rounded-xl border border-border bg-background p-4"
+                aria-label="Album artwork"
             >
-                <ImagePlus data-icon="inline-start"/>
-                {selected ? "Change cover" : "Find a cover"}
-            </Button>
+                <div className="shrink-0 [&_.cover]:size-16 [&_.cover]:rounded-lg">
+                    <Cover track={track} source={selected?.thumbnail}/>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold">Album artwork</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {selected ? "Cover selected · embedded when saved" : "Search using this song’s tags"}
+                    </p>
+                </div>
+                <Button variant="secondary" disabled={disabled} onClick={findCovers}>
+                    <ImagePlus data-icon="inline-start"/>
+                    {selected ? "Change cover" : "Find a cover"}
+                </Button>
+            </section>}
+            {triggerOnly && <Button variant="secondary" disabled={disabled} onClick={findCovers}>
+                <Search data-icon="inline-start"/>
+                Find online
+            </Button>}
             <Dialog
                 open={open}
                 onOpenChange={setOpen}
@@ -255,6 +249,6 @@ export function CoverSearch({ query, track, selected, disabled, onSelect }: Cove
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </section>
+        </>
     );
 }

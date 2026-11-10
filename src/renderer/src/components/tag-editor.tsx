@@ -1,8 +1,9 @@
+import {coverSearchQuery} from "@/lib/artwork";
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Check} from "lucide-react";
 import {Cover} from "@/components/cover";
-import {LocalArtworkPicker} from "@/components/local-artwork-picker";
+import {ArtworkPicker} from "@/components/artwork-picker";
 import {getErrorMessage} from "../../../shared/errors";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -151,7 +152,8 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                         onToggle={toggle}
                     />
 
-                    <LocalArtworkPicker
+                    <ArtworkPicker
+                        query={coverSearchQuery(first.title, values)}
                         track={first}
                         selected={artwork}
                         disabled={busy}

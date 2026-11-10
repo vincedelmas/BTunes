@@ -1,6 +1,6 @@
 import type {SidebarLayout} from "@/types/sidebar";
 import {useDragOrder} from "@/hooks/use-drag-order";
-import {navigationItems} from "@/lib/sidebar-navigation";
+import {navigationGroups, navigationItems} from "@/lib/sidebar-navigation";
 import {ReorderHandle} from "@/components/reorder-handle";
 import type {Playlist} from "../../../shared/types/library";
 import {SettingsSection} from "@/components/settings/settings-section";
@@ -54,21 +54,32 @@ interface SidebarOrderSettingsProps {
 
 
 export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettingsProps) {
+    const orderedItems = layout.navigationIds.map((id) => navigationItems.find((item) => item.id === id)!);
+
+    function reorderNavigation(groupId: string, ids: string[]) {
+        const order = navigationGroups.flatMap((group) => {
+            if (group.id === groupId) return ids;
+            return orderedItems.filter((item) => item.group === group.id).map((item) => item.id);
+        });
+
+        layout.setNavigationOrder(order);
+    }
+
     return (
         <SettingsSection
             title="Sidebar order"
-            description="Drag items to reorder them. Changes are saved automatically."
+            description="Reorder items within Navigation, Collections, and Transfer & sync. Changes are saved automatically."
         >
             <div className="sidebar-order-settings grid gap-7 md:grid-cols-2">
-                <OrderList
-                    title="Navigation"
-                    group="navigation item"
-                    onChange={layout.setNavigationOrder}
-                    items={layout.navigationIds.map((id) => ({
-                        id,
-                        label: navigationItems.find((item) => item.id === id)!.label,
-                    }))}
-                />
+                {navigationGroups.map((group) => (
+                    <OrderList
+                        key={group.id}
+                        title={group.label}
+                        group={group.id}
+                        onChange={(ids) => reorderNavigation(group.id, ids)}
+                        items={orderedItems.filter((item) => item.group === group.id)}
+                    />
+                ))}
                 {playlists.length > 0 &&
                     <OrderList
                         group="playlist"

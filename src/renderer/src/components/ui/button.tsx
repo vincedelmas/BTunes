@@ -13,6 +13,7 @@ const buttonVariants = cva(
                     "border-input bg-control hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
                 secondary:
                     "bg-secondary text-secondary-foreground hover:bg-accent aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+                plain: "text-content hover:text-foreground aria-pressed:text-primary",
                 ghost:
                     "hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
                 destructive:

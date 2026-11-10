@@ -1,4 +1,6 @@
+import {PageHeader} from "@/components/page-header";
 import {useState} from "react";
+import type {ReactNode} from "react";
 import {ArrowDownToLine, Bookmark, RefreshCw, Settings, Square, X} from "lucide-react";
 import {useDownloads} from "@/hooks/use-downloads";
 import {useListSelection} from "@/hooks/use-list-selection";
@@ -12,6 +14,7 @@ import {canDownload} from "@/lib/downloads";
 import {DownloadRow} from "@/components/downloads/download-row";
 
 interface DownloadsPageProps {
+    visualizer: ReactNode;
     query: string;
     genres: string[];
     onSettings: () => void;
@@ -19,21 +22,23 @@ interface DownloadsPageProps {
 }
 
 
-export function DownloadsPage({ query, genres, onSettings, onSaved }: DownloadsPageProps) {
+export function DownloadsPage({ visualizer, query, genres, onSettings, onSaved }: DownloadsPageProps) {
     const downloads = useDownloads();
     const [filter, setFilter] = useState("");
     const [selected, setSelected] = useState<string[]>([]);
     const [reviewing, setReviewing] = useState<string>();
     const snapshot = downloads.snapshot;
+    const search = query.trim().toLowerCase();
     const items = (snapshot?.items ?? []).filter((item) => {
-        if (query && ![item.title, item.artist, item.name].join(" ").toLowerCase().includes(query.toLowerCase())) return false;
+        if (search && ![item.title, item.artist, item.name].join(" ").toLowerCase().includes(search)) return false;
         if (filter === "available") return canDownload(item);
         if (filter === "review") return item.status === "review";
         if (filter === "done") return item.status === "done";
         return true;
     });
     const selection = useListSelection(items.map((item) => item.id), selected, setSelected);
-    const visibleSelection = new Set(items.filter((item) => selected.includes(item.id)).map((item) => item.id));
+    const selectedIds = new Set(selected);
+    const visibleSelection = new Set(items.filter((item) => selectedIds.has(item.id)).map((item) => item.id));
     const available = items.filter((item) => canDownload(item) && (!visibleSelection.size || visibleSelection.has(item.id)));
     const review = snapshot?.items.find((item) => item.id === reviewing);
     const total = snapshot?.items.length ?? 0;
@@ -41,20 +46,28 @@ export function DownloadsPage({ query, genres, onSettings, onSaved }: DownloadsP
 
     return (
         <div className="downloads-page flex min-h-0 flex-1 flex-col gap-3">
-            <div className="flex shrink-0 flex-wrap items-center gap-3">
-                <p className="mr-auto text-xs text-muted-foreground">
-                    {total.toLocaleString("en")} {total === 1 ? "bookmarked song" : "bookmarked songs"}
-                    {reviewCount > 0 && <span className="ml-3 text-primary">{reviewCount} ready to review</span>}
-                </p>
-                {visibleSelection.size > 0 && <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelected([])}
-                >
-                    <X data-icon="inline-start"/>
-                    Clear selection ({visibleSelection.size})
-                </Button>}
-            </div>
+            <PageHeader
+                visualizer={visualizer}
+                title="Downloads"
+                details={<span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>{total.toLocaleString("en")} {total === 1 ? "bookmarked song" : "bookmarked songs"}</span>
+                    {reviewCount > 0 && <span className="text-success">{reviewCount} ready to review</span>}
+                </span>}
+                actions={<>
+                    <Button
+                        variant="ghost"
+                        disabled={snapshot?.busy || snapshot?.scanning}
+                        onClick={() => void downloads.refresh()}
+                    >
+                        <RefreshCw data-icon="inline-start"/>
+                        {snapshot?.scanning ? "Scanning…" : "Refresh bookmarks"}
+                    </Button>
+                    <Button variant="outline" aria-label="Download settings" onClick={onSettings}>
+                        <Settings data-icon="inline-start"/>
+                        Download settings
+                    </Button>
+                </>}
+            />
             <div className="flex shrink-0 flex-wrap items-center gap-3">
                 <Button
                     disabled={!available.length || snapshot?.busy || snapshot?.scanning}
@@ -70,14 +83,6 @@ export function DownloadsPage({ query, genres, onSettings, onSaved }: DownloadsP
                     <Square data-icon="inline-start"/>
                     Stop downloads
                 </Button>}
-                <Button
-                    variant="ghost"
-                    disabled={snapshot?.busy || snapshot?.scanning}
-                    onClick={() => void downloads.refresh()}
-                >
-                    <RefreshCw data-icon="inline-start"/>
-                    {snapshot?.scanning ? "Scanning…" : "Refresh bookmarks"}
-                </Button>
                 <FilterSelect
                     className="ml-auto"
                     label="Download status"
@@ -86,14 +91,14 @@ export function DownloadsPage({ query, genres, onSettings, onSaved }: DownloadsP
                     placeholder="All statuses"
                     options={[{ value: "available", label: "Available / retry" }, { value: "review", label: "Ready to review" }, { value: "done", label: "In your library" }]}
                 />
-                <Button
-                    size="icon"
+                {visibleSelection.size > 0 && <Button
+                    size="sm"
                     variant="ghost"
-                    aria-label="Download settings"
-                    onClick={onSettings}
+                    onClick={() => setSelected([])}
                 >
-                    <Settings/>
-                </Button>
+                    <X data-icon="inline-start"/>
+                    Clear selection ({visibleSelection.size})
+                </Button>}
             </div>
             {(downloads.error || snapshot?.error) && <Alert variant="destructive">
                 <AlertDescription>{downloads.error || snapshot?.error}</AlertDescription>

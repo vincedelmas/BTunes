@@ -1,42 +1,46 @@
-import {useAppUpdates} from "@/hooks/use-app-updates";
-import {UpdateNotification} from "@/components/update-notification";
-import {DownloadsPage} from "@/components/downloads/downloads-page";
+import {useEffect, useRef, useState} from "react";
+
 import {DevicesPage} from "@/components/devices/devices-page";
-import {SongDropZone} from "@/components/library/song-drop-zone";
-import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
-import type {OpenedCollection} from "@/types/collection";
-import {useItemReveal} from "@/hooks/use-item-reveal";
-import {albumKey, getAlbumArtist} from "@/lib/music";
-import {useEffect, useState} from "react";
-import {usePlayer} from "@/hooks/use-player";
-import {Button} from "@/components/ui/button";
-import {useLibrary} from "@/hooks/use-library";
-import {TagEditor} from "@/components/tag-editor";
+import {DownloadsPage} from "@/components/downloads/downloads-page";
+import {LibraryPage} from "@/components/library/library-page";
 import {Sidebar} from "@/components/library/sidebar";
-import {useCollection} from "@/hooks/use-collection";
-import type {Track} from "../../shared/types/library";
-import {SettingsPage} from "@/components/settings-page";
-import type {TrackActions} from "@/types/track-actions";
-import {PlayerBar} from "@/components/player/player-bar";
-import {FilterBar} from "@/components/library/filter-bar";
-import {AlbumGrid} from "@/components/library/album-grid";
-import {QueuePanel} from "@/components/player/queue-panel";
-import {ArtistGrid} from "@/components/library/artist-grid";
-import {TrackTable} from "@/components/library/track-table";
-import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
-import {Alert, AlertDescription} from "@/components/ui/alert";
 import {TrackCollectionDialog} from "@/components/library/track-collection-dialog";
-import {LibraryStats} from "@/components/library/library-stats";
-import {LibrarySearch} from "@/components/library/library-search";
-import {CollectionEmptyState} from "@/components/library/collection-empty-state";
+import {PlayerBar} from "@/components/player/player-bar";
+import {QueuePanel} from "@/components/player/queue-panel";
+import {SoundVisualizer} from "@/components/player/sound-visualizer";
+import {SettingsPage} from "@/components/settings-page";
+import {TagEditor} from "@/components/tag-editor";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {UpdateNotification} from "@/components/update-notification";
+
+import {useAppUpdates} from "@/hooks/use-app-updates";
+import {useAppearance} from "@/hooks/use-appearance";
+import {useAudioAnalyser} from "@/hooks/use-audio-analyser";
+import {useCollection} from "@/hooks/use-collection";
+import {useItemReveal} from "@/hooks/use-item-reveal";
+import {useLibrary} from "@/hooks/use-library";
+import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
+import {usePlaybackFollow} from "@/hooks/use-playback-follow";
+import {usePlayer} from "@/hooks/use-player";
+import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
+
+import {albumKey, getAlbumArtist} from "@/lib/music";
+
+import type {Track} from "../../shared/types/library";
+import type {OpenedCollection} from "@/types/collection";
 import type {SettingsTab} from "@/types/settings";
+import type {TrackActions} from "@/types/track-actions";
 
 
 export function App() {
+    const main = useRef<HTMLElement>(null);
     const library = useLibrary();
     const updates = useAppUpdates();
     const locator = useItemReveal();
     const player = usePlayer(library.setError);
+    const [appearance, setAppearance] = useAppearance();
+    const analyser = useAudioAnalyser(player.audio, appearance.visualizer !== "off");
     const [editing, setEditing] = useState<Track[]>();
     const [showQueue, setShowQueue] = useState(false);
     const [settingsTab, setSettingsTab] = useState<SettingsTab>("library");
@@ -46,8 +50,8 @@ export function App() {
 
     const { audio: audioRef } = player;
     const {
-        view, search, artist, sort, selected, tracks, albums, genres, activePlaylist, title,
-        setSearch, setArtist, setSort, setSelected, navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
+        view, search, artist, selected, tracks, genres, activePlaylist,
+        setSearch, navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
     } = collection;
 
     useEffect(() => {
@@ -57,8 +61,11 @@ export function App() {
     }, [library.ready]);
 
     const openedCollectionIds = new Set(openedCollection?.ids);
-    const openedCollectionTracks = library.data.tracks.filter((track) => openedCollectionIds.has(track.id));
+    const openedCollectionTracks = openedCollection
+        ? library.data.tracks.filter((track) => openedCollectionIds.has(track.id))
+        : [];
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
+    const visualizer = <SoundVisualizer analyser={analyser} style={appearance.visualizer} playing={player.playing}/>;
 
     const actions: TrackActions = {
         onEdit: setEditing,
@@ -94,65 +101,91 @@ export function App() {
         locator.show(key);
     }
 
+    usePlaybackFollow(
+        main,
+        current?.id,
+        player.playing,
+        view !== "tracks" || Boolean(search || artist || selected.length || editing || openedCollection),
+        (id) => locator.show(id, false),
+    );
+
     useMouseNavigation(goBack, goForward);
 
-    const renderCollection = () => {
-        if (!tracks.length) {
-            return <CollectionEmptyState
-                view={view}
-                onClearFilters={clearFilters}
-                hasFilters={Boolean(search || artist)}
-                hasTracks={Boolean(library.data.tracks.length)}
-                hasFolders={Boolean(library.data.folders.length)}
-                onSettings={() => showSettings()}
+    function playCollection(shuffle: boolean) {
+        if (!tracks.length) return;
+
+        player.setShuffle(shuffle);
+        const index = shuffle ? Math.floor(Math.random() * tracks.length) : 0;
+        player.start(tracks[index], tracks, index);
+    }
+
+    const feedback = <>
+        {library.error && <Alert variant="destructive">
+            <AlertDescription>
+                {library.error}
+                <Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
+            </AlertDescription>
+        </Alert>}
+        {library.notice && <p role="status" className="notice mb-5 max-h-16 shrink-0 overflow-auto text-xs text-primary [overflow-wrap:anywhere]">
+            {library.notice}
+        </p>}
+    </>;
+
+    function renderPage() {
+        if (view === "settings") {
+            return <SettingsPage
+                appearance={appearance}
+                analyser={analyser}
+                playing={player.playing}
+                onAppearanceChange={setAppearance}
+                updates={updates}
+                tab={settingsTab}
+                onTabChange={setSettingsTab}
+                busy={library.busy}
+                error={library.error}
+                notice={library.notice}
+                sidebarLayout={sidebarLayout}
+                folders={library.data.folders}
+                playlists={library.data.playlists}
+                songCount={library.data.tracks.length}
+                onImport={() => void library.importFolder()}
+                onRefresh={() => void library.reconcile().catch(library.reportError)}
             />;
         }
 
-        if (view === "albums") {
-            return (
-                <AlbumGrid
-                    currentTrack={current}
-                    reveal={locator.target}
-                    onRevealed={locator.clear}
-                    albums={albums}
-                    actions={actions}
-                    playlists={library.data.playlists}
-                    onOpen={(tracks) => setOpenedCollection({ ids: tracks.map((track) => track.id) })}
-                />
-            );
+        if (view === "android" || view === "downloads") {
+            return <div className="content flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-3 pt-5">
+                {feedback}
+                {view === "downloads" ? <DownloadsPage
+                    visualizer={visualizer}
+                    query={search}
+                    genres={genres}
+                    onSettings={() => showSettings("downloads")}
+                    onSaved={library.refresh}
+                /> : <DevicesPage query={search} visualizer={visualizer}/>}
+            </div>;
         }
 
-        if (view === "artists") {
-            return (
-                <ArtistGrid
-                    tracks={tracks}
-                    currentTrack={current}
-                    reveal={locator.target}
-                    onRevealed={locator.clear}
-                    onArtist={(name) => setOpenedCollection({
-                        artistName: name,
-                        ids: library.data.tracks.filter((track) => getAlbumArtist(track) === name).map((track) => track.id)
-                    })}
-                />
-            );
-        }
-
-        return (
-            <TrackTable
-                reveal={locator.target}
-                onRevealed={locator.clear}
-                sort={sort}
-                tracks={tracks}
-                onSort={setSort}
-                actions={actions}
-                selected={selected}
-                onSelect={setSelected}
-                currentId={current?.id}
-                playing={player.playing}
-                playlists={library.data.playlists}
-            />
-        );
-    };
+        return <LibraryPage
+            collection={collection}
+            data={library.data}
+            current={current}
+            playing={player.playing}
+            actions={actions}
+            reveal={locator.target}
+            onRevealed={locator.clear}
+            onOpenAlbum={(tracks) => setOpenedCollection({ ids: tracks.map((track) => track.id) })}
+            onOpenArtist={(name) => setOpenedCollection({
+                artistName: name,
+                ids: library.data.tracks.filter((track) => getAlbumArtist(track) === name).map((track) => track.id),
+            })}
+            onSettings={() => showSettings()}
+            onImported={library.refresh}
+            onPlay={playCollection}
+            visualizer={visualizer}
+            feedback={feedback}
+        />;
+    }
 
     return (
         <div
@@ -168,120 +201,18 @@ export function App() {
                 onRefresh={library.refresh}
                 onError={library.reportError}
                 onSettings={() => showSettings()}
+                search={search}
+                onSearch={setSearch}
+                onClearSearch={clearSearch}
+                actions={{ ...actions, onRemove: undefined }}
+                current={current}
+                artworkExpanded={appearance.sidebarArtwork}
+                onArtworkToggle={() => setAppearance({ ...appearance, sidebarArtwork: !appearance.sidebarArtwork })}
+                onReveal={revealPlaying}
             />
 
-            <main className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col">
-                {view !== "settings" && (
-                    <header
-                        className="topbar h-[72px] flex items-center gap-5 py-0 px-6 sticky top-0 bg-background
-                    z-[1] shrink-0 max-[1150px]:py-0"
-                    >
-                        <LibrarySearch
-                            value={search}
-                            onClear={clearSearch}
-                            onChange={(value) => {
-                                if (view === "settings" || view === "android") navigate("tracks");
-                                setSearch(value);
-                            }}
-                        />
-                    </header>
-                )}
-                {view === "settings" ?
-                    <SettingsPage
-                        updates={updates}
-                        tab={settingsTab}
-                        onTabChange={setSettingsTab}
-                        busy={library.busy}
-                        error={library.error}
-                        notice={library.notice}
-                        sidebarLayout={sidebarLayout}
-                        folders={library.data.folders}
-                        playlists={library.data.playlists}
-                        songCount={library.data.tracks.length}
-                        onImport={() => void library.importFolder()}
-                        onRefresh={() => void library.reconcile()
-                            .catch(library.reportError)
-                        }
-                    />
-                    :
-                    <>
-                        <div className="library-hero shrink-0 border-b border-border/60 px-6 pt-2 pb-6">
-                            <h1 className="mb-2 text-3xl leading-tight font-semibold tracking-[-0.04em]">
-                                {title}
-                            </h1>
-                            {view === "android" || view === "downloads" ?
-                                <p className="text-xs text-muted-foreground">
-                                    {view === "downloads" ? "Download songs from bookmarks" : "USB music sync"}
-                                </p>
-                                :
-                                <LibraryStats
-                                    tracks={tracks}
-                                />
-                            }
-                        </div>
-                        <div className="content py-5 px-6 flex flex-col min-h-0 flex-1 overflow-hidden">
-                            {library.error &&
-                                <Alert variant="destructive">
-                                    <AlertDescription>
-                                        {library.error}
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => library.setError("")}
-                                        >
-                                            Dismiss
-                                        </Button>
-                                    </AlertDescription>
-                                </Alert>
-                            }
-                            {library.notice &&
-                                <p
-                                    role="status"
-                                    className="notice text-primary text-xs mb-5 [overflow-wrap:anywhere] shrink-0 max-h-16 overflow-auto"
-                                >
-                                    {library.notice}
-                                </p>
-                            }
-                            {view === "downloads" ? (
-                                <DownloadsPage
-                                    query={search}
-                                    genres={genres}
-                                    onSettings={() => showSettings("downloads")}
-                                    onSaved={library.refresh}
-                                />
-                            ) : view === "android" ?
-                                <DevicesPage/>
-                                :
-                                <>
-                                    <FilterBar
-                                        artist={artist}
-                                        search={search}
-                                        onArtist={setArtist}
-                                        onClear={clearFilters}
-                                    />
-                                    <div className="collection-results min-h-0 flex-1 flex flex-col">
-                                        {view === "tracks" ? (
-                                            <SongDropZone
-                                                onImported={async () => {
-                                                    clearFilters();
-                                                    await library.refresh();
-                                                }}
-                                                onError={library.reportError}
-                                            >
-                                                {renderCollection()}
-                                            </SongDropZone>
-                                        ) : renderCollection()}
-                                    </div>
-                                    {view === "duplicates" && !!tracks.length &&
-                                        <p className="muted text-muted-foreground duplicate-note shrink-0 mt-[14px] mx-2 mb-0 text-xs">
-                                            Matches use title, artist, and rounded duration. No files are deleted.
-                                        </p>
-                                    }
-                                </>
-                            }
-                        </div>
-                    </>
-                }
+            <main ref={main} className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col">
+                {renderPage()}
             </main>
             {showQueue &&
                 <QueuePanel
@@ -323,6 +254,7 @@ export function App() {
             />
             <audio
                 ref={audioRef}
+                crossOrigin="anonymous"
                 onTimeUpdate={player.updateTime}
                 onEnded={player.ended}
                 onPlay={() => player.setPlaying(true)}

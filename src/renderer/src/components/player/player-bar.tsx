@@ -3,6 +3,8 @@ import {cn} from "@/lib/utils";
 import {PlaybackTimeline} from "@/components/player/playback-timeline";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
+import {Separator} from "@/components/ui/separator";
+import {RangeInput} from "@/components/ui/range-input";
 import type {PlayerState} from "@/types/player";
 import type {Track} from "../../../../shared/types/library";
 
@@ -20,9 +22,9 @@ interface PlayerBarProps {
 
 export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: PlayerBarProps) {
     return (
-        <footer className="player-bar col-span-full flex items-center justify-between rounded-t-xl border border-b-0 border-border bg-card py-3 px-4 gap-5">
+        <footer className="player-bar col-span-full grid grid-cols-[minmax(0,1fr)_minmax(300px,46%)_minmax(0,1fr)] items-center gap-5 rounded-t-xl border border-b-0 border-border border-t-primary/25 bg-card px-4 py-2">
             <div
-                className="now-playing flex w-[28%] min-w-0 items-center gap-4 [&_.cover]:size-14 [&_.cover]:rounded-lg">
+                className="now-playing flex min-w-0 items-center gap-3 [&_.cover]:size-14 [&_.cover]:rounded-lg">
                 <Cover
                     track={current}
                 />
@@ -32,80 +34,83 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                 </div>
             </div>
 
-            <div className="transport w-[42%] max-w-[590px]">
+            <div className="transport min-w-0">
                 <div
-                    className="transport-buttons flex justify-center items-center gap-2 mb-2 text-content">
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Shuffle"
-                        title="Shuffle"
-                        aria-pressed={player.shuffle}
-                        className={cn(player.shuffle && "enabled bg-selection text-primary ring-1 ring-primary/60")}
-                        onClick={() => player.setShuffle(!player.shuffle)}
-                    >
-                        <Shuffle/>
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled={!current}
-                        aria-label="Previous track"
-                        title="Previous track"
-                        onClick={() => player.next(-1)}
-                    >
-                        <SkipBack/>
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="default"
-                        disabled={!current}
-                        className="play-toggle size-10 rounded-full shadow-sm"
-                        onClick={player.toggle}
-                        aria-label={player.playing ? "Pause" : "Play"}
-                        title={player.playing ? "Pause" : "Play"}
-                    >
-                        {player.playing
-                            ? <Pause fill="currentColor"/>
-                            : <Play fill="currentColor"/>
-                        }
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        disabled={!current}
-                        aria-label="Next track"
-                        title="Next track"
-                        onClick={() => player.next()}
-                    >
-                        <SkipForward/>
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Repeat"
-                        title={"Repeat: " + player.repeat}
-                        data-repeat={player.repeat}
-                        aria-pressed={player.repeat !== "off"}
-                        className={cn(player.repeat !== "off" && "enabled bg-selection text-primary ring-1 ring-primary/60")}
-                        onClick={player.cycleRepeat}
-                    >
-                        {player.repeat === "one" ? <Repeat1/> : <Repeat/>}
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Stop"
-                        title="Stop"
-                        disabled={!current}
-                        onClick={player.stop}
-                    >
-                        <Square/>
-                    </Button>
-                    <ShowPlayingButton
-                        disabled={!current}
-                        onClick={onReveal}
-                    />
+                    className="transport-buttons mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-content">
+                    <div className="flex justify-end">
+                        <Button
+                            size="icon"
+                            variant="plain"
+                            aria-label="Shuffle"
+                            title="Shuffle"
+                            aria-pressed={player.shuffle}
+                            className={cn(player.shuffle && "enabled")}
+                            onClick={() => player.setShuffle(!player.shuffle)}
+                        >
+                            <Shuffle/>
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2" aria-label="Playback controls">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            disabled={!current}
+                            aria-label="Previous track"
+                            title="Previous track"
+                            onClick={() => player.next(-1)}
+                        >
+                            <SkipBack/>
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="default"
+                            disabled={!current}
+                            className="play-toggle size-10 rounded-full shadow-sm"
+                            onClick={player.toggle}
+                            aria-label={player.playing ? "Pause" : "Play"}
+                            title={player.playing ? "Pause" : "Play"}
+                        >
+                            {player.playing
+                                ? <Pause fill="currentColor"/>
+                                : <Play fill="currentColor"/>
+                            }
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            disabled={!current}
+                            aria-label="Next track"
+                            title="Next track"
+                            onClick={() => player.next()}
+                        >
+                            <SkipForward/>
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            size="icon"
+                            variant="plain"
+                            aria-label="Repeat"
+                            title={"Repeat: " + player.repeat}
+                            data-repeat={player.repeat}
+                            aria-pressed={player.repeat !== "off"}
+                            className={cn(player.repeat !== "off" && "enabled")}
+                            onClick={player.cycleRepeat}
+                        >
+                            {player.repeat === "one" ? <Repeat1/> : <Repeat/>}
+                        </Button>
+                        <Separator orientation="vertical" className="mx-1 h-4 data-vertical:self-center"/>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Stop"
+                            title="Stop"
+                            disabled={!current}
+                            onClick={player.stop}
+                        >
+                            <Square/>
+                        </Button>
+                    </div>
                 </div>
 
                 <PlaybackTimeline
@@ -115,7 +120,8 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                 />
             </div>
 
-            <div className="volume flex items-center gap-3 text-content">
+            <div className="volume flex min-w-0 items-center justify-end gap-2 text-content">
+                <ShowPlayingButton disabled={!current} onClick={onReveal}/>
                 <Button
                     size="icon"
                     variant="ghost"
@@ -127,16 +133,16 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                 >
                     <ListMusic/>
                 </Button>
+                <Separator orientation="vertical" className="mx-1 h-5 data-vertical:self-center"/>
                 <Volume2
                     size={18}
                     aria-hidden="true"
                 />
-                <input
-                    className="h-[3px] w-[90px] cursor-pointer [accent-color:var(--primary)] max-[1150px]:w-15"
+                <RangeInput
+                    className="w-[90px] max-[1150px]:w-15"
                     min="0"
                     max="1"
                     step="0.01"
-                    type="range"
                     aria-label="Volume"
                     value={player.volume}
                     onChange={(ev) => player.setVolume(Number(ev.target.value))}

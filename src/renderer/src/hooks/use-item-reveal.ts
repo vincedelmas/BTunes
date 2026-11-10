@@ -5,8 +5,8 @@ export function useItemReveal() {
     const sequence = useRef(0);
     const [target, setTarget] = useState<ItemReveal>();
 
-    function show(key: string | number) {
-        setTarget({ key, request: ++sequence.current });
+    function show(key: string | number, select = true) {
+        setTarget({ key, request: ++sequence.current, select });
     }
 
     function clear() {

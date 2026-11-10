@@ -1,6 +1,6 @@
 import type {Header} from "@tanstack/react-table";
 import type {KeyboardEvent} from "react";
-import {ChevronDown, ChevronUp, ChevronsUpDown} from "lucide-react";
+import {ChevronDown, ChevronUp, ChevronsUpDown, Image} from "lucide-react";
 import type {Track} from "../../../../shared/types/library";
 import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
 import type {songTableFeatures} from "@/lib/song-columns";
@@ -23,6 +23,7 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
     const column = header.column;
     const field = column.id as TrackSortField;
     const label = String(column.columnDef.header);
+    const sortable = column.id !== "artwork";
     const active = sort.field === field;
     const direction = sort.descending ? "descending" : "ascending";
     const DirectionIcon = sort.descending ? ChevronDown : ChevronUp;
@@ -54,15 +55,19 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
             <button
                 className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 hover:text-foreground active:cursor-grabbing", active && "is-sorted text-foreground")}
                 draggable
-                title="Click to sort; drag to reorder. Alt+arrow keys also reorder."
+                title={sortable ? "Click to sort; drag to reorder. Alt+arrow keys also reorder." : "Drag to reorder. Alt+arrow keys also reorder."}
                 onDragStart={(ev) => reordering.start(ev, column.id)}
                 onDragEnd={reordering.end}
                 onKeyDown={(ev) => reordering.keyDown(ev, column.id)}
-                aria-label={"Sort by " + label}
-                onClick={() => onSort({ field, descending: active ? !sort.descending : false })}
+                aria-label={sortable ? "Sort by " + label : "Move Artwork column"}
+                onClick={() => {
+                    if (sortable) onSort({ field, descending: active ? !sort.descending : false });
+                }}
             >
-                <span className="truncate">{label}</span>
-                <SortIcon className={cn("size-[13px] shrink-0", active && "text-primary")}/>
+                {sortable ? <>
+                    <span className="truncate">{label}</span>
+                    <SortIcon className={cn("size-[13px] shrink-0", active && "text-primary")}/>
+                </> : <Image className="mx-auto size-3.5 text-info" aria-hidden="true"/>}
             </button>
             <div
                 role="separator"

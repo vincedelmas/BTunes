@@ -1,5 +1,5 @@
 import {Button} from "@/components/ui/button";
-import {ListMusic, Pencil, Sparkles, Trash2} from "lucide-react";
+import {Brain, ListMusic, Pencil, Trash2} from "lucide-react";
 import type {Playlist} from "../../../../shared/types/library";
 import {ContextMenu, ContextMenuContent, ContextMenuGroup, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger} from "@/components/ui/context-menu";
 
@@ -26,17 +26,10 @@ export function PlaylistItem({ playlist, active, onNavigate, onEdit, onDelete }:
                     />
                 }
             >
-                <ListMusic data-icon="inline-start"/>
+                {playlist.rule ? <Brain data-icon="inline-start" className="text-info" aria-label="Smart playlist"/> : <ListMusic data-icon="inline-start"/>}
                 <span className="truncate">
                     {playlist.name}
                 </span>
-                {playlist.rule &&
-                    <Sparkles
-                        data-icon="inline-end"
-                        aria-label="Automatic playlist"
-                        className="ml-auto"
-                    />
-                }
             </ContextMenuTrigger>
             <ContextMenuContent className="track-menu">
                 <ContextMenuGroup>

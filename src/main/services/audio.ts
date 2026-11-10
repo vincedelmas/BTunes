@@ -21,6 +21,7 @@ export async function serveAudio(path: string, request: Request): Promise<Respon
 
     const headers = new Headers({
         "Accept-Ranges": "bytes",
+        "Access-Control-Allow-Origin": "*",
         "Cache-Control": "no-store",
         "Content-Type": audioTypes[extname(path).toLowerCase()] ?? "application/octet-stream",
     });

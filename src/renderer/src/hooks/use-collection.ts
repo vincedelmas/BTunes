@@ -40,21 +40,24 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     const genres = genreChoices(data.tracks.map((track) => track.genre));
     const activePlaylist = data.playlists.find((playlist) => "playlist:" + playlist.id === view);
+    const playlistId = activePlaylist?.id;
 
     useEffect(() => {
         let active = true;
-        if (!view.startsWith("playlist:")) return;
+        if (!playlistId) return;
 
-        void rpc("playlist.tracks", { id: Number(view.split(":")[1]) })
+        void rpc("playlist.tracks", { id: playlistId })
             .then((ids) => {
                 if (active) setPlaylistIds(ids);
             })
-            .catch(onError);
+            .catch((error) => {
+                if (active) onError(error);
+            });
 
         return () => {
             active = false;
         };
-    }, [view, data.revision, onError]);
+    }, [playlistId, data.revision, onError]);
 
     const duplicates = new Map<string, number>();
     const playlistMembers = new Set(playlistIds);
@@ -67,7 +70,8 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         }
     }
 
-    const tracks = data.tracks.filter((track) => {
+    const collectionTracks = view === "settings" || view === "android" || view === "downloads" ? [] : data.tracks;
+    const tracks = collectionTracks.filter((track) => {
         if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
         if (artist && getAlbumArtist(track) !== artist) return false;
         if (view === "history" && !track.lastPlayed) return false;
@@ -77,7 +81,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         return true;
     }).sort((first, second) => compareTracks(first, second, sort));
 
-    const albums = groupAlbums(tracks);
+    const albums = view === "albums" ? groupAlbums(tracks) : [];
     const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
 
     function clearFilters() {

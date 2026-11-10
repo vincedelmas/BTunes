@@ -5,6 +5,7 @@ export const songTableFeatures = tableFeatures({ columnSizingFeature, columnResi
 
 
 export const songColumns = [
+    { id: "artwork", header: "Artwork", size: 90, minSize: 80, maxSize: 160 },
     { id: "title", enableHiding: false, header: "Title", size: 270, minSize: 180, maxSize: 700 },
     { id: "artist", header: "Artist", size: 160, minSize: 100, maxSize: 500 },
     { id: "albumArtist", header: "Album artist", size: 160, minSize: 100, maxSize: 500 },

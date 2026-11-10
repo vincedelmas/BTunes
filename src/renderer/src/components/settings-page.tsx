@@ -1,3 +1,9 @@
+import {PageHeader} from "@/components/page-header";
+import {Badge} from "@/components/ui/badge";
+import {FolderOpen} from "lucide-react";
+import type {RefObject} from "react";
+import type {Appearance} from "@/types/appearance";
+import {AppearanceSettings} from "@/components/settings/appearance-settings";
 import type {Playlist} from "../../../shared/types/library";
 import type {SidebarLayout} from "@/types/sidebar";
 import {AppUpdates} from "@/components/settings/app-updates";
@@ -10,6 +16,10 @@ import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 
 interface SettingsPageProps {
+    appearance: Appearance;
+    analyser: RefObject<AnalyserNode | null>;
+    playing: boolean;
+    onAppearanceChange: (appearance: Appearance) => void;
     tab: SettingsTab;
     updates: AppUpdateController;
     onTabChange: (tab: SettingsTab) => void;
@@ -25,14 +35,18 @@ interface SettingsPageProps {
 }
 
 
-export function SettingsPage({ updates, tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
+export function SettingsPage({ appearance, analyser, playing, onAppearanceChange, updates, tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
     return (
-        <div className="settings-page min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-8">
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-                <header className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-semibold tracking-[-0.035em]">Settings</h1>
-                    <p className="text-sm text-muted-foreground">Library, downloads, navigation, and app updates.</p>
-                </header>
+        <div className="settings-page min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4">
+            <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+                <PageHeader
+                    title="Settings"
+                    details="Library, downloads, navigation, and app updates."
+                    actions={<Badge variant="outline">
+                        <FolderOpen data-icon="inline-start"/>
+                        {songCount.toLocaleString("en")} songs · {folders.length} {folders.length === 1 ? "folder" : "folders"}
+                    </Badge>}
+                />
                 {error && <Alert variant="destructive">
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>}
@@ -43,7 +57,7 @@ export function SettingsPage({ updates, tab, onTabChange, folders, busy, songCou
                 <Tabs
                     value={tab}
                     onValueChange={(value) => {
-                        if (value === "library" || value === "downloads" || value === "sidebar" || value === "about") onTabChange(value);
+                        if (value === "library" || value === "downloads" || value === "appearance" || value === "sidebar" || value === "about") onTabChange(value);
                     }}
                     className="gap-6"
                 >
@@ -54,6 +68,7 @@ export function SettingsPage({ updates, tab, onTabChange, folders, busy, songCou
                     >
                         <TabsTrigger value="library">Library</TabsTrigger>
                         <TabsTrigger value="downloads">Downloads</TabsTrigger>
+                        <TabsTrigger value="appearance">Appearance</TabsTrigger>
                         <TabsTrigger value="sidebar">Sidebar</TabsTrigger>
                         <TabsTrigger value="about">About</TabsTrigger>
                     </TabsList>
@@ -74,6 +89,16 @@ export function SettingsPage({ updates, tab, onTabChange, folders, busy, songCou
                         keepMounted
                     >
                         <DownloadSettings musicFolders={folders}/>
+                    </TabsContent>
+                    <TabsContent
+                        value="appearance"
+                    >
+                        <AppearanceSettings
+                            appearance={appearance}
+                            analyser={analyser}
+                            playing={playing}
+                            onChange={onAppearanceChange}
+                        />
                     </TabsContent>
                     <TabsContent
                         value="sidebar"

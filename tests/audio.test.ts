@@ -17,6 +17,7 @@ void test("audio streaming serves exact byte ranges, suffixes, HEAD, and invalid
         assert.equal(range.headers.get("Content-Range"), "bytes 80-119/200");
         assert.equal(range.headers.get("Content-Length"), "40");
         assert.equal(range.headers.get("Accept-Ranges"), "bytes");
+        assert.equal(range.headers.get("Access-Control-Allow-Origin"), "*");
         assert.deepEqual(Buffer.from(await range.arrayBuffer()), bytes.subarray(80, 120));
 
         const suffix = await serveAudio(path, new Request("btunes://audio/1", { headers: { Range: "bytes=-20" } }));
@@ -26,6 +27,7 @@ void test("audio streaming serves exact byte ranges, suffixes, HEAD, and invalid
 
         const head = await serveAudio(path, new Request("btunes://audio/1", { method: "HEAD" }));
         assert.equal(head.headers.get("Content-Length"), "200");
+        assert.equal(head.headers.get("Access-Control-Allow-Origin"), "*");
         assert.equal(await head.text(), "");
 
         for (const invalid of ["bytes=300-", "bytes=100-50", "bytes=-0", "bytes=0-1,3-4", "nonsense"]) {

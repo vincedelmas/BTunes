@@ -4,12 +4,14 @@ import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/
 
 interface LibrarySearchProps {
     value: string;
+    placeholder?: string;
+    disabled?: boolean;
     onChange: (value: string) => void;
     onClear: () => void;
 }
 
 
-export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) {
+export function LibrarySearch({ value, placeholder = "Search this page", disabled = false, onChange, onClear }: LibrarySearchProps) {
     const input = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -33,28 +35,22 @@ export function LibrarySearch({ value, onChange, onClear }: LibrarySearchProps) 
 
     return (
         <InputGroup
-            className="search m-0 h-9 w-full max-w-[440px] gap-3 rounded-lg border-input bg-control px-4 text-foreground focus-within:border-primary has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+            className="search m-0 h-9 w-full gap-2 rounded-lg border-input bg-control px-2.5 text-foreground focus-within:border-primary has-[[data-slot=input-group-control]:focus-visible]:border-primary has-[[data-slot=input-group-control]:focus-visible]:ring-0">
             <InputGroupInput
                 ref={input}
                 className="border-0 bg-transparent p-0 text-sm shadow-none focus-visible:border-0 focus-visible:ring-0"
                 value={value}
                 aria-label="Search your library"
-                placeholder="Search songs, artists, albums"
+                title="Search this page (Ctrl+F)"
+                placeholder={placeholder}
+                disabled={disabled}
                 onChange={(ev) => onChange(ev.target.value)}
             />
             <InputGroupAddon className="p-0">
                 <Search
-                    size={18}
                     aria-hidden="true"
                 />
             </InputGroupAddon>
-            {!value && (
-                <InputGroupAddon align="inline-end" className="p-0">
-                    <kbd className="rounded border border-border px-1.5 py-0.5 font-sans text-xs text-muted-foreground">
-                        Ctrl F
-                    </kbd>
-                </InputGroupAddon>
-            )}
             {value && (
                 <InputGroupAddon
                     align="inline-end"

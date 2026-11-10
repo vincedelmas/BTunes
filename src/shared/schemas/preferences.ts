@@ -8,3 +8,8 @@ export const trackSortSchema = z.strictObject({
 }) satisfies z.ZodType<TrackSort>;
 
 export const volumeSchema = z.number().min(0).max(1);
+
+export const appearanceSchema = z.strictObject({
+    visualizer: z.enum(["spectrum", "waveform", "orbit", "off"]),
+    sidebarArtwork: z.boolean(),
+});

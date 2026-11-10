@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import type {RefObject} from "react";
 import {formatTime} from "@/lib/music";
+import {RangeInput} from "@/components/ui/range-input";
 
 interface PlaybackTimelineProps {
     audio: RefObject<HTMLAudioElement | null>;
@@ -39,10 +40,9 @@ export function PlaybackTimeline({ audio, trackId, onSeek }: PlaybackTimelinePro
     return (
         <div className="timeline flex items-center gap-3 text-xs text-muted-foreground tabular-nums [&_input]:flex-1 [&_input]:min-w-0">
             <span className="w-9 shrink-0 text-right">{formatTime(position)}</span>
-            <input
-                className="h-[3px] cursor-pointer [accent-color:var(--primary)] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4"
+            <RangeInput
+                className="focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-4"
                 aria-label="Playback position"
-                type="range"
                 min="0"
                 max={duration || 1}
                 step="0.1"

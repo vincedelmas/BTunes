@@ -2,7 +2,7 @@ const {app} = require("electron");
 const {DatabaseSync} = require("node:sqlite");
 const {drizzle} = require("drizzle-orm/node-sqlite");
 const {migrate} = require("drizzle-orm/node-sqlite/migrator");
-const {mkdtempSync, mkdirSync, rmSync, writeFileSync, statSync} = require("node:fs");
+const {mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, statSync} = require("node:fs");
 const {join} = require("node:path");
 const {tmpdir} = require("node:os");
 const childProcess = require("node:child_process");
@@ -41,10 +41,21 @@ app.setPath("userData", profile);
 
 const source = join(music, "Silence.mp3");
 execFileSync("ffmpeg", [
-    "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=8000:cl=mono", "-t", "60",
+    "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=8000", "-t", "60",
     "-metadata", "title=Silence", "-metadata", "artist=Fixture artist", "-metadata", "album=Album 000",
     "-metadata", "genre=Ambient", source,
 ]);
+
+const coverImage = join(profile, "cover.jpg");
+execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=c=teal:s=32x32", "-frames:v", "1", coverImage]);
+global.fetch = async (input) => {
+    const url = new URL(input instanceof Request ? input.url : input.toString());
+    if (url.hostname === "itunes.apple.com") return Response.json({
+        results: [{collectionName: "Album 000", artistName: "Fixture artist", artworkUrl100: "https://is1-ssl.mzstatic.com/fixture/100x100bb.jpg"}]
+    });
+    if (url.hostname.endsWith(".mzstatic.com")) return new Response(new Uint8Array(readFileSync(coverImage)), {headers: {"Content-Type": "image/jpeg"}});
+    throw new Error("Unexpected network request: " + url);
+};
 
 const database = new DatabaseSync(join(profile, "library.sqlite"));
 migrate(drizzle({client: database}), {migrationsFolder: join(__dirname, "../drizzle")});
@@ -52,7 +63,7 @@ database.exec("BEGIN");
 const insert = database.prepare("INSERT INTO tracks (id,path,title,artist,album,genre,year,duration,size,album_artist,modified_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
 for (let index = 0; index < 2300; index++) {
     const path = index ? join(music, "fixture-" + index + ".mp3") : source;
-    if (index) writeFileSync(path, "");
+    if (index) writeFileSync(path, index === 1 ? readFileSync(source) : "");
     const info = statSync(path);
     insert.run(index + 1, path,
         index ? "Song " + String(index).padStart(4, "0") : "Silence",
@@ -62,6 +73,7 @@ for (let index = 0; index < 2300; index++) {
 const folderInfo = statSync(music);
 database.prepare("INSERT INTO folders (path,identity) VALUES (?,?)").run(music, folderInfo.dev + ":" + folderInfo.ino);
 database.prepare("INSERT INTO playlists(name,rule) VALUES (?,?)").run("Road trip", null);
+database.prepare("INSERT INTO playlists(name,rule) VALUES (?,?)").run("Jazz focus", "Jazz");
 database.exec("COMMIT");
 database.close();
 
@@ -160,8 +172,41 @@ app.on("browser-window-created", (_, win) => {
                     if (ratio < 3) throw new Error(label + ' marker contrast is ' + ratio.toFixed(2) + ':1; expected 3:1');
                 };
                 window.uiReview = { waitFor, frame, button, visible, assertContrast, assertControlContrast, assertSelectionContrast };
+                window.visualizerProbe={sources:0,analyser:null};
+                const createSource=AudioContext.prototype.createMediaElementSource;
+                AudioContext.prototype.createMediaElementSource=function(media){
+                    const source=createSource.call(this,media);
+                    window.visualizerProbe.sources++;
+                    return source;
+                };
+                const createAnalyser=AudioContext.prototype.createAnalyser;
+                AudioContext.prototype.createAnalyser=function(){
+                    const analyser=createAnalyser.call(this);
+                    window.visualizerProbe.analyser=analyser;
+                    return analyser;
+                };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
+                const stats=document.querySelector('.library-hero .library-stats');
+                if(!stats.textContent.includes('1 artist') || stats.textContent.includes('album artist')) throw new Error('Library artist label is incorrect');
+                if(stats.querySelector('[aria-label="Total duration"]').textContent.trim()!=='38 hr 20 min') throw new Error('Library total duration is incorrect');
+                const center=element=>{const rect=element.getBoundingClientRect();return rect.x+rect.width/2;};
+                const middle=element=>{const rect=element.getBoundingClientRect();return rect.y+rect.height/2;};
+                const separator=document.querySelector('.transport-buttons [data-slot="separator"]');
+                if(Math.abs(middle(separator)-middle(document.querySelector('.play-toggle')))>1) throw new Error('Transport separator is not vertically centered');
+                if(document.querySelector('th[data-column="artwork"]')) throw new Error('Artwork must be an optional hidden column');
+                if(!document.querySelector('.brand [aria-label="Settings"]')) throw new Error('Settings must live beside the app name');
+                if(document.querySelector('.sidebar-bottom')) throw new Error('Settings still occupies the artwork area');
+
+                if(Math.abs(center(document.querySelector('.play-toggle'))-center(document.querySelector('.player-bar')))>1) throw new Error('Play button is not centered in the player');
+                if(document.querySelector('.topbar')) throw new Error('Search toolbar should not occupy the page header');
+                if(document.querySelector('.library-hero').getBoundingClientRect().height>120) throw new Error('Library header is too tall');
+                const sidebarSearch=document.querySelector('.sidebar [aria-label="Search your library"]');
+                if(!sidebarSearch || sidebarSearch.getBoundingClientRect().top<document.querySelector('.brand').getBoundingClientRect().bottom) throw new Error('Search should sit below the brand in the sidebar');
+                const visualizer=document.querySelector('.page-header .sound-visualizer');
+                if(!visualizer || Math.abs(middle(visualizer)-middle(document.querySelector('.page-actions')))>1) throw new Error('Visualizer should align with the header actions');
+                const collections=document.querySelector('[aria-label="Open playlists"]').parentElement;
+                if(!collections.textContent.includes('Collections') || collections.textContent.includes('Transfer & sync')) throw new Error('Playlists must have their own navigation group');
                 await frame();
                 for (const selector of ['h1', '.library-stats', '[data-track-id="1"] strong', '[data-track-id="1"] [data-column="artist"]', 'nav button']) {
                     assertContrast(document.querySelector(selector), 4.5, selector);
@@ -229,6 +274,26 @@ app.on("browser-window-created", (_, win) => {
                 if(!albumArtistToggle) throw new Error('Album artist column is unavailable');
                 albumArtistToggle.click();
                 await waitFor(()=>document.querySelector('th[data-column="albumArtist"]'));
+                const artworkToggle=[...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Artwork');
+                if(!artworkToggle) throw new Error('Artwork column toggle is missing');
+                artworkToggle.click();
+                await waitFor(()=>document.querySelector('td[data-column="artwork"] .cover'));
+                if(document.querySelector('[aria-label="Sort by Artwork"]')) throw new Error('Artwork must not offer an invalid sort');
+                const artworkSize=document.querySelector('td[data-column="artwork"] .cover').getBoundingClientRect().height;
+                if(artworkSize<30 || artworkSize>36) throw new Error('Artwork thumbnail should be about 50% larger');
+                const artworkRow=document.querySelector('[data-track-id]');
+                if(artworkRow.getBoundingClientRect().height!==48) throw new Error('Artwork rows need enough vertical space');
+                if(document.querySelector('th[data-column="title"]').getBoundingClientRect().width<document.querySelector('th[data-column="artwork"]').getBoundingClientRect().width*1.5) throw new Error('Artwork sizing squeezed the song title column');
+                const artworkScroll=document.querySelector('.track-scroll');
+                artworkScroll.scrollTop=artworkScroll.scrollHeight;
+                await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
+                artworkToggle.click();
+                await waitFor(()=>!document.querySelector('th[data-column="artwork"]'));
+                artworkToggle.click();
+                await waitFor(()=>document.querySelector('th[data-column="artwork"]'));
+                artworkScroll.scrollTop=0;
+                await waitFor(()=>document.querySelector('[data-track-id="1"]'));
+
                 const genreToggle=[...document.querySelectorAll('[role="menuitemcheckbox"]')].find(item=>item.textContent.trim()==='Genre');
                 genreToggle.click();
                 await waitFor(()=>!document.querySelector('th[data-column="genre"]'));
@@ -239,6 +304,8 @@ app.on("browser-window-created", (_, win) => {
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('.track-table'));
                 if(document.querySelector('th[data-column="genre"]')) throw new Error('Column visibility did not persist');
+                if(!document.querySelector('th[data-column="artwork"]')) throw new Error('Artwork visibility did not persist');
+
                 const restoredHeader=document.querySelector('.track-table thead');
                 restoredHeader.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:300,clientY:250}));
                 await waitFor(()=>document.querySelector('[role="menuitemcheckbox"]'));
@@ -270,6 +337,7 @@ app.on("browser-window-created", (_, win) => {
                 };
                 setSearch('Song 2299');
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                if(document.querySelector('.library-hero [aria-label="Total duration"]').textContent.trim()!=='1 min') throw new Error('Duration does not reflect filtered songs');
                 await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
                 document.querySelector('[aria-label="Clear search"]').click();
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2301');
@@ -335,7 +403,7 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('.album-dialog [data-track-id]'));
                 const table=document.querySelector('.album-dialog .track-table');
                 if(table.getAttribute('aria-rowcount')!=='11') throw new Error('Album did not use the shared song table');
-                if(!document.querySelector('.album-dialog .library-stats').textContent.includes('1 album artist')) throw new Error('Album dialog is missing artist counts');
+                if(!document.querySelector('.album-dialog .library-stats').textContent.includes('1 artist')) throw new Error('Album dialog is missing artist counts');
                 const albumRows=[...document.querySelectorAll('.album-dialog [data-track-id]')];
                 albumRows[0].click();
                 albumRows[1].dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
@@ -372,6 +440,7 @@ app.on("browser-window-created", (_, win) => {
                 document.querySelector('[aria-label="Play album Album 000"]').click();
                 await waitFor(()=>!document.querySelector('audio').paused);
                 if(document.querySelector('.album-dialog')) throw new Error('Play album should play directly without opening the album');
+                if(document.querySelector('h1').textContent!=='Albums') throw new Error('Starting playback must preserve the current page');
                 window.uiReview.button('Songs').click();
                 await waitFor(()=>document.querySelector('[data-track-id="1"]'));
                 const first=document.querySelector('[data-track-id="1"]');
@@ -398,6 +467,29 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(() => !document.querySelector('[aria-label="Playback position"]').disabled);
                 await audio.play();
                 await waitFor(() => !audio.paused);
+                await waitFor(()=>window.visualizerProbe.analyser?.context.state==='running');
+                const playingArtwork=document.querySelector('[aria-label="Locate current song in library"]');
+                playingArtwork.focus();
+                if(getComputedStyle(playingArtwork).outlineStyle!=='none') throw new Error('Sidebar cover must not show a focus outline');
+                const artworkBounds=playingArtwork.getBoundingClientRect();
+                playingArtwork.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:artworkBounds.x+10,clientY:artworkBounds.y+10}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
+                for(const label of ['Play now','Play next','Add to queue','Edit tags','Go to artist','Go to album','Show in folder','Copy file path']) {
+                    if(!document.querySelector('[role="menu"]').textContent.includes(label)) throw new Error('Now-playing context menu is missing '+label);
+                }
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                await waitFor(()=>!document.querySelector('[role="menu"]'));
+                                const signal=new Uint8Array(window.visualizerProbe.analyser.frequencyBinCount);
+                await waitFor(()=>{window.visualizerProbe.analyser.getByteFrequencyData(signal);return signal.some(value=>value>0);});
+                if(window.visualizerProbe.sources!==1) throw new Error('Playback must use one shared audio source');
+                const shuffle=document.querySelector('.player-bar [aria-label="Shuffle"]');
+                shuffle.click();
+                await waitFor(()=>shuffle.getAttribute('aria-pressed')==='true');
+                await frame();
+                if(getComputedStyle(shuffle).backgroundColor!=='rgba(0, 0, 0, 0)' || getComputedStyle(shuffle).boxShadow!=='none') throw new Error('Shuffle must color only its icon');
+                shuffle.click();
+                await waitFor(()=>shuffle.getAttribute('aria-pressed')==='false');
+
                 const repeat=document.querySelector('[aria-label="Repeat"]');
                 if(repeat.dataset.repeat!=='off') throw new Error('Repeat must start disabled');
                 repeat.click();
@@ -448,8 +540,73 @@ app.on("browser-window-created", (_, win) => {
             await capture("tag-editor-playing");
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
-                button('Cancel').click();
-                await waitFor(()=>!document.querySelector('[role="dialog"]'));
+                document.querySelector('[aria-label="Reset Title"]').click();
+                await waitFor(()=>document.getElementById('tag-title').value==='Silence');
+                if(!button('Choose image')) throw new Error('Local artwork picker is missing');
+                button('Find online').click();
+                await waitFor(()=>document.querySelector('[aria-label="Use cover: Album 000 by Fixture artist"]'));
+                document.querySelector('[aria-label="Use cover: Album 000 by Fixture artist"]').click();
+                await waitFor(()=>!button('Use selected cover').disabled);
+                button('Use selected cover').click();
+                await waitFor(()=>!document.querySelector('.cover-picker'));
+                if(button('Save').disabled || !document.querySelector('.tag-summary img')) throw new Error('Online artwork was not applied to the tag editor');
+                document.querySelector('[aria-label="Reset artwork"]').click();
+                await waitFor(()=>button('Save').disabled);
+                button('Find online').click();
+                await waitFor(()=>document.querySelector('[aria-label="Use cover: Album 000 by Fixture artist"]'));
+                document.querySelector('[aria-label="Use cover: Album 000 by Fixture artist"]').click();
+                await waitFor(()=>!button('Use selected cover').disabled);
+                button('Use selected cover').click();
+                await waitFor(()=>!document.querySelector('.cover-picker'));
+                button('Save').click();
+                await waitFor(()=>!document.querySelector('.tag-editor'));
+                const saved=await window.btunes.rpc('library.get',undefined);
+                if(!saved.tracks.find(track=>track.id===1)?.cover) throw new Error('Online artwork did not persist');
+            })()`, true);
+            const savedMetadata = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-of', 'json', source], {encoding: 'utf8'}));
+            if (!savedMetadata.streams.some(stream => stream.disposition?.attached_pic === 1)) throw new Error('Online artwork was not embedded in the audio file');
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button,visible,frame}=window.uiReview;
+                const audio=document.querySelector('audio');
+                const viewport=document.querySelector('.track-scroll');
+                const pause=async()=>{audio.pause();await waitFor(()=>!document.querySelector('.play-toggle[aria-label="Pause"]'));};
+                const resume=async()=>{await audio.play();await waitFor(()=>document.querySelector('.play-toggle[aria-label="Pause"]'));await frame();};
+                document.querySelector('.track-table').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                await waitFor(()=>!document.querySelector('[data-track-id][aria-selected="true"]'));
+                document.activeElement?.blur();
+                await pause();
+                viewport.scrollTop=viewport.scrollHeight;
+                await new Promise(resolve=>setTimeout(resolve,8100));
+                await resume();
+                await waitFor(()=>visible(document.querySelector('[data-track-id="1"]'),viewport));
+                if(document.querySelector('[data-track-id][aria-selected="true"]')) throw new Error('Automatic following must preserve selection');
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>!visible(document.querySelector('[data-track-id="1"]'),viewport));
+                document.querySelector('.player-bar [aria-label="Next track"]').click();
+                await waitFor(()=>visible(document.querySelector('[data-track-id="2"]'),viewport) && !audio.paused);
+                if(document.querySelector('[data-track-id][aria-selected="true"]')) throw new Error('Track advancement changed selection');
+                document.querySelector('.player-bar [aria-label="Previous track"]').click();
+                await waitFor(()=>audio.src.endsWith('/1') && !audio.paused);
+                await pause();
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
+                document.querySelector('[data-track-id="2300"]').click();
+                await waitFor(()=>document.querySelector('[data-track-id="2300"][aria-selected="true"]'));
+                await resume();
+                if(visible(document.querySelector('[data-track-id="1"]'),viewport)) throw new Error('Playback interrupted a song selection');
+                document.querySelector('[data-track-id="2300"]').dispatchEvent(new MouseEvent('click',{bubbles:true,ctrlKey:true}));
+                await waitFor(()=>!document.querySelector('[data-track-id][aria-selected="true"]'));
+                await pause();
+                viewport.scrollTop=viewport.scrollHeight;
+                viewport.dispatchEvent(new WheelEvent('wheel',{bubbles:true,deltaY:100}));
+                await resume();
+                if(visible(document.querySelector('[data-track-id="1"]'),viewport)) throw new Error('Playback interrupted recent song browsing');
+                await pause();
+                button('Albums').click();
+                await resume();
+                if(document.querySelector('h1').textContent!=='Albums') throw new Error('Playback must not navigate away from another page');
+                button('Songs').click();
+                await waitFor(()=>document.querySelector('.track-scroll'));
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button,visible}=window.uiReview;
@@ -501,7 +658,7 @@ app.on("browser-window-created", (_, win) => {
             })()`, true);
 
             await win.webContents.executeJavaScript(`(async () => {
-                const {waitFor,button,visible}=window.uiReview;
+                const {waitFor,button,visible,frame}=window.uiReview;
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('.track-table'));
                 const search=document.querySelector('[aria-label="Search your library"]');
@@ -528,6 +685,13 @@ app.on("browser-window-created", (_, win) => {
                 document.querySelector('.player-bar [aria-label="Show playing song"]').click();
                 await waitFor(()=>!search.value && visible(document.querySelector('[data-track-id="1"]'),document.querySelector('.track-scroll')));
                 if(document.querySelector('.track-table').getAttribute('aria-rowcount')!=='2301') throw new Error('Reveal should clear filters hiding the playing song');
+                const progress=document.querySelector('[aria-label="Playback position"]');
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(progress,'15');
+                progress.dispatchEvent(new Event('input',{bubbles:true}));
+                await waitFor(()=>document.querySelector('audio').currentTime>=14.5);
+                await frame();
+                const fill=parseFloat(progress.style.getPropertyValue('--range-fill'));
+                if(fill<24 || fill>30) throw new Error('Playback progress fill does not follow the seek position');
                 button('Possible duplicates').click();
                 await waitFor(()=>document.querySelector('[data-slot="empty-title"]')?.textContent==='No duplicates');
                 const empty=document.querySelector('[data-slot="empty"]').textContent;
@@ -541,6 +705,16 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
                 if(document.querySelector('.library-hero .library-stats')) throw new Error('Device page shows local library counts');
                 await waitFor(()=>[...document.querySelectorAll('[data-slot="card-title"]')].some(title=>title.textContent==='Fixture phone'));
+                const deviceSearch=document.querySelector('.sidebar [aria-label="Search your library"]');
+                const searchDevices=value=>{
+                    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(deviceSearch,value);
+                    deviceSearch.dispatchEvent(new Event('input',{bubbles:true}));
+                };
+                searchDevices('No matching phone');
+                await waitFor(()=>document.querySelector('.devices-page').textContent.includes('No devices match your search.'));
+                if(document.querySelector('h1').textContent!=='Devices') throw new Error('Device search navigated to Songs');
+                document.querySelector('[aria-label="Clear search"]').click();
+                await waitFor(()=>[...document.querySelectorAll('[data-slot="card-title"]')].some(title=>title.textContent==='Fixture phone'));
                 const storage=[...document.querySelectorAll('button')].find(item=>item.textContent.includes('Internal storage'));
                 storage.click();
                 await waitFor(()=>[...document.querySelectorAll('button')].some(item=>item.textContent.trim()==='Music'));
@@ -549,15 +723,65 @@ app.on("browser-window-created", (_, win) => {
                 button('Compare with PC').click();
                 await waitFor(()=>button('Copy missing songs') && !button('Copy missing songs').disabled);
                 if(!document.querySelector('.devices-page').textContent.includes('Missing on phone')) throw new Error('Phone comparison did not render');
-                const page=document.querySelector('.devices-page');
+                const page=document.querySelector('.device-content');
                 if(page.scrollHeight<=page.clientHeight) throw new Error('Device content must scroll vertically');
                 for(const card of page.querySelectorAll('[data-slot="card"]')) {
                     if(card.scrollHeight>card.clientHeight+1) throw new Error('Device card contents are clipped');
                 }
                 page.scrollTop=page.scrollHeight;
                 await waitFor(()=>visible(button('Copy missing songs'),page));
+                if(!visible(document.querySelector('.devices-page .page-header'),document.querySelector('main'))) throw new Error('Device header scrolled out of view');
             })()`, true);
             await capture("devices-scrolled");
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor,button,frame}=window.uiReview;
+                document.querySelector('[aria-label="Open playlists"]').click();
+                await waitFor(()=>document.querySelector('.playlist-browser'));
+                if(document.querySelector('nav[aria-label="Library navigation"]')) throw new Error('Playlists did not get a dedicated sidebar');
+                const smart=button('Jazz focus');
+                if(!smart.querySelector('[aria-label="Smart playlist"]')) throw new Error('Smart playlist brain icon is missing');
+                smart.click();
+                await waitFor(()=>document.querySelector('h1').textContent==='Jazz focus');
+                document.querySelector('[aria-label="Create playlist"]').click();
+                await waitFor(()=>document.getElementById('playlist-name'));
+                const setName=value=>{
+                    const input=document.getElementById('playlist-name');
+                    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);
+                    input.dispatchEvent(new Event('input',{bubbles:true}));
+                };
+                setName('Sidebar test');
+                await waitFor(()=>!button('Create playlist').disabled);
+                button('Create playlist').click();
+                await waitFor(()=>!document.querySelector('.playlist-dialog') && document.querySelector('h1').textContent==='Sidebar test');
+                const contextMenu=async(label)=>{
+                    const entry=button(label);
+                    const bounds=entry.getBoundingClientRect();
+                    entry.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:bounds.x+40,clientY:bounds.y+10}));
+                    await waitFor(()=>document.querySelector('[role="menu"]'));
+                };
+                await contextMenu('Sidebar test');
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Edit playlist').click();
+                await waitFor(()=>document.getElementById('playlist-name'));
+                setName('Renamed sidebar test');
+                button('Save playlist').click();
+                await waitFor(()=>!document.querySelector('.playlist-dialog') && button('Renamed sidebar test'));
+                await contextMenu('Renamed sidebar test');
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Delete playlist').click();
+                await waitFor(()=>button('Delete playlist'));
+                button('Delete playlist').click();
+                await waitFor(()=>!document.querySelector('[role="dialog"]') && !button('Renamed sidebar test'));
+                const library=await window.btunes.rpc('library.get',undefined);
+                if(library.tracks.length!==2300 || library.playlists.some(item=>item.name.includes('sidebar test'))) throw new Error('Playlist CRUD did not preserve library contents');
+                await frame();
+                if(document.querySelector('.content [role="alert"]')) throw new Error('Deleting the active playlist left an error banner');
+                document.querySelector('.playlist-browser').querySelector('button').click();
+                await waitFor(()=>document.querySelector('nav[aria-label="Library navigation"]'));
+                document.querySelector('[aria-label="Hide now-playing artwork"]').click();
+                await waitFor(()=>!document.getElementById('sidebar-playing-details'));
+                document.querySelector('[aria-label="Show now-playing artwork"]').click();
+                await waitFor(()=>document.querySelector('#sidebar-playing-details .cover'));
+            })()`, true);
+
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
                 button('Settings').click();
@@ -570,14 +794,43 @@ app.on("browser-window-created", (_, win) => {
             await capture("settings");
             await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,frame,button,assertContrast}=window.uiReview;
+                button('Appearance').click();
+                await waitFor(()=>document.getElementById('visualizer-style'));
+                const chooseStyle=async(label,value)=>{
+                    document.getElementById('visualizer-style').click();
+                    await waitFor(()=>document.querySelector('[role="option"]'));
+                    [...document.querySelectorAll('[role="option"]')].find(item=>item.textContent.trim()===label).click();
+                    await waitFor(()=>JSON.parse(localStorage.getItem('btunes.appearance.v1')).visualizer===value);
+                };
+                const audio=document.querySelector('audio');
+                const wasPaused=audio.paused;
+                await chooseStyle('Orbit','orbit');
+                await waitFor(()=>document.querySelector('.sound-visualizer[data-style="orbit"]'));
+                await chooseStyle('Off','off');
+                await waitFor(()=>!document.querySelector('.sound-visualizer'));
+                await chooseStyle('Waveform','waveform');
+                await waitFor(()=>document.querySelector('.sound-visualizer[data-style="waveform"]'));
+                if(audio.paused!==wasPaused || window.visualizerProbe.sources!==1) throw new Error('Visualizer settings interrupted or duplicated audio playback');
+                document.getElementById('sidebar-artwork').click();
+                await waitFor(()=>!document.getElementById('sidebar-playing-details'));
                 button('Sidebar').click();
                 await waitFor(()=>document.querySelector('[aria-label="Navigation"]'));
                 await frame();
                 const list=document.querySelector('[aria-label="Navigation"]');
-                if(list.children.length!==document.querySelectorAll('nav[aria-label="Library navigation"] button').length) throw new Error('Sidebar settings must show every navigation item');
+                if(list.children.length+document.querySelector('[aria-label="Collections"]').children.length+document.querySelector('[aria-label="Transfer & sync"]').children.length!==document.querySelectorAll('nav[aria-label="Library navigation"] button').length) throw new Error('Sidebar settings must show every navigation item');
                 if(list.scrollHeight>list.clientHeight+1) throw new Error('Sidebar navigation list should expand instead of scrolling');
                 assertContrast(list.querySelector('li span'),4.5,'Sidebar order label');
                 assertContrast(list.querySelector('button svg'),3,'Sidebar drag handle');
+                const devicesHandle=document.querySelector('[aria-label="Move Devices tools"]');
+                devicesHandle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',altKey:true,bubbles:true}));
+                await waitFor(()=>document.querySelector('[aria-label="Transfer & sync"] li span').textContent==='Devices');
+                const navigationLabels=()=>[...document.querySelectorAll('nav[aria-label="Library navigation"] button')].map(item=>item.textContent.trim());
+                if(navigationLabels().indexOf('Devices')>navigationLabels().indexOf('Downloads')) throw new Error('Transfer ordering did not update the sidebar');
+                devicesHandle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',altKey:true,bubbles:true}));
+                await frame();
+                if(navigationLabels()[0]!=='Songs') throw new Error('Transfer items escaped their navigation group');
+                devicesHandle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',altKey:true,bubbles:true}));
+                await waitFor(()=>document.querySelector('[aria-label="Transfer & sync"] li span').textContent==='Downloads');
             })()`, true);
             await capture("settings-sidebar");
             await win.webContents.executeJavaScript(`(async () => {
@@ -590,6 +843,7 @@ app.on("browser-window-created", (_, win) => {
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(volume,'0.23');
                 volume.dispatchEvent(new Event('input',{bubbles:true}));
                 await window.uiReview.waitFor(()=>document.querySelector('audio').volume===0.23);
+                if(Math.abs(parseFloat(volume.style.getPropertyValue('--range-fill'))-23)>0.1) throw new Error('Volume fill must follow the saved level');
                 await window.uiReview.waitFor(()=>JSON.parse(localStorage.getItem('btunes.volume.v1'))===0.23);
             })()`, true);
             win.webContents.session.flushStorageData();
@@ -604,6 +858,10 @@ app.on("browser-window-created", (_, win) => {
                     await new Promise(resolve=>setTimeout(resolve,20));
                 }
                 if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || document.querySelector('audio').volume!==0.23) throw new Error('Volume did not persist after reopening');
+                if(!document.querySelector('.sound-visualizer[data-style="waveform"]')) throw new Error('Visualizer style did not persist after reopening');
+                if(document.getElementById('sidebar-playing-details')) throw new Error('Sidebar artwork visibility did not persist after reopening');
+                if(!document.querySelector('th[data-column="artwork"]')) throw new Error('Artwork column visibility did not persist after reopening');
+
             })()`, true);
             await capture('compact-songs');
 

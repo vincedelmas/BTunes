@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import {readPreference, writePreference, normalizeOrder, moveItem} from "../src/renderer/src/lib/preferences.ts";
-import {trackSortSchema, volumeSchema} from "../src/shared/schemas/preferences.ts";
+import {appearanceSchema, trackSortSchema, volumeSchema} from "../src/shared/schemas/preferences.ts";
 
 void test("preferences persist valid sort values and reject corrupt or obsolete data", () => {
     const storage = new Map<string, string>();
@@ -21,6 +21,11 @@ void test("preferences persist valid sort values and reject corrupt or obsolete 
         assert.equal(readPreference("volume", volumeSchema, 0.7), 0.23);
         writePreference("volume", 0);
         assert.equal(readPreference("volume", volumeSchema, 0.7), 0);
+        const appearance = { visualizer: "orbit", sidebarArtwork: false } as const;
+        writePreference("appearance", appearance);
+        assert.deepEqual(readPreference("appearance", appearanceSchema, { visualizer: "spectrum", sidebarArtwork: true }), appearance);
+        storage.set("appearance", '{"visualizer":"removed","sidebarArtwork":true}');
+        assert.deepEqual(readPreference("appearance", appearanceSchema, appearance), appearance);
         storage.set("volume", "1.5");
         assert.equal(readPreference("volume", volumeSchema, 0.7), 0.7);
         storage.set("sort", '{"field":"removed","descending":true}');

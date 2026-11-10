@@ -17,6 +17,15 @@ export const formatTime = (seconds: number) => {
 };
 
 
+export function formatDuration(seconds: number) {
+    const minutes = Math.floor(Math.max(0, Number.isFinite(seconds) ? seconds : 0) / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (!hours) return minutes + " min";
+    return hours + " hr " + (minutes % 60) + " min";
+}
+
+
 export function formatBytes(bytes: number) {
     if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
 
