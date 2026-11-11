@@ -26,6 +26,15 @@ app.setName("BTunes");
 
 if (process.platform === "linux") {
     app.setDesktopName("btunes.desktop");
+
+    const platform = app.commandLine.getSwitchValue("ozone-platform");
+    const waylandSession = process.env.XDG_SESSION_TYPE === "wayland" || Boolean(process.env.WAYLAND_DISPLAY);
+    const usesWayland = platform === "wayland" || ((!platform || platform === "auto") && waylandSession);
+
+    if (usesWayland && !app.commandLine.hasSwitch("use-webgpu-adapter")) {
+        // WebGPU otherwise probes native Vulkan even when the UI already renders with OpenGL.
+        app.commandLine.appendSwitch("use-webgpu-adapter", "opengles");
+    }
 }
 
 
