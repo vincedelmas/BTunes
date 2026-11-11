@@ -121,6 +121,12 @@ app.on("browser-window-created", (_, win) => {
                     return bounds.top>=container.top-1 && bounds.bottom<=container.bottom+1;
                 };
                 window.uiReview = { waitFor, frame, button, visible };
+                window.mediaSessionActions = {};
+                const setMediaAction=MediaSession.prototype.setActionHandler;
+                MediaSession.prototype.setActionHandler=function(action,handler){
+                    window.mediaSessionActions[action]=handler;
+                    return setMediaAction.call(this,action,handler);
+                };
                 window.visualizerProbe={sources:0,analyser:null};
                 const createSource=AudioContext.prototype.createMediaElementSource;
                 AudioContext.prototype.createMediaElementSource=function(media){
@@ -398,6 +404,21 @@ app.on("browser-window-created", (_, win) => {
                 await audio.play();
                 await waitFor(() => !audio.paused);
                 await waitFor(()=>window.visualizerProbe.analyser?.context.state==='running');
+                await waitFor(()=>window.mediaSessionActions.nexttrack);
+                if(window.mediaSessionActions.previoustrack) throw new Error('Desktop Previous should be disabled at the beginning of the queue');
+                if(navigator.mediaSession.metadata?.title!=='Silence' || navigator.mediaSession.metadata.artist!=='Fixture artist') throw new Error('Desktop media metadata does not describe the current song');
+                window.mediaSessionActions.nexttrack({action:'nexttrack'});
+                await waitFor(()=>navigator.mediaSession.metadata?.title==='Song 0001' && window.mediaSessionActions.previoustrack);
+                window.mediaSessionActions.previoustrack({action:'previoustrack'});
+                await waitFor(()=>navigator.mediaSession.metadata?.title==='Silence' && !audio.paused);
+                window.mediaSessionActions.pause({action:'pause'});
+                await waitFor(()=>audio.paused && navigator.mediaSession.playbackState==='paused');
+                window.mediaSessionActions.play({action:'play'});
+                await waitFor(()=>!audio.paused && navigator.mediaSession.playbackState==='playing');
+                window.mediaSessionActions.stop({action:'stop'});
+                await waitFor(()=>audio.paused && audio.currentTime<0.1);
+                window.mediaSessionActions.play({action:'play'});
+                await waitFor(()=>!audio.paused && navigator.mediaSession.playbackState==='playing');
                 const playingArtwork=document.querySelector('[aria-label="Locate current song in library"]');
                 const artworkBounds=playingArtwork.getBoundingClientRect();
                 playingArtwork.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:artworkBounds.x+10,clientY:artworkBounds.y+10}));
@@ -724,6 +745,7 @@ app.on("browser-window-created", (_, win) => {
                 const upcoming=()=>[...document.querySelectorAll('[aria-label="Queued songs"] [data-queue-key]')];
                 button('Clear upcoming').click();
                 await waitFor(()=>upcoming().length===0);
+                await waitFor(()=>!window.mediaSessionActions.nexttrack);
                 const enqueueCurrent=async(count)=>{
                     const cover=document.querySelector('[aria-label="Locate current song in library"]');
                     const bounds=cover.getBoundingClientRect();
@@ -733,6 +755,7 @@ app.on("browser-window-created", (_, win) => {
                     await waitFor(()=>upcoming().length===count);
                 };
                 await enqueueCurrent(1);
+                await waitFor(()=>window.mediaSessionActions.nexttrack);
                 await enqueueCurrent(2);
                 const keys=upcoming().map(row=>row.dataset.queueKey);
                 upcoming()[1].querySelector('[aria-label^="Move "]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',altKey:true,bubbles:true}));

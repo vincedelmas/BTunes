@@ -1,0 +1,72 @@
+import {useEffect, useEffectEvent} from "react";
+import type {PlayerState} from "@/types/player";
+import type {Track} from "../../../shared/types/library";
+
+
+export function useMediaSession(player: PlayerState, track?: Track) {
+    const active = Boolean(track);
+    const canWrap = player.repeat !== "off" && player.queue.length > 0;
+    const canGoNext = active && (player.queueIndex < player.queue.length - 1 || canWrap);
+    const canGoPrevious = active && (player.queueIndex > 0 || canWrap);
+
+    const handleAction = useEffectEvent((action: MediaSessionAction) => {
+        switch (action) {
+            case "play":
+                player.play();
+                break;
+            case "pause":
+                player.audio.current?.pause();
+                break;
+            case "stop":
+                player.stop();
+                break;
+            case "nexttrack":
+                player.next();
+                break;
+            case "previoustrack":
+                player.next(-1);
+                break;
+        }
+    });
+
+    useEffect(() => {
+        if (!navigator.mediaSession) return;
+
+        const session = navigator.mediaSession;
+        const actions: [MediaSessionAction, boolean][] = [
+            ["play", active],
+            ["pause", active],
+            ["stop", active],
+            ["nexttrack", canGoNext],
+            ["previoustrack", canGoPrevious],
+        ];
+
+        for (const [action, enabled] of actions) {
+            session.setActionHandler(action, enabled ? () => handleAction(action) : null);
+        }
+
+        return () => {
+            for (const [action] of actions) session.setActionHandler(action, null);
+        };
+    }, [active, canGoNext, canGoPrevious]);
+
+    useEffect(() => {
+        if (!navigator.mediaSession) return;
+
+        navigator.mediaSession.metadata = track ? new MediaMetadata({
+            title: track.title,
+            album: track.album,
+            artist: track.artist,
+        }) : null;
+    }, [track]);
+
+    useEffect(() => {
+        if (!navigator.mediaSession) return;
+        if (!active) {
+            navigator.mediaSession.playbackState = "none";
+            return;
+        }
+
+        navigator.mediaSession.playbackState = player.playing ? "playing" : "paused";
+    }, [active, player.playing]);
+}

@@ -192,6 +192,7 @@ export function usePlayer(onError: (message: string) => void) {
     }
 
     return {
+        play,
         next,
         stop,
         seek,

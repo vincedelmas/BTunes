@@ -15,6 +15,7 @@ import {SettingsPage} from "@/components/settings-page";
 import type {TrackActions} from "@/types/track-actions";
 import {PlayerBar} from "@/components/player/player-bar";
 import type {OpenedCollection} from "@/types/collection";
+import {useMediaSession} from "@/hooks/use-media-session";
 import {QueuePanel} from "@/components/player/queue-panel";
 import {useAudioAnalyser} from "@/hooks/use-audio-analyser";
 import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
@@ -62,6 +63,9 @@ export function App() {
         ? library.data.tracks.filter((track) => openedCollectionIds.has(track.id))
         : [];
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
+
+    useMediaSession(player, current);
+
     const visualizer = appearance.visualizer !== "off"
         ? (
             <SoundVisualizer
