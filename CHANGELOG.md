@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/vincedelmas/BTunes/compare/v1.1.5...v1.2.0) (2026-11-11)
+
+
+### Features
+
+* persist and restore window state ([0103f86](https://github.com/vincedelmas/BTunes/commit/0103f86f91e9cdba0986d752901124f80c351568))
+
 ## [1.1.5](https://github.com/vincedelmas/BTunes/compare/v1.1.4...v1.1.5) (2026-11-11)
 
 
