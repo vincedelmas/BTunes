@@ -1,8 +1,8 @@
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Check} from "lucide-react";
-import {TagForm} from "@/components/tag-form";
 import {Button} from "@/components/ui/button";
+import {TagForm} from "@/components/tag-form";
 import {coverSearchQuery} from "@/lib/artwork";
 import {tagFields} from "../../../../shared/tags";
 import {CoverSearch} from "@/components/cover-search";
@@ -12,7 +12,7 @@ import type {TagPatch} from "../../../../shared/types/tags";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import type {DownloadItem} from "../../../../shared/types/downloads";
 import {tagPatchFieldsSchema} from "../../../../shared/schemas/tags";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
 interface DownloadReviewProps {
@@ -24,32 +24,37 @@ interface DownloadReviewProps {
 
 
 export function DownloadReview({ item, genres, onClose, onSaved }: DownloadReviewProps) {
-    const initial = Object.fromEntries(tagFields.map((field) => [field, String(item.tags[field] || "")])) as Record<keyof TagPatch, string>;
+    const initial = Object.fromEntries(
+        tagFields.map((field) => [field, String(item.tags[field] || "")])
+    ) as Record<keyof TagPatch, string>;
+
     const [values, setValues] = useState(initial);
-    const [artwork, setArtwork] = useState(item.artwork);
-    const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [artwork, setArtwork] = useState(item.artwork);
     const enabled = new Set(tagFields.filter((field) => values[field] !== initial[field]));
+
     const track: Track = {
         id: 0,
         path: "",
-        title: values.title,
-        artist: values.artist,
-        albumArtist: values.albumArtist,
-        album: values.album,
-        genre: values.genre,
-        year: Number(values.year),
         size: 0,
+        plays: 0,
+        cover: null,
         duration: 0,
         favorite: 0,
-        plays: 0,
         lastPlayed: 0,
-        cover: null
+        genre: values.genre,
+        title: values.title,
+        album: values.album,
+        artist: values.artist,
+        year: Number(values.year),
+        albumArtist: values.albumArtist
     };
 
     async function save() {
-        setBusy(true);
         setError("");
+        setBusy(true);
+
         try {
             const patch = tagPatchFieldsSchema.parse({ ...values, year: Number(values.year) });
             await rpc("downloads.publish", { id: item.id, patch, artworkId: artwork?.id });
@@ -66,14 +71,14 @@ export function DownloadReview({ item, genres, onClose, onSaved }: DownloadRevie
 
     return (
         <Dialog
-            open
+            open={true}
             onOpenChange={(open) => {
                 if (!open && !busy) onClose();
             }}
         >
             <DialogContent
                 showCloseButton={!busy}
-                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]"
+                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-175"
             >
                 <DialogHeader className="shrink-0 bg-linear-to-br from-primary/10 to-card px-7 py-6">
                     <DialogTitle>
@@ -87,11 +92,11 @@ export function DownloadReview({ item, genres, onClose, onSaved }: DownloadRevie
                     </DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 overflow-y-auto px-7 py-6">
-                    {item.message && (
+                    {item.message &&
                         <p className="mb-5 text-sm text-muted-foreground">
                             {item.message}
                         </p>
-                    )}
+                    }
                     <TagForm
                         busy={busy}
                         batch={false}
@@ -110,10 +115,7 @@ export function DownloadReview({ item, genres, onClose, onSaved }: DownloadRevie
                         query={coverSearchQuery(item.title, values)}
                     />
                     {error && (
-                        <Alert
-                            className="mt-4"
-                            variant="destructive"
-                        >
+                        <Alert className="mt-4" variant="destructive">
                             <AlertDescription>
                                 {error}
                             </AlertDescription>
@@ -121,17 +123,10 @@ export function DownloadReview({ item, genres, onClose, onSaved }: DownloadRevie
                     )}
                 </div>
                 <DialogFooter className="m-0 shrink-0 rounded-none px-7 py-4">
-                    <Button
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={onClose}
-                    >
+                    <Button variant="ghost" disabled={busy} onClick={onClose}>
                         Review later
                     </Button>
-                    <Button
-                        disabled={busy}
-                        onClick={() => void save()}
-                    >
+                    <Button disabled={busy} onClick={() => void save()}>
                         <Check data-icon="inline-start"/>
                         {busy ? "Saving…" : "Save to library"}
                     </Button>

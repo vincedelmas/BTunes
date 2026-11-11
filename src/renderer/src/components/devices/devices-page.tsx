@@ -19,13 +19,16 @@ interface DevicesPageProps {
 
 export function DevicesPage({ visualizer, searchControl, query }: DevicesPageProps) {
     const phone = useDevices();
-    const folders = phone.files.filter((file) => file.directory).sort((first, second) => first.name.localeCompare(second.name));
-    const selectedDevice = phone.devices.find((device) => device.storages.some((storage) => storage.id === phone.storageId));
-    const parent = phone.path.slice(0, phone.path.lastIndexOf("/")) || "/";
     const search = query.trim().toLocaleLowerCase();
-    const devices = phone.devices.filter((device) => (
-        [device.name, ...device.storages.map((storage) => storage.name)].join(" ").toLocaleLowerCase().includes(search)
-    ));
+
+    const parent = phone.path.slice(0, phone.path.lastIndexOf("/")) || "/";
+    const selectedDevice = phone.devices.find((d) => d.storages.some((s) => s.id === phone.storageId));
+    const folders = phone.files.filter((f) => f.directory).sort((fi, se) => fi.name.localeCompare(se.name));
+
+    const devices = phone.devices
+        .filter((d) => ([d.name, ...d.storages.map((s) => s.name)]
+            .join(" ").toLocaleLowerCase().includes(search)));
+
     const visibleFolders = folders.filter((folder) => folder.name.toLocaleLowerCase().includes(search));
 
     return (
@@ -52,36 +55,36 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                 actions={
                     <Button
                         variant="outline"
-                        onClick={() => void phone.refresh()}
                         disabled={phone.busy || phone.loading}
+                        onClick={() => void phone.refresh()}
                     >
                         <RefreshCw data-icon="inline-start"/>
                         {phone.loading ? "Looking for devices…" : "Refresh devices"}
                     </Button>
                 }
             />
-            <div
-                className="device-content grid min-h-0 flex-1 auto-rows-max content-start gap-5 overflow-x-hidden overflow-y-auto pb-3 pr-1"
-            >
-                {phone.error && (
+            <div className="device-content grid min-h-0 flex-1 auto-rows-max content-start gap-5 overflow-x-hidden overflow-y-auto pb-3 pr-1">
+                {phone.error &&
                     <Alert variant="destructive">
                         <AlertDescription>
                             {phone.error}
                         </AlertDescription>
                     </Alert>
-                )}
-                {!phone.devices.length && !phone.loading && (
+                }
+
+                {!phone.devices.length && !phone.loading &&
                     <EmptyState
                         icon={Usb}
                         title="Connect your phone by USB"
                         description="Unlock your phone and choose File Transfer in its USB settings. It will appear here when connected."
                     />
-                )}
-                {search && !devices.length && !selectedDevice && phone.devices.length > 0 && (
+                }
+
+                {search && !devices.length && !selectedDevice && phone.devices.length > 0 &&
                     <p className="text-sm text-muted-foreground">
                         No devices match your search.
                     </p>
-                )}
+                }
                 {devices.map((device) => (
                     <Card key={device.id}>
                         <CardHeader>
@@ -98,35 +101,30 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {!device.storages.length ? (
+                            {!device.storages.length ?
                                 <p className="text-sm text-muted-foreground">
-                                    Storage is unavailable. Unlock the phone and reconnect its cable with File Transfer enabled.
+                                    Storage is unavailable.
+                                    Unlock the phone and reconnect its cable with File Transfer enabled.
                                 </p>
-                            ) : (
+                                :
                                 <div className="flex flex-wrap gap-3">
-                                    {device.storages.map((storage) => (
+                                    {device.storages.map((storage) =>
                                         <Button
                                             key={storage.id}
                                             disabled={phone.busy || phone.opening}
-                                            onClick={() => void phone.browse("/", storage.id)}
                                             variant={storage.id === phone.storageId ? "secondary" : "outline"}
+                                            onClick={() => void phone.browse("/", storage.id)}
                                         >
                                             <Folder data-icon="inline-start"/>
-                                            {storage.name}
-                                            {" "}
-                                            ·
-                                            {" "}
-                                            {formatBytes(storage.freeBytes)}
-                                            {" "}
-                                            free
+                                            {storage.name}{" "}·{" "}{formatBytes(storage.freeBytes)}{" "}free
                                         </Button>
-                                    ))}
+                                    )}
                                 </div>
-                            )}
+                            }
                         </CardContent>
                     </Card>
                 ))}
-                {selectedDevice && (
+                {selectedDevice &&
                     <Card>
                         <CardHeader>
                             <CardTitle>
@@ -153,7 +151,7 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-                                {visibleFolders.map((folder) => (
+                                {visibleFolders.map((folder) =>
                                     <Button
                                         variant="ghost"
                                         key={folder.path}
@@ -170,13 +168,15 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                                             data-icon="inline-end"
                                         />
                                     </Button>
-                                ))}
+                                )}
                             </div>
-                            {search && !visibleFolders.length && (
+
+                            {search && !visibleFolders.length &&
                                 <p className="text-xs text-muted-foreground">
                                     No folders match your search.
                                 </p>
-                            )}
+                            }
+
                             <div className="flex flex-wrap gap-3">
                                 <Button
                                     onClick={() => void phone.compare()}
@@ -184,7 +184,8 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                                 >
                                     Compare with PC
                                 </Button>
-                                {phone.path === "/" && !folders.some((folder) => folder.name.toLowerCase() === "music") && (
+
+                                {phone.path === "/" && !folders.some((folder) => folder.name.toLowerCase() === "music") &&
                                     <Button
                                         variant="outline"
                                         disabled={phone.busy || phone.opening}
@@ -193,11 +194,11 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                                         <FolderPlus data-icon="inline-start"/>
                                         Create Music folder
                                     </Button>
-                                )}
+                                }
                             </div>
                         </CardContent>
                     </Card>
-                )}
+                }
                 <DeviceComparison
                     state={phone.state}
                     onSync={() => void phone.sync()}

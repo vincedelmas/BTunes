@@ -7,7 +7,7 @@ import {ArrowLeft, Brain, ListMusic, Plus} from "lucide-react";
 import type {Playlist} from "../../../../shared/types/library";
 import {PlaylistForm} from "@/components/library/playlist-form";
 import {PlaylistItem} from "@/components/library/playlist-item";
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
 interface PlaylistBrowserProps {
@@ -23,9 +23,9 @@ interface PlaylistBrowserProps {
 
 
 export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNavigate, onRefresh, onError }: PlaylistBrowserProps) {
-    const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState<Playlist>();
     const [deleting, setDeleting] = useState<Playlist>();
+    const [creating, setCreating] = useState(false);
     const [removing, setRemoving] = useState(false);
 
     async function deletePlaylist() {
@@ -49,26 +49,13 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
     }
 
     return (
-        <section
-            id="playlist-browser"
-            aria-label="Playlist browser"
-            className="playlist-browser flex min-h-0 flex-1 flex-col"
-        >
+        <section id="playlist-browser" aria-label="Playlist browser" className="playlist-browser flex min-h-0 flex-1 flex-col">
             <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-                <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onBack}
-                >
+                <Button size="sm" variant="ghost" onClick={onBack}>
                     <ArrowLeft data-icon="inline-start"/>
                     Library
                 </Button>
-                <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label="Create playlist"
-                    onClick={() => setCreating(true)}
-                >
+                <Button size="icon" variant="ghost" aria-label="Create playlist" onClick={() => setCreating(true)}>
                     <Plus/>
                 </Button>
             </div>
@@ -94,30 +81,32 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                 <p className="mb-2 mt-5 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                     Your playlists
                 </p>
-                {!playlists.length && (
+                {!playlists.length &&
                     <p className="px-2 text-xs text-muted-foreground">
                         Create a playlist or choose a genre rule.
                     </p>
-                )}
+                }
+
                 {layout.playlistIds.map((id) => {
                     const playlist = playlists.find((entry) => String(entry.id) === id)!;
+
                     return (
                         <PlaylistItem
                             key={id}
                             name={playlist.name}
                             smart={Boolean(playlist.rule)}
                             active={view === "playlist:" + id}
-                            onEdit={() => setEditing(playlist)}
                             canPin={layout.pinnedIds.length < 3}
+                            onEdit={() => setEditing(playlist)}
                             onDelete={() => setDeleting(playlist)}
-                            onNavigate={() => onNavigate("playlist:" + id)}
                             pinned={layout.pinnedIds.includes("playlist:" + id)}
+                            onNavigate={() => onNavigate("playlist:" + id)}
                             onPin={() => layout.setPinned("playlist:" + id, !layout.pinnedIds.includes("playlist:" + id))}
                         />
                     );
                 })}
             </div>
-            {(creating || editing) && (
+            {(creating || editing) &&
                 <Dialog
                     open
                     onOpenChange={(open) => {
@@ -126,16 +115,13 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                         setEditing(undefined);
                     }}
                 >
-                    <DialogContent className="playlist-dialog gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+                    <DialogContent className="playlist-dialog gap-0 overflow-hidden p-0 sm:max-w-140">
                         <DialogHeader className="bg-linear-to-br from-primary/10 to-card px-7 py-6">
-                            <div
-                                className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
-                            >
-                                {editing?.rule ? (
-                                    <Brain className="size-6"/>
-                                ) : (
-                                    <ListMusic className="size-6"/>
-                                )}
+                            <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                {editing?.rule
+                                    ? <Brain className="size-6"/>
+                                    : <ListMusic className="size-6"/>
+                                }
                             </div>
                             <DialogTitle className="text-2xl font-bold">
                                 {editing ? "Edit playlist" : "Create playlist"}
@@ -165,10 +151,10 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                         />
                     </DialogContent>
                 </Dialog>
-            )}
-            {deleting && (
+            }
+            {deleting &&
                 <Dialog
-                    open
+                    open={true}
                     onOpenChange={(open) => {
                         if (!open && !removing) setDeleting(undefined);
                     }}
@@ -185,24 +171,16 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                             </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                            <Button
-                                variant="ghost"
-                                disabled={removing}
-                                onClick={() => setDeleting(undefined)}
-                            >
+                            <Button variant="ghost" disabled={removing} onClick={() => setDeleting(undefined)}>
                                 Cancel
                             </Button>
-                            <Button
-                                disabled={removing}
-                                variant="destructive"
-                                onClick={() => void deletePlaylist()}
-                            >
+                            <Button disabled={removing} variant="destructive" onClick={() => void deletePlaylist()}>
                                 {removing ? "Deleting…" : "Delete playlist"}
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-            )}
+            }
         </section>
     );
 }

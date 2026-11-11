@@ -26,16 +26,16 @@ export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCanc
     const [saving, setSaving] = useState(false);
     const [name, setName] = useState(playlist?.name ?? "");
     const [rule, setRule] = useState(playlist?.rule ?? "");
-    const rules = [...new Set([...genres, ...(playlist?.rule ? [playlist.rule] : [])])];
 
+    const rules = [...new Set([...genres, ...(playlist?.rule ? [playlist.rule] : [])])];
     const saveLabel = playlist ? "Save playlist" : "Create playlist";
 
     async function save() {
         setSaving(true);
 
         try {
-            const details = { name, rule: rule || undefined };
             let id: number;
+            const details = { name, rule: rule || undefined };
 
             if (playlist) {
                 await rpc("playlist.update", { id: playlist.id, ...details });
@@ -108,29 +108,23 @@ export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCanc
                             Pin to main sidebar
                         </FieldLabel>
                         <FieldDescription>
-                            {!pinned && !canPin ? "Three playlists are already pinned. Unpin one to make room." : "Keep this playlist at hand. Up to three playlists can be pinned."}
+                            {!pinned && !canPin
+                                ? "Three playlists are already pinned. Unpin one to make room."
+                                : "Keep this playlist at hand. Up to three playlists can be pinned."
+                            }
                         </FieldDescription>
                     </div>
                 </Field>
             </FieldGroup>
             <DialogFooter className="m-0 rounded-none px-7 py-4">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={saving}
-                    onClick={onCancel}
-                >
+                <Button type="button" variant="ghost" disabled={saving} onClick={onCancel}>
                     Cancel
                 </Button>
-                <Button
-                    type="submit"
-                    disabled={saving || !name.trim()}
-                >
-                    {playlist ? (
-                        <Check data-icon="inline-start"/>
-                    ) : (
-                        <Plus data-icon="inline-start"/>
-                    )}
+                <Button type="submit" disabled={saving || !name.trim()}>
+                    {playlist
+                        ? <Check data-icon="inline-start"/>
+                        : <Plus data-icon="inline-start"/>
+                    }
                     {saving ? "Saving…" : saveLabel}
                 </Button>
             </DialogFooter>

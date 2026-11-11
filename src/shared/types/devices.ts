@@ -4,11 +4,13 @@ interface DeviceStorage {
     freeBytes: number;
 }
 
+
 export interface MusicDevice {
     id: string;
     name: string;
     storages: DeviceStorage[];
 }
+
 
 export interface DeviceFile {
     name: string;
@@ -16,6 +18,7 @@ export interface DeviceFile {
     size: number;
     directory: boolean;
 }
+
 
 interface DeviceComparison {
     bytes: number;
@@ -25,6 +28,7 @@ interface DeviceComparison {
     phoneOnly: number;
     preview: { title: string; artist: string }[];
 }
+
 
 export interface DeviceSyncState {
     total: number;

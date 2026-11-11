@@ -11,7 +11,9 @@ import {downloaderSettingsSchema} from "../../../../shared/schemas/downloads";
 import {BookmarkPatternFields} from "@/components/downloads/bookmark-pattern-fields";
 import {Field, FieldContent, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/field";
 
-const qualityOptions = ["128k", "192k", "256k", "320k"].map((value) => ({ value, label: value.replace("k", " kbps") }));
+
+const qualityOptions = ["128k", "192k", "256k", "320k"]
+    .map((value) => ({ value, label: value.replace("k", " kbps") }));
 
 
 interface DownloadSettingsProps {
@@ -25,10 +27,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
 
     if (!settings) {
         return (
-            <p
-                role="status"
-                className="py-6 text-sm text-muted-foreground"
-            >
+            <p role="status" className="py-6 text-sm text-muted-foreground">
                 {error || "Loading download settings…"}
             </p>
         );
@@ -40,11 +39,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                 title="Bookmarks"
                 description="Select the bookmarks file and folder used for downloads."
                 action={
-                    <Button
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() => void form.importSettings()}
-                    >
+                    <Button variant="ghost" disabled={busy} onClick={() => void form.importSettings()}>
                         <Import data-icon="inline-start"/>
                         Import Go app settings
                     </Button>
@@ -57,25 +52,18 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                         </FieldLabel>
                         <div className="flex items-center gap-4 rounded-lg border border-border/60 p-3">
                             <FileJson className="size-5 shrink-0 text-muted-foreground"/>
-                            <div
-                                className="min-w-0 flex-1"
-                                aria-labelledby="download-bookmarks-label"
-                            >
+                            <div className="min-w-0 flex-1" aria-labelledby="download-bookmarks-label">
                                 <p className="truncate font-medium">
-                                    {settings.bookmarksFile ? "Bookmarks file selected" : "Choose a browser file"}
+                                    {settings.bookmarksFile
+                                        ? "Bookmarks file selected"
+                                        : "Choose a browser file"
+                                    }
                                 </p>
-                                <p
-                                    title={settings.bookmarksFile}
-                                    className="mt-1 truncate text-xs text-muted-foreground"
-                                >
+                                <p title={settings.bookmarksFile} className="mt-1 truncate text-xs text-muted-foreground">
                                     {settings.bookmarksFile || "Chrome or Brave · bookmarks are only read"}
                                 </p>
                             </div>
-                            <Button
-                                disabled={busy}
-                                variant="outline"
-                                onClick={() => void form.chooseBookmarks()}
-                            >
+                            <Button disabled={busy} variant="outline" onClick={() => void form.chooseBookmarks()}>
                                 <FolderOpen data-icon="inline-start"/>
                                 Browse
                             </Button>
@@ -107,10 +95,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                     />
                 </FieldGroup>
             </SettingsSection>
-            <SettingsSection
-                title="Audio & library"
-                description="Set the output folder and audio quality."
-            >
+            <SettingsSection title="Audio & library" description="Set the output folder and audio quality.">
                 <FieldGroup>
                     <Field>
                         <FieldLabel htmlFor="download-destination">
@@ -126,11 +111,11 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                             onChange={(destination) => change({ destination })}
                             options={musicFolders.map((folder) => ({ value: folder, label: folder }))}
                         />
-                        {!musicFolders.length && (
+                        {!musicFolders.length &&
                             <FieldDescription>
                                 Add a music folder in the Library tab first.
                             </FieldDescription>
-                        )}
+                        }
                     </Field>
                     <FieldGroup className="grid gap-5 sm:grid-cols-2">
                         <Field>
@@ -171,10 +156,7 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                         </Field>
                     </FieldGroup>
                     <Separator/>
-                    <Field
-                        data-disabled={busy}
-                        orientation="horizontal"
-                    >
+                    <Field data-disabled={busy} orientation="horizontal">
                         <FieldContent>
                             <FieldLabel htmlFor="download-metadata">
                                 Automatic tags & artwork
@@ -192,39 +174,34 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
                     </Field>
                 </FieldGroup>
             </SettingsSection>
-            {error && (
+
+            {error &&
                 <Alert variant="destructive">
                     <AlertDescription>
                         {error}
                     </AlertDescription>
                 </Alert>
-            )}
-            <div
-                className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/95 px-5 py-4 backdrop-blur-xl"
-            >
-                <p
-                    role="status"
-                    className="flex items-center gap-2 text-xs text-muted-foreground"
-                >
-                    {!dirty && notice && (
+            }
+
+            <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-xl border
+            border-border/60 bg-card/95 px-5 py-4 backdrop-blur-xl">
+                <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {!dirty && notice &&
                         <Check className="size-3.5 text-primary"/>
-                    )}
-                    {dirty ? "You have unsaved changes." : notice || "Your download preferences are up to date."}
+                    }
+
+                    {dirty
+                        ? "You have unsaved changes."
+                        : notice || "Your download preferences are up to date."
+                    }
                 </p>
                 <div className="flex items-center gap-2">
-                    {dirty && (
-                        <Button
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() => void form.reset()}
-                        >
+                    {dirty &&
+                        <Button variant="ghost" disabled={busy} onClick={() => void form.reset()}>
                             Discard
                         </Button>
-                    )}
-                    <Button
-                        disabled={busy || !dirty}
-                        onClick={() => void form.save()}
-                    >
+                    }
+                    <Button disabled={busy || !dirty} onClick={() => void form.save()}>
                         <Save data-icon="inline-start"/>
                         {busy ? "Working…" : "Save changes"}
                     </Button>

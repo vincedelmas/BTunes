@@ -1,8 +1,9 @@
-export function genreKey(value: string) {
+export const genreKey = (value: string) => {
     return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
 }
 
-export function genreChoices(values: Iterable<string>) {
+
+export const genreChoices = (values: Iterable<string>) => {
     const groups = new Map<string, Map<string, number>>();
 
     for (const value of values) {
@@ -18,9 +19,10 @@ export function genreChoices(values: Iterable<string>) {
     return [...groups.values()]
         .map((spellings) => [...spellings].sort((first, second) => second[1] - first[1])[0][0])
         .sort((first, second) => first.localeCompare(second, "en", { sensitivity: "base" }));
-}
+};
 
-export function resolveGenre(value: string, choices: string[]) {
+
+export const resolveGenre = (value: string, choices: string[]) => {
     const key = genreKey(value);
     return choices.find((choice) => genreKey(choice) === key) ?? value.trim().replace(/\s+/g, " ");
-}
+};

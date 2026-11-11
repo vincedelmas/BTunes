@@ -13,17 +13,20 @@ interface BookmarkPatternFieldsProps {
 
 export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkPatternFieldsProps) {
     const [example, setExample] = useState("Daft Punk - One More Time");
-    let artist = "";
+
     let title = "";
     let error = "";
+    let artist = "";
 
     try {
         const fields = compileBookmarkPattern(pattern).exec(example)?.groups;
-        artist = fields?.artist?.trim() || "";
         title = fields?.title?.trim() || "";
+        artist = fields?.artist?.trim() || "";
     }
     catch (cause) {
-        error = cause instanceof Error ? cause.message : "Check your bookmark pattern.";
+        error = cause instanceof Error
+            ? cause.message
+            : "Check your bookmark pattern.";
     }
 
     return (
@@ -54,11 +57,11 @@ export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkP
                     {" "}
                     for sections to ignore.
                 </FieldDescription>
-                {error && (
+                {error &&
                     <p className="text-xs text-destructive">
                         {error}
                     </p>
-                )}
+                }
             </Field>
             <Field>
                 <FieldLabel htmlFor="download-example">
@@ -70,26 +73,17 @@ export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkP
                     id="download-example"
                     onChange={(ev) => setExample(ev.target.value)}
                 />
-                <div
-                    aria-live="polite"
-                    className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground"
-                >
-                    {artist && title ? (
+                <div aria-live="polite" className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                    {artist && title ?
                         <>
-                            <p
-                                title={artist}
-                                className="truncate"
-                            >
+                            <p title={artist} className="truncate">
                                 Artist
                                 {" "}
                                 <span className="ml-2 text-foreground">
                                     {artist}
                                 </span>
                             </p>
-                            <p
-                                title={title}
-                                className="truncate"
-                            >
+                            <p title={title} className="truncate">
                                 Title
                                 {" "}
                                 <span className="ml-2 text-foreground">
@@ -97,11 +91,9 @@ export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkP
                                 </span>
                             </p>
                         </>
-                    ) : (
-                        <p>
-                            Try a name that matches your pattern to see the result.
-                        </p>
-                    )}
+                        :
+                        <p>Try a name that matches your pattern to see the result.</p>
+                    }
                 </div>
             </Field>
         </FieldGroup>

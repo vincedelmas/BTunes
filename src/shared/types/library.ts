@@ -1,26 +1,29 @@
+export type Playlist = { id: number; name: string; rule: string | null };
+export type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed" | "albumArtist"> & { albumArtist?: string };
+
+
 export type Track = {
     id: number;
     path: string;
+    year: number;
+    size: number;
     title: string;
-    artist: string;
-    albumArtist: string;
     album: string;
     genre: string;
-    year: number;
+    plays: number;
+    artist: string;
     duration: number;
     favorite: number;
-    plays: number;
     lastPlayed: number;
-    cover: string | null;
-    size: number;
     modifiedAt?: number;
-};
-export type Playlist = { id: number; name: string; rule: string | null };
-export type Snapshot = {
-    revision: number;
-    tracks: Track[];
-    playlists: Playlist[];
-    folders: string[];
+    albumArtist: string;
+    cover: string | null;
 };
 
-export type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed" | "albumArtist"> & { albumArtist?: string };
+
+export type Snapshot = {
+    tracks: Track[];
+    revision: number;
+    folders: string[];
+    playlists: Playlist[];
+};

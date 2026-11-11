@@ -21,11 +21,7 @@ export function PlaylistItem({ name, active, smart, pinned, canPin, onPin, onNav
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger
-                render={
-                    <div className="playlist-item group flex min-w-0 items-center gap-1"/>
-                }
-            >
+            <ContextMenuTrigger render={<div className="playlist-item group flex min-w-0 items-center gap-1"/>}>
                 <Button
                     size="navigation"
                     onClick={onNavigate}
@@ -33,15 +29,15 @@ export function PlaylistItem({ name, active, smart, pinned, canPin, onPin, onNav
                     aria-current={active ? "page" : undefined}
                     className="nav-item min-w-0 flex-1 justify-start aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)] [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground"
                 >
-                    {smart ? (
+                    {smart ?
                         <Brain
                             className="text-info"
                             data-icon="inline-start"
                             aria-label="Smart playlist"
                         />
-                    ) : (
+                        :
                         <ListMusic data-icon="inline-start"/>
-                    )}
+                    }
                     <span className="truncate">
                         {name}
                     </span>
@@ -54,49 +50,36 @@ export function PlaylistItem({ name, active, smart, pinned, canPin, onPin, onNav
                     aria-pressed={pinned}
                     disabled={!pinned && !canPin}
                     title={!pinned && !canPin ? "Unpin a playlist first (3 of 3 pinned)" : pinLabel}
-                    className="pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+                    className="pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100
+                    focus-visible:pointer-events-auto focus-visible:opacity-100"
                 >
-                    {pinned ? (
-                        <PinOff/>
-                    ) : (
-                        <Pin/>
-                    )}
+                    {pinned ? <PinOff/> : <Pin/>}
                 </Button>
             </ContextMenuTrigger>
             <ContextMenuContent className="track-menu">
                 <ContextMenuGroup>
-                    <ContextMenuItem
-                        onClick={onPin}
-                        disabled={!pinned && !canPin}
-                    >
-                        {pinned ? (
-                            <PinOff/>
-                        ) : (
-                            <Pin/>
-                        )}
+                    <ContextMenuItem onClick={onPin} disabled={!pinned && !canPin}>
+                        {pinned ? <PinOff/> : <Pin/>}
                         {pinned ? "Unpin playlist" : "Pin to sidebar"}
                     </ContextMenuItem>
-                    {onEdit && (
+                    {onEdit &&
                         <ContextMenuItem onClick={onEdit}>
                             <Pencil/>
                             Edit playlist
                         </ContextMenuItem>
-                    )}
+                    }
                 </ContextMenuGroup>
-                {onDelete && (
+                {onDelete &&
                     <>
                         <ContextMenuSeparator/>
                         <ContextMenuGroup>
-                            <ContextMenuItem
-                                onClick={onDelete}
-                                variant="destructive"
-                            >
+                            <ContextMenuItem onClick={onDelete} variant="destructive">
                                 <Trash2/>
                                 Delete playlist
                             </ContextMenuItem>
                         </ContextMenuGroup>
                     </>
-                )}
+                }
             </ContextMenuContent>
         </ContextMenu>
     );

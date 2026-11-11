@@ -7,8 +7,9 @@ import {compareTracks} from "../../../shared/track-sorting";
 import type {TrackSort} from "../../../shared/types/track-sorting";
 import {useDeferredValue, useEffect, useRef, useState} from "react";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
-import {duplicateKey, groupAlbums, getAlbumArtist} from "@/lib/music";
+import {duplicateKey, getAlbumArtist, groupAlbums} from "@/lib/music";
 import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
+
 
 const viewTitles: Record<string, string> = {
     albums: "Albums",
@@ -78,9 +79,10 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         if (artist && getAlbumArtist(track) !== artist) return false;
         if (view === "history" && !track.lastPlayed) return false;
         if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
-        if (view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2) return false;
 
-        return true;
+        return !(view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2);
+
+
     }).sort((first, second) => compareTracks(first, second, sort));
 
     const albums = view === "albums" ? groupAlbums(tracks) : [];
@@ -171,9 +173,9 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }
 
     return {
-        view, search, artist, sort, selected, tracks, albums, genres,
-        activePlaylist, title, smartMix,
-        setSearch, setArtist, setSort, setSelected,
-        navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
+        view, search, artist, sort, selected, tracks, albums,
+        genres, activePlaylist, title, smartMix, setSearch,
+        setArtist, setSort, setSelected, navigate, goBack,
+        goForward, clearSearch, showArtist, clearFilters,
     };
 }

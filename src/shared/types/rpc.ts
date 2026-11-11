@@ -8,6 +8,7 @@ import type {TagPreview, TagSaveResult} from "./tags";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
 import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
 
+
 type RpcOutputs = {
     "updates.get": UpdateState;
     "updates.check": void;
@@ -51,15 +52,19 @@ type RpcOutputs = {
     "playlist.delete": void;
 };
 
+
 export type RpcInput<K extends keyof typeof rpcSchemas> = z.infer<(typeof rpcSchemas)[K]>;
 
+
 export type Rpc = <K extends keyof RpcOutputs>(method: K, input: RpcInput<K>) => Promise<RpcOutputs[K]>;
+
 
 declare global {
     interface Window {
         btunes: { rpc: Rpc; filePaths: (files: File[]) => string[] };
     }
 }
+
 
 export type RpcRoutes = {
     [K in keyof RpcOutputs]: {

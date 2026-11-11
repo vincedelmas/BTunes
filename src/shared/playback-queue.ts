@@ -1,35 +1,45 @@
 import type {PlaybackQueue} from "./types/playback-queue.ts";
 
 
-export function removeQueuedTrack(queue: PlaybackQueue, key: number): PlaybackQueue {
+export const removeQueuedTrack = (queue: PlaybackQueue, key: number): PlaybackQueue => {
     const index = queue.entries.findIndex((entry) => entry.key === key);
     if (index < 0 || index === queue.index) return queue;
 
     return {
-        entries: queue.entries.filter((entry) => entry.key !== key),
         index: index < queue.index ? queue.index - 1 : queue.index,
+        entries: queue.entries.filter((entry) => entry.key !== key),
     };
-}
+};
 
 
-export function reorderUpcoming(queue: PlaybackQueue, keys: number[]): PlaybackQueue {
+export const reorderUpcoming = (queue: PlaybackQueue, keys: number[]): PlaybackQueue => {
     const upcoming = queue.entries.slice(queue.index + 1);
     const entries = new Map(upcoming.map((entry) => [entry.key, entry]));
-    if (keys.length !== upcoming.length || new Set(keys).size !== keys.length || keys.some((key) => !entries.has(key))) return queue;
+
+    if (
+        keys.length !== upcoming.length
+        || new Set(keys).size !== keys.length
+        || keys.some((key) => !entries.has(key))
+    ) {
+        return queue;
+    }
 
     return {
-        entries: [...queue.entries.slice(0, queue.index + 1), ...keys.map((key) => entries.get(key)!)],
         index: queue.index,
+        entries: [...queue.entries.slice(0, queue.index + 1), ...keys.map((key) => entries.get(key)!)],
+    };
+};
+
+
+export const clearUpcoming = (queue: PlaybackQueue): PlaybackQueue => {
+    return {
+        index: queue.index,
+        entries: queue.entries.slice(0, queue.index + 1),
     };
 }
 
 
-export function clearUpcoming(queue: PlaybackQueue): PlaybackQueue {
-    return { entries: queue.entries.slice(0, queue.index + 1), index: queue.index };
-}
-
-
-export function shuffleUpcoming(queue: PlaybackQueue, random = Math.random): PlaybackQueue {
+export const shuffleUpcoming = (queue: PlaybackQueue, random = Math.random): PlaybackQueue => {
     const upcoming = queue.entries.slice(queue.index + 1);
 
     for (let index = upcoming.length - 1; index > 0; index--) {
@@ -37,15 +47,22 @@ export function shuffleUpcoming(queue: PlaybackQueue, random = Math.random): Pla
         [upcoming[index], upcoming[target]] = [upcoming[target], upcoming[index]];
     }
 
-    return { entries: [...queue.entries.slice(0, queue.index + 1), ...upcoming], index: queue.index };
-}
+    return {
+        index: queue.index,
+        entries: [...queue.entries.slice(0, queue.index + 1), ...upcoming],
+    };
+};
 
 
-export function restoreUpcoming(queue: PlaybackQueue, keys: number[]): PlaybackQueue {
-    const positions = new Map(keys.map((key, index) => [key, index]));
-    const upcoming = queue.entries.slice(queue.index + 1).toSorted((first, second) => (
-        (positions.get(first.key) ?? Infinity) - (positions.get(second.key) ?? Infinity) || first.key - second.key
-    ));
+export const restoreUpcoming = (queue: PlaybackQueue, keys: number[]): PlaybackQueue => {
+    const pos = new Map(keys.map((key, index) => [key, index]));
 
-    return { entries: [...queue.entries.slice(0, queue.index + 1), ...upcoming], index: queue.index };
-}
+    const upcoming = queue.entries
+        .slice(queue.index + 1)
+        .toSorted((first, second) => ((pos.get(first.key) ?? Infinity) - (pos.get(second.key) ?? Infinity) || first.key - second.key));
+
+    return {
+        index: queue.index,
+        entries: [...queue.entries.slice(0, queue.index + 1), ...upcoming],
+    };
+};

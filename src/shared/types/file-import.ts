@@ -5,6 +5,7 @@ export interface FileImportResult {
     errors: { path: string; message: string }[];
 }
 
+
 export interface FileImportChoice {
     folder: string;
     operation: "copy" | "move";

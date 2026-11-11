@@ -37,34 +37,19 @@ interface LibraryPageProps {
 }
 
 
-export function LibraryPage({
-    collection,
-    data,
-    current,
-    playing,
-    actions,
-    reveal,
-    onRevealed,
-    onOpenAlbum,
-    onOpenArtist,
-    onSettings,
-    onImported,
-    onPlay,
-    visualizer,
-    searchControl,
-    feedback
-}: LibraryPageProps) {
+export function LibraryPage(props: LibraryPageProps) {
+    const {
+        collection, data, current, playing, actions, reveal, onRevealed, onOpenAlbum,
+        onOpenArtist, onSettings, onImported, onPlay, visualizer, searchControl, feedback,
+    } = props;
+
     const { view, title, tracks, albums, sort, selected, search, artist, setSort, setSelected, setArtist, clearFilters } = collection;
 
     const navigation = navigationItems.find((item) => item.id === view);
     let icon = navigation?.icon ?? ListMusic;
 
-    if (collection.activePlaylist) {
-        icon = collection.activePlaylist.rule ? Brain : ListMusic;
-    }
-    else if (collection.smartMix) {
-        icon = Brain;
-    }
+    if (collection.activePlaylist) icon = collection.activePlaylist.rule ? Brain : ListMusic;
+    else if (collection.smartMix) icon = Brain;
 
     const coverTrack = collection.activePlaylist
         ? tracks.find((track) => track.cover)
@@ -129,23 +114,25 @@ export function LibraryPage({
 
     return (
         <>
-            <div
-                className="library-hero shrink-0 border-b border-border/60 bg-linear-to-br from-primary/4 via-background to-background px-6 py-5"
-            >
+            <div className="library-hero shrink-0 border-b border-border/60 bg-linear-to-br from-primary/4 via-background to-background px-6 py-5">
                 <PageHeader
                     icon={icon}
                     title={title}
                     search={searchControl}
                     visualizer={visualizer}
-                    artwork={coverTrack ? (
+                    artwork={coverTrack ?
                         <Cover
-                            large
+                            large={true}
                             track={coverTrack}
                         />
-                    ) : undefined}
+                        :
+                        undefined
+                    }
                     details={
                         <div className="flex flex-col gap-1">
-                            <LibraryStats tracks={tracks}/>
+                            <LibraryStats
+                                tracks={tracks}
+                            />
                         </div>
                     }
                     actions={
@@ -156,18 +143,15 @@ export function LibraryPage({
                                 className="rounded-full px-4"
                                 onClick={() => onPlay(false)}
                             >
-                                <Play
-                                    fill="currentColor"
-                                    data-icon="inline-start"
-                                />
+                                <Play fill="currentColor" data-icon="inline-start"/>
                                 Play all
                             </Button>
                             <Button
                                 size="lg"
                                 variant="secondary"
                                 disabled={!tracks.length}
-                                onClick={() => onPlay(true)}
                                 className="rounded-full px-4"
+                                onClick={() => onPlay(true)}
                             >
                                 <Shuffle data-icon="inline-start"/>
                                 Shuffle
@@ -197,11 +181,13 @@ export function LibraryPage({
                         </SongDropZone>
                     ) : renderCollection()}
                 </div>
-                {view === "duplicates" && tracks.length > 0 && (
+
+                {view === "duplicates" && tracks.length > 0 &&
                     <p className="duplicate-note mx-2 mb-0 mt-3.5 shrink-0 text-xs text-muted-foreground">
-                        Matches use title, artist, and rounded duration. No files are deleted.
+                        Matches use title, artist, and rounded duration.
+                        No files are deleted.
                     </p>
-                )}
+                }
             </div>
         </>
     );

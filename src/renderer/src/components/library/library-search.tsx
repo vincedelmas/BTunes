@@ -16,9 +16,10 @@ interface LibrarySearchProps {
 
 export function LibrarySearch({ scope, value, placeholder = "Search this page", onChange, onClear }: LibrarySearchProps) {
     const id = useId();
+    const [openScope, setOpenScope] = useState<string>();
     const input = useRef<HTMLInputElement>(null);
     const trigger = useRef<HTMLButtonElement>(null);
-    const [openScope, setOpenScope] = useState<string>();
+
     const expanded = openScope === scope || Boolean(value);
 
     useEffect(() => {
@@ -73,7 +74,8 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
                 id={id}
                 inert={!expanded}
                 aria-hidden={!expanded}
-                className={cn("overflow-hidden transition-[width,opacity] duration-200 ease-out motion-reduce:transition-none", expanded ? "w-[clamp(180px,24vw,280px)] opacity-100" : "w-0 opacity-0")}
+                className={cn("overflow-hidden transition-[width,opacity] duration-200 ease-out " +
+                    "motion-reduce:transition-none", expanded ? "w-[clamp(180px,24vw,280px)] opacity-100" : "w-0 opacity-0")}
             >
                 <InputGroup className="search ml-2 h-9 w-[calc(100%-0.5rem)] rounded-full bg-control">
                     <InputGroupInput
@@ -92,7 +94,7 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
                             closeSearch();
                         }}
                     />
-                    {value && (
+                    {value &&
                         <InputGroupAddon align="inline-end">
                             <InputGroupButton
                                 size="icon-xs"
@@ -103,7 +105,7 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
                                 <X aria-hidden="true"/>
                             </InputGroupButton>
                         </InputGroupAddon>
-                    )}
+                    }
                 </InputGroup>
             </div>
         </div>

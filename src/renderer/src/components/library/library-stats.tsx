@@ -11,20 +11,21 @@ interface LibraryStatsProps {
 
 
 export function LibraryStats({ tracks, className }: LibraryStatsProps) {
+    let duration = 0;
     const albums = new Set<string>();
     const artists = new Set<string>();
-    let duration = 0;
 
     for (const track of tracks) {
         albums.add(albumKey(track));
         artists.add(getAlbumArtist(track));
-        if (Number.isFinite(track.duration)) duration += Math.max(0, track.duration);
+
+        if (Number.isFinite(track.duration)) {
+            duration += Math.max(0, track.duration);
+        }
     }
 
     return (
-        <p
-            className={cn("library-stats flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}
-        >
+        <p className={cn("library-stats flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground", className)}>
             <span>
                 {tracks.length}
                 {" "}
@@ -49,14 +50,8 @@ export function LibraryStats({ tracks, className }: LibraryStatsProps) {
             <span aria-hidden="true">
                 ·
             </span>
-            <span
-                aria-label="Total duration"
-                className="inline-flex items-center gap-1.5 text-info"
-            >
-                <Clock3
-                    className="size-3"
-                    aria-hidden="true"
-                />
+            <span aria-label="Total duration" className="inline-flex items-center gap-1.5 text-info">
+                <Clock3 className="size-3" aria-hidden="true"/>
                 {formatDuration(duration)}
             </span>
         </p>

@@ -19,11 +19,16 @@ interface DownloadRowProps {
 
 
 export function DownloadRow({ item, selected, busy, onSelect, onDownload, onReview }: DownloadRowProps) {
-    const working = item.status === "downloading" || item.status === "enriching" || item.status === "publishing";
     const failed = item.status === "error" || item.status === "invalid";
-    const needsAttention = item.status === "review" && Boolean(item.message) && item.message !== "Review tags and cover, then save to your library.";
-    const label = needsAttention ? "Check tags & cover" : downloadStatusLabels[item.status];
+    const working = item.status === "downloading" || item.status === "enriching" || item.status === "publishing";
+
+    const needsAttention = item.status === "review"
+        && Boolean(item.message)
+        && item.message !== "Review tags and cover, then save to your library.";
+
     let variant: "success" | "warning" | "destructive" | "secondary" = "secondary";
+    const label = needsAttention ? "Check tags & cover" : downloadStatusLabels[item.status];
+
     if (item.status === "review") variant = "success";
     if (needsAttention) variant = "warning";
     if (failed) variant = "destructive";
@@ -39,6 +44,8 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
             tabIndex={0}
             role="option"
             aria-selected={selected}
+            className={cn("download-row flex h-18 min-w-0 items-center gap-4 rounded-lg border border-transparent px-3 " +
+                "outline-none hover:bg-accent focus-visible:border-primary", selected && "border-primary bg-selection")}
             onClick={(ev) => {
                 if (!(ev.target as HTMLElement).closest("button")) onSelect(ev);
             }}
@@ -48,9 +55,10 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
                     onSelect(ev);
                 }
             }}
-            className={cn("download-row flex h-[72px] min-w-0 items-center gap-4 rounded-lg border border-transparent px-3 outline-none hover:bg-accent focus-visible:border-primary", selected && "border-primary bg-selection")}
         >
-            <Cover source={item.artwork?.thumbnail}/>
+            <Cover
+                source={item.artwork?.thumbnail}
+            />
             <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-medium">
                     {item.title}
@@ -60,41 +68,31 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
                 </p>
             </div>
             <div className="download-status min-w-0 max-w-[35%] text-right">
-                <Badge
-                    variant={variant}
-                    className="max-w-full"
-                >
-                    {working && (
+                <Badge variant={variant} className="max-w-full">
+                    {working &&
                         <LoaderCircle className="animate-spin"/>
-                    )}
-                    {needsAttention && (
+                    }
+                    {needsAttention &&
                         <TriangleAlert/>
-                    )}
+                    }
                     <span className="truncate">
                         {label}
                         {item.status === "downloading" && " · " + item.progress.toFixed(0) + "%"}
                     </span>
                 </Badge>
-                {detail && (
-                    <p
-                        title={item.message}
-                        className="mt-1 truncate text-xs text-muted-foreground"
-                    >
+                {detail &&
+                    <p title={item.message} className="mt-1 truncate text-xs text-muted-foreground">
                         {detail}
                     </p>
-                )}
+                }
             </div>
             <div className="flex min-w-36 shrink-0 justify-end">
-                {item.status === "review" && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={onReview}
-                    >
+                {item.status === "review" &&
+                    <Button size="sm" variant="outline" onClick={onReview}>
                         <Check data-icon="inline-start"/>
                         Review & save
                     </Button>
-                )}
+                }
                 {canDownload(item) && (
                     <Button
                         size="icon-sm"
