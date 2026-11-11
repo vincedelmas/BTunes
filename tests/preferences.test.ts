@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {appearanceSchema, trackSortSchema, volumeSchema} from "../src/shared/schemas/preferences.ts";
+import {repeatSchema, volumeSchema, shuffleSchema, appearanceSchema, trackSortSchema} from "../src/shared/schemas/preferences.ts";
 import {readPreference, writePreference, normalizeOrder, moveItem} from "../src/renderer/src/lib/preferences.ts";
 
 void test("preferences persist valid sort values and reject corrupt or obsolete data", () => {
@@ -21,6 +21,18 @@ void test("preferences persist valid sort values and reject corrupt or obsolete 
         assert.equal(readPreference("volume", volumeSchema, 0.7), 0.23);
         writePreference("volume", 0);
         assert.equal(readPreference("volume", volumeSchema, 0.7), 0);
+        for (const repeat of ["off", "all", "one"] as const) {
+            writePreference("repeat", repeat);
+            assert.equal(readPreference("repeat", repeatSchema, "off"), repeat);
+        }
+        for (const shuffle of [true, false]) {
+            writePreference("shuffle", shuffle);
+            assert.equal(readPreference("shuffle", shuffleSchema, false), shuffle);
+        }
+        storage.set("repeat", '"invalid"');
+        assert.equal(readPreference("repeat", repeatSchema, "off"), "off");
+        storage.set("shuffle", '"true"');
+        assert.equal(readPreference("shuffle", shuffleSchema, false), false);
         const appearance = { visualizer: "orbit", sidebarArtwork: false } as const;
         writePreference("appearance", appearance);
         assert.deepEqual(readPreference("appearance", appearanceSchema, { visualizer: "spectrum", sidebarArtwork: true }), appearance);

@@ -900,6 +900,18 @@ app.on("browser-window-created", (_, win) => {
                 await window.uiReview.waitFor(()=>document.querySelector('audio').volume===0.23);
                 await window.uiReview.waitFor(()=>JSON.parse(localStorage.getItem('btunes.volume.v1'))===0.23);
             })()`, true);
+            await win.webContents.executeJavaScript(`(async () => {
+                const {waitFor}=window.uiReview;
+                const shuffle=document.querySelector('.player-bar [aria-label="Shuffle"]');
+                if(shuffle.getAttribute('aria-pressed')!=='true') shuffle.click();
+                const repeat=document.querySelector('[aria-label="Repeat"]');
+                while(repeat.dataset.repeat!=='one') {
+                    repeat.click();
+                    await new Promise(resolve=>requestAnimationFrame(resolve));
+                }
+                await waitFor(()=>JSON.parse(localStorage.getItem('btunes.shuffle.v1'))===true);
+                await waitFor(()=>JSON.parse(localStorage.getItem('btunes.repeat.v1'))==='one');
+            })()`, true);
             win.webContents.session.flushStorageData();
             await new Promise(resolve => {
                 win.webContents.once('did-finish-load', resolve);
@@ -912,6 +924,8 @@ app.on("browser-window-created", (_, win) => {
                     await new Promise(resolve=>setTimeout(resolve,20));
                 }
                 if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || document.querySelector('audio').volume!==0.23) throw new Error('Volume did not persist after reopening');
+                if(document.querySelector('.player-bar [aria-label="Shuffle"]').getAttribute('aria-pressed')!=='true') throw new Error('Shuffle did not persist after reopening');
+                if(document.querySelector('[aria-label="Repeat"]').dataset.repeat!=='one') throw new Error('Repeat did not persist after reopening');
                 if(!document.querySelector('.sound-visualizer[data-style="waveform"]')) throw new Error('Visualizer style did not persist after reopening');
                 if(document.getElementById('sidebar-playing-details')) throw new Error('Sidebar artwork visibility did not persist after reopening');
                 if(!document.querySelector('th[data-column="artwork"]')) throw new Error('Artwork column visibility did not persist after reopening');

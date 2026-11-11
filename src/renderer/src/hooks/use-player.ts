@@ -3,9 +3,9 @@ import type {RepeatMode} from "@/types/player";
 import {usePreference} from "@/hooks/use-preference";
 import {getErrorMessage} from "../../../shared/errors";
 import type {Track} from "../../../shared/types/library";
-import {volumeSchema} from "../../../shared/schemas/preferences";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import type {PlaybackQueue} from "../../../shared/types/playback-queue";
+import {repeatSchema, volumeSchema, shuffleSchema} from "../../../shared/schemas/preferences";
 import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../../../shared/playback-queue";
 
 
@@ -13,14 +13,14 @@ export function usePlayer(onError: (message: string) => void, onSkip: (track: Tr
     const sequence = useRef(0);
     const queueRef = useRef<PlaybackQueue>({ entries: [], index: -1 });
     const [queue, setQueue] = useState<PlaybackQueue>({ entries: [], index: -1 });
-    const shuffleEnabled = useRef(false);
+    const [shuffle, updateShuffle] = usePreference("btunes.shuffle.v1", shuffleSchema, false);
+    const shuffleEnabled = useRef(shuffle);
     const unshuffledOrder = useRef<number[]>([]);
     const counted = useRef(false);
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const [volume, setVolume] = usePreference("btunes.volume.v1", volumeSchema, 0.7);
-    const [repeat, setRepeat] = useState<RepeatMode>("off");
+    const [repeat, setRepeat] = usePreference<RepeatMode>("btunes.repeat.v1", repeatSchema, "off");
     const [playing, setPlaying] = useState(false);
-    const [shuffle, updateShuffle] = useState(false);
 
     const audio = useRef<HTMLAudioElement>(null);
 

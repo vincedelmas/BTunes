@@ -2,6 +2,10 @@ import {z} from "zod";
 import type {TrackSort} from "../types/track-sorting";
 
 
+export const shuffleSchema = z.boolean();
+
+export const repeatSchema = z.enum(["off", "all", "one"]);
+
 export const volumeSchema = z.number().min(0).max(1);
 
 export const itemOrderSchema = z.array(z.string()).max(10000);
