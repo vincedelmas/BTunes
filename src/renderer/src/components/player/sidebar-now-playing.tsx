@@ -27,7 +27,7 @@ export function SidebarNowPlaying({ current, playlists, actions, expanded, onTog
                 onClick={onReveal}
                 disabled={!current}
                 aria-label="Locate current song in library"
-                className="mx-auto block rounded-lg outline-none focus-visible:outline-none [&_.cover]:size-[clamp(40px,calc(100vh-700px-var(--sidebar-pin-space,0px)),192px)] [&_.cover]:max-w-full [&_.cover]:rounded-lg"
+                className="mx-auto block rounded-lg outline-none focus-visible:outline-none [&_.cover]:size-[clamp(40px,calc(100vh-684px-var(--sidebar-pin-space,0px)),208px)] [&_.cover]:max-w-full [&_.cover]:rounded-lg"
             >
                 <Cover track={current}/>
             </button>
