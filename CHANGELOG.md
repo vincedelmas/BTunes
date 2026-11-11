@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/vincedelmas/BTunes/compare/v1.1.4...v1.1.5) (2026-11-11)
+
+
+### Bug Fixes
+
+* preserve linear volume when syncing audio streams ([a0701db](https://github.com/vincedelmas/BTunes/commit/a0701db8bdeab0396a17a06d52346e1c07027a95))
+
 ## [1.1.4](https://github.com/vincedelmas/BTunes/compare/v1.1.3...v1.1.4) (2026-11-11)
 
 
