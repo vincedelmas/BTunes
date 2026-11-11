@@ -1,9 +1,14 @@
-import {X} from "lucide-react";
+import {useEffect} from "react";
+import {ListMusic, Pause, Play, Shuffle, X} from "lucide-react";
 import type {PlayerState} from "@/types/player";
 import {Cover} from "@/components/cover";
 import {Button} from "@/components/ui/button";
+import {EmptyState} from "@/components/empty-state";
 import {VirtualGrid} from "@/components/virtual-grid";
-import {cn} from "@/lib/utils";
+import {QueuedTrackRow} from "@/components/player/queued-track-row";
+import {useDragOrder} from "@/hooks/use-drag-order";
+import {formatDuration} from "@/lib/music";
+
 
 interface QueuePanelProps {
     player: PlayerState;
@@ -12,44 +17,90 @@ interface QueuePanelProps {
 
 
 export function QueuePanel({ player, onClose }: QueuePanelProps) {
-    const items = player.queue.map((track, index) => ({ track, index }));
+    const current = player.queue[player.queueIndex];
+    const upcoming = player.queue.slice(player.queueIndex + 1);
+    const duration = upcoming.reduce((total, entry) => total + Math.max(0, entry.track.duration || 0), 0);
+    const ordering = useDragOrder(upcoming.map((entry) => String(entry.key)), (keys) => player.reorderUpcoming(keys.map(Number)), "queue");
+
+    useEffect(() => {
+        const close = (ev: KeyboardEvent) => {
+            if (ev.key !== "Escape" || document.querySelector('[role="dialog"], [role="menu"]')) return;
+            onClose();
+        };
+
+        document.addEventListener("keydown", close);
+        return () => document.removeEventListener("keydown", close);
+    }, [onClose]);
 
     return (
         <aside
             aria-label="Playback queue"
-            className="queue fixed right-2 top-2 bottom-[106px] w-[330px] border border-border bg-popover p-5 overflow-hidden rounded-lg z-20 shadow-[-20px_0_70px_#0005] flex flex-col gap-4 [&_.virtual-grid-scroll]:flex-1"
+            className="queue fixed bottom-[106px] right-2 top-2 z-20 flex w-[390px] flex-col gap-4 overflow-hidden rounded-xl border border-border bg-popover p-5 shadow-[-20px_0_70px_#0005]"
         >
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Queue</h2>
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Close queue"
-                    onClick={onClose}
-                >
+            <header className="flex shrink-0 items-center justify-between gap-3">
+                <div>
+                    <h2 className="text-xl font-semibold">Queue</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">{upcoming.length} upcoming · {formatDuration(duration)}</p>
+                </div>
+                <Button variant="ghost" size="icon-sm" aria-label="Close queue" onClick={onClose}>
                     <X/>
                 </Button>
-            </div>
-            {!items.length && <p className="muted text-muted-foreground">Play an album or a song to get started.</p>}
-            <VirtualGrid
-                items={items}
-                label="Queued songs"
-                maxColumns={1}
-                itemHeight={64}
-                getKey={(item) => item.index}
-                renderItem={({ track, index }) => (
-                    <button
-                        className={cn("queue-track flex items-center gap-3 w-full text-left border-0 rounded-[5px] bg-transparent p-2 text-sm hover:bg-secondary", player.currentTrack?.id === track.id && "is-current text-primary")}
-                        onClick={() => player.start(track, player.queue, index)}
+            </header>
+            {current && <section className="shrink-0 rounded-xl border border-primary/20 bg-primary/5 p-3" aria-label="Now playing in queue">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">Now playing</p>
+                <div className="queue-track flex min-w-0 items-center gap-3" aria-current="true" data-queue-key={current.key}>
+                    <Cover track={current.track}/>
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{current.track.title}</p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">{current.track.artist}</p>
+                    </div>
+                    <Button
+                        size="icon"
+                        variant="plain"
+                        aria-label={player.playing ? "Pause current song" : "Resume current song"}
+                        onClick={player.toggle}
                     >
-                        <Cover track={track}/>
-                        <span className="min-w-0 truncate">
-                            <span className="block truncate">{track.title}</span>
-                            <small className="mt-1 block truncate text-xs text-muted-foreground">{track.artist}</small>
-                        </span>
-                    </button>
-                )}
-            />
+                        {player.playing ? <Pause/> : <Play/>}
+                    </Button>
+                </div>
+            </section>}
+            <div className="flex shrink-0 items-center justify-between gap-3">
+                <h3 className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Up next</h3>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="plain"
+                        size="icon-xs"
+                        disabled={!upcoming.length}
+                        aria-label="Shuffle upcoming"
+                        aria-pressed={player.shuffle}
+                        title="Shuffle upcoming songs"
+                        onClick={() => player.setShuffle(!player.shuffle)}
+                    >
+                        <Shuffle/>
+                    </Button>
+                    <Button variant="ghost" size="sm" disabled={!upcoming.length} onClick={player.clearUpcoming}>Clear upcoming</Button>
+                </div>
+            </div>
+            <div className="min-h-0 flex-1">
+                {upcoming.length ? <VirtualGrid
+                    items={upcoming}
+                    label="Queued songs"
+                    maxColumns={1}
+                    itemHeight={68}
+                    getKey={(entry) => entry.key}
+                    renderItem={(entry) => <QueuedTrackRow
+                        entry={entry}
+                        ordering={ordering}
+                        onPlay={() => player.jumpToQueue(player.queue.findIndex((item) => item.key === entry.key))}
+                        onRemove={() => player.removeQueued(entry.key)}
+                    />}
+                /> : <EmptyState
+                    icon={ListMusic}
+                    title={current ? "You’re all caught up" : "Your queue is empty"}
+                    description="Right-click songs to play them next or add them to the queue."
+                />}
+            </div>
+            {upcoming.length > 1 && <p className="shrink-0 text-xs text-muted-foreground">Drag a handle or use Alt + ↑ / ↓ to reorder.</p>}
         </aside>
     );
 }

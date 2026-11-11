@@ -1,3 +1,5 @@
+import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../../../shared/playback-queue";
+import type {PlaybackQueue} from "../../../shared/types/playback-queue";
 import type {RepeatMode} from "@/types/player";
 import {usePreference} from "@/hooks/use-preference";
 import {volumeSchema} from "../../../shared/schemas/preferences";
@@ -8,14 +10,17 @@ import {useEffect, useEffectEvent, useRef, useState} from "react";
 
 
 export function usePlayer(onError: (message: string) => void) {
-    const cursor = useRef(0);
+    const sequence = useRef(0);
+    const queueRef = useRef<PlaybackQueue>({ entries: [], index: -1 });
+    const [queue, setQueue] = useState<PlaybackQueue>({ entries: [], index: -1 });
+    const shuffleEnabled = useRef(false);
+    const unshuffledOrder = useRef<number[]>([]);
     const counted = useRef(false);
     const [currentTrack, setCurrentTrack] = useState<Track>();
-    const [queue, setQueue] = useState<Track[]>([]);
     const [volume, setVolume] = usePreference("btunes.volume.v1", volumeSchema, 0.7);
     const [repeat, setRepeat] = useState<RepeatMode>("off");
     const [playing, setPlaying] = useState(false);
-    const [shuffle, setShuffle] = useState(false);
+    const [shuffle, updateShuffle] = useState(false);
 
     const audio = useRef<HTMLAudioElement>(null);
 
@@ -36,10 +41,12 @@ export function usePlayer(onError: (message: string) => void) {
         media.currentTime = Math.max(0, Math.min(seconds, Math.max(0, media.duration - 0.01)));
     };
 
-    const start = (track: Track, tracks: Track[], index?: number) => {
-        const nextIndex = index ?? tracks.findIndex((item) => item.id === track.id);
-        cursor.current = Math.max(0, nextIndex);
-        if (tracks !== queue) setQueue([...tracks]);
+    function updateQueue(next: PlaybackQueue) {
+        queueRef.current = next;
+        setQueue(next);
+    }
+
+    function playTrack(track: Track) {
         counted.current = false;
 
         if (currentTrack?.id === track.id) {
@@ -49,7 +56,47 @@ export function usePlayer(onError: (message: string) => void) {
         }
 
         setCurrentTrack(track);
-    };
+    }
+
+    function start(track: Track, tracks: Track[], index?: number) {
+        const selected = index ?? tracks.findIndex((item) => item.id === track.id);
+        const validIndex = Number.isInteger(selected) && selected >= 0 && selected < tracks.length;
+        const source = validIndex ? tracks : [track, ...tracks];
+        const entries = source.map((item) => ({ key: ++sequence.current, track: item }));
+        const nextIndex = validIndex ? selected : 0;
+        let next = { entries, index: nextIndex };
+
+        if (shuffleEnabled.current) {
+            next = { entries: [entries[nextIndex], ...entries.filter((_, index) => index !== nextIndex)], index: 0 };
+            unshuffledOrder.current = next.entries.slice(1).map((entry) => entry.key);
+            next = shuffleUpcoming(next);
+        }
+
+        updateQueue(next);
+        playTrack(track);
+    }
+
+    function jumpToQueue(index: number) {
+        const currentQueue = queueRef.current;
+        const entry = currentQueue.entries[index];
+        if (!entry) return;
+
+        updateQueue({ ...currentQueue, index });
+        playTrack(entry.track);
+    }
+
+    function setShuffle(enabled: boolean) {
+        if (shuffleEnabled.current === enabled) return;
+        shuffleEnabled.current = enabled;
+        updateShuffle(enabled);
+        if (enabled) {
+            unshuffledOrder.current = queueRef.current.entries.slice(queueRef.current.index + 1).map((entry) => entry.key);
+            updateQueue(shuffleUpcoming(queueRef.current));
+        }
+        else {
+            updateQueue(restoreUpcoming(queueRef.current, unshuffledOrder.current));
+        }
+    }
 
     const currentTrackId = currentTrack?.id;
     const playOnTrackChange = useEffectEvent(play);
@@ -68,25 +115,22 @@ export function usePlayer(onError: (message: string) => void) {
     }
 
     function next(direction = 1) {
-        if (!currentTrack || !queue.length) return;
+        const currentQueue = queueRef.current;
+        if (!currentTrack || !currentQueue.entries.length) return;
 
-        const currentIndex = cursor.current;
-        let index = currentIndex + direction;
+        let index = currentQueue.index + direction;
+        const length = currentQueue.entries.length;
 
-        if (shuffle && queue.length > 1) {
-            index = (currentIndex + 1 + Math.floor(Math.random() * (queue.length - 1))) % queue.length;
-        }
-
-        if (index < 0 || index >= queue.length) {
+        if (index < 0 || index >= length) {
             if (repeat === "off") {
                 audio.current?.pause();
                 return;
             }
 
-            index = (index + queue.length) % queue.length;
+            index = (index + length) % length;
         }
 
-        start(queue[index], queue, index);
+        jumpToQueue(index);
     }
 
     function cycleRepeat() {
@@ -108,7 +152,7 @@ export function usePlayer(onError: (message: string) => void) {
         next();
     }
 
-    const enqueue = (tracks: Track[], playNext = false) => {
+    function enqueue(tracks: Track[], playNext = false) {
         if (!tracks.length) return;
 
         if (!currentTrack) {
@@ -116,13 +160,18 @@ export function usePlayer(onError: (message: string) => void) {
             return;
         }
 
-        setQueue((previous) => {
-            if (!playNext) return [...previous, ...tracks];
-
-            const index = cursor.current;
-            return [...previous.slice(0, index + 1), ...tracks, ...previous.slice(index + 1)];
+        const currentQueue = queueRef.current;
+        const entries = tracks.map((track) => ({ key: ++sequence.current, track }));
+        const index = playNext ? currentQueue.index + 1 : currentQueue.entries.length;
+        if (shuffleEnabled.current) {
+            const keys = entries.map((entry) => entry.key);
+            unshuffledOrder.current = playNext ? [...keys, ...unshuffledOrder.current] : [...unshuffledOrder.current, ...keys];
+        }
+        updateQueue({
+            entries: [...currentQueue.entries.slice(0, index), ...entries, ...currentQueue.entries.slice(index)],
+            index: currentQueue.index,
         });
-    };
+    }
 
     function updateTime() {
         const media = audio.current;
@@ -147,7 +196,15 @@ export function usePlayer(onError: (message: string) => void) {
         stop,
         seek,
         audio,
-        queue,
+        queue: queue.entries,
+        queueIndex: queue.index,
+        jumpToQueue,
+        removeQueued: (key: number) => updateQueue(removeQueuedTrack(queueRef.current, key)),
+        reorderUpcoming: (keys: number[]) => {
+            updateQueue(reorderUpcoming(queueRef.current, keys));
+            unshuffledOrder.current = queueRef.current.entries.slice(queueRef.current.index + 1).map((entry) => entry.key);
+        },
+        clearUpcoming: () => updateQueue(clearUpcoming(queueRef.current)),
         start,
         toggle,
         repeat,
