@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/vincedelmas/BTunes/compare/v1.1.3...v1.1.4) (2026-11-11)
+
+
+### Bug Fixes
+
+* sync taskbar audio stream volume ([e58314e](https://github.com/vincedelmas/BTunes/commit/e58314ef3dd8ba3a9b76af7db41e4aa07b6a7601))
+
 ## [1.1.3](https://github.com/vincedelmas/BTunes/compare/v1.1.2...v1.1.3) (2026-11-11)
 
 
