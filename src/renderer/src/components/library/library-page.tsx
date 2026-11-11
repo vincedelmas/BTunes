@@ -40,23 +40,37 @@ interface LibraryPageProps {
 }
 
 
-export function LibraryPage({ collection, data, current, playing, actions, reveal, onRevealed, onOpenAlbum, onOpenArtist, onSettings, onImported, onPlay, visualizer, searchControl, feedback }: LibraryPageProps) {
-    const {view, title, tracks, albums, sort, selected, search, artist, setSort, setSelected, setArtist, clearFilters} = collection;
+export function LibraryPage({
+                                collection,
+                                data,
+                                current,
+                                playing,
+                                actions,
+                                reveal,
+                                onRevealed,
+                                onOpenAlbum,
+                                onOpenArtist,
+                                onSettings,
+                                onImported,
+                                onPlay,
+                                visualizer,
+                                searchControl,
+                                feedback
+                            }: LibraryPageProps) {
+    const { view, title, tracks, albums, sort, selected, search, artist, setSort, setSelected, setArtist, clearFilters } = collection;
     const navigation = navigationItems.find((item) => item.id === view);
     let icon = navigation?.icon ?? ListMusic;
-    let eyebrow = "Your library";
 
     if (collection.activePlaylist) {
-        eyebrow = collection.activePlaylist.rule ? "Smart playlist" : "Playlist";
         icon = collection.activePlaylist.rule ? Brain : ListMusic;
     }
     else if (collection.smartMix) {
-        eyebrow = "Made from your library";
         icon = Brain;
     }
 
-    const coverTrack = collection.activePlaylist ? tracks.find((track) => track.cover) : undefined;
-
+    const coverTrack = collection.activePlaylist
+        ? tracks.find((track) => track.cover)
+        : undefined;
 
     function renderCollection() {
         if (!tracks.length) {
@@ -111,9 +125,8 @@ export function LibraryPage({ collection, data, current, playing, actions, revea
         <>
             <div className="library-hero shrink-0 border-b border-border/60 bg-linear-to-br from-primary/4 via-background to-background px-6 py-5">
                 <PageHeader
-                    title={title}
-                    eyebrow={eyebrow}
                     icon={icon}
+                    title={title}
                     artwork={coverTrack ? <Cover track={coverTrack} large/> : undefined}
                     search={searchControl}
                     visualizer={visualizer}
