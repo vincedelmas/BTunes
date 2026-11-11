@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from "react";
 
 import {DevicesPage} from "@/components/devices/devices-page";
 import {DownloadsPage} from "@/components/downloads/downloads-page";
+import {LibrarySearch} from "@/components/library/library-search";
 import {LibraryPage} from "@/components/library/library-page";
 import {Sidebar} from "@/components/library/sidebar";
 import {TrackCollectionDialog} from "@/components/library/track-collection-dialog";
@@ -66,6 +67,7 @@ export function App() {
         : [];
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
     const visualizer = <SoundVisualizer analyser={analyser} style={appearance.visualizer} playing={player.playing}/>;
+    const searchControl = <LibrarySearch scope={view} value={search} onChange={setSearch} onClear={clearSearch}/>;
 
     const actions: TrackActions = {
         onEdit: setEditing,
@@ -158,11 +160,12 @@ export function App() {
                 {feedback}
                 {view === "downloads" ? <DownloadsPage
                     visualizer={visualizer}
+                    searchControl={searchControl}
                     query={search}
                     genres={genres}
                     onSettings={() => showSettings("downloads")}
                     onSaved={library.refresh}
-                /> : <DevicesPage query={search} visualizer={visualizer}/>}
+                /> : <DevicesPage query={search} visualizer={visualizer} searchControl={searchControl}/>}
             </div>;
         }
 
@@ -183,6 +186,7 @@ export function App() {
             onImported={library.refresh}
             onPlay={playCollection}
             visualizer={visualizer}
+            searchControl={searchControl}
             feedback={feedback}
         />;
     }
@@ -201,9 +205,6 @@ export function App() {
                 onRefresh={library.refresh}
                 onError={library.reportError}
                 onSettings={() => showSettings()}
-                search={search}
-                onSearch={setSearch}
-                onClearSearch={clearSearch}
                 actions={{ ...actions, onRemove: undefined }}
                 current={current}
                 artworkExpanded={appearance.sidebarArtwork}

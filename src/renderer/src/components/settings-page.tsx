@@ -1,6 +1,6 @@
 import {PageHeader} from "@/components/page-header";
 import {Badge} from "@/components/ui/badge";
-import {FolderOpen} from "lucide-react";
+import {FolderOpen, SlidersHorizontal} from "lucide-react";
 import type {RefObject} from "react";
 import type {Appearance} from "@/types/appearance";
 import {AppearanceSettings} from "@/components/settings/appearance-settings";
@@ -41,6 +41,8 @@ export function SettingsPage({ appearance, analyser, playing, onAppearanceChange
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
                 <PageHeader
                     title="Settings"
+                    eyebrow="Make BTunes yours"
+                    icon={SlidersHorizontal}
                     details="Library, downloads, navigation, and app updates."
                     actions={<Badge variant="outline">
                         <FolderOpen data-icon="inline-start"/>

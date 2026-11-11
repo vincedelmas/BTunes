@@ -136,6 +136,14 @@ app.on("browser-window-created", (_, win) => {
                 };
                 await waitFor(() => document.querySelector('[data-track-id="1"]'));
                 if(document.querySelector('h1')?.textContent!=='Songs') throw new Error('Songs must be the default view');
+                if(!document.querySelector('.page-header [aria-label="Open search"]')) throw new Error('Header search should start collapsed');
+                document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true}));
+                await waitFor(()=>document.activeElement===document.querySelector('[aria-label="Search your library"]'));
+                if(!document.querySelector('.page-header [aria-label="Close search"]')) throw new Error('Ctrl+F did not expand header search');
+                document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+                await waitFor(()=>document.querySelector('.page-header [aria-label="Open search"]'));
+                if(document.activeElement!==document.querySelector('[aria-label="Open search"]')) throw new Error('Closing search should restore focus to its trigger');
+
                 const stats=document.querySelector('.library-hero .library-stats');
                 if(!stats.textContent.includes('1 artist') || stats.textContent.includes('album artist')) throw new Error('Library artist label is incorrect');
                 if(stats.querySelector('[aria-label="Total duration"]').textContent.trim()!=='38 hr 20 min') throw new Error('Library total duration is incorrect');
@@ -608,7 +616,7 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Devices');
                 if(document.querySelector('.library-hero .library-stats')) throw new Error('Device page shows local library counts');
                 await waitFor(()=>[...document.querySelectorAll('[data-slot="card-title"]')].some(title=>title.textContent==='Fixture phone'));
-                const deviceSearch=document.querySelector('.sidebar [aria-label="Search your library"]');
+                const deviceSearch=document.querySelector('.page-header [aria-label="Search your library"]');
                 const searchDevices=value=>{
                     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(deviceSearch,value);
                     deviceSearch.dispatchEvent(new Event('input',{bubbles:true}));
@@ -690,6 +698,8 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('nav[aria-label="Library navigation"]'));
                 const pins=document.querySelector('[aria-label="Pinned playlists"]');
                 if(!pins?.textContent.includes('Recently added') || !pins.textContent.includes('Jazz focus') || pins.textContent.includes('sidebar test')) throw new Error('Main sidebar did not preserve valid pins after deletion');
+                if(pins.closest('[data-navigation-group]')?.dataset.navigationGroup!=='collections') throw new Error('Pinned playlists belong under Collections');
+                if(pins.previousElementSibling?.getAttribute('aria-label')!=='Open playlists') throw new Error('Pinned playlists should follow the Playlists entry');
                 document.querySelector('[aria-label="Hide now-playing artwork"]').click();
                 await waitFor(()=>!document.getElementById('sidebar-playing-details'));
                 document.querySelector('[aria-label="Show now-playing artwork"]').click();
@@ -738,6 +748,7 @@ app.on("browser-window-created", (_, win) => {
                 button('Settings').click();
                 await waitFor(()=>document.querySelector('h1')?.textContent==='Settings');
                 if(document.querySelector('[role="dialog"]')) throw new Error('Settings should be a page');
+                if(document.querySelector('[aria-label="Search your library"]')) throw new Error('Settings should omit contextual music search');
                 if(!button('Add music folder')) throw new Error("Settings does not expose folder management");
                 if(!document.querySelector('.folder-list').textContent.includes('music')) throw new Error("Configured folder not shown");
             })()`, true);
@@ -766,7 +777,7 @@ app.on("browser-window-created", (_, win) => {
                 await waitFor(()=>document.querySelector('[aria-label="Navigation"]'));
                 await frame();
                 const list=document.querySelector('[aria-label="Navigation"]');
-                if(list.children.length+document.querySelector('[aria-label="Collections"]').children.length+document.querySelector('[aria-label="Transfer & sync"]').children.length!==document.querySelectorAll('nav[aria-label="Library navigation"] button').length) throw new Error('Sidebar settings must show every navigation item');
+                if(list.children.length+document.querySelector('[aria-label="Collections"]').children.length+document.querySelector('[aria-label="Transfer & sync"]').children.length!==document.querySelectorAll('nav[aria-label="Library navigation"] [data-navigation-id]').length) throw new Error('Sidebar settings must show every navigation item');
                 if(list.scrollHeight>list.clientHeight+1) throw new Error('Sidebar navigation list should expand instead of scrolling');
                 const devicesHandle=document.querySelector('[aria-label="Move Devices tools"]');
                 devicesHandle.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowUp',altKey:true,bubbles:true}));

@@ -15,6 +15,7 @@ import {DownloadRow} from "@/components/downloads/download-row";
 
 interface DownloadsPageProps {
     visualizer: ReactNode;
+    searchControl: ReactNode;
     query: string;
     genres: string[];
     onSettings: () => void;
@@ -22,7 +23,7 @@ interface DownloadsPageProps {
 }
 
 
-export function DownloadsPage({ visualizer, query, genres, onSettings, onSaved }: DownloadsPageProps) {
+export function DownloadsPage({ visualizer, searchControl, query, genres, onSettings, onSaved }: DownloadsPageProps) {
     const downloads = useDownloads();
     const [filter, setFilter] = useState("");
     const [selected, setSelected] = useState<string[]>([]);
@@ -49,6 +50,9 @@ export function DownloadsPage({ visualizer, query, genres, onSettings, onSaved }
             <PageHeader
                 visualizer={visualizer}
                 title="Downloads"
+                eyebrow="Bring music into your library"
+                icon={ArrowDownToLine}
+                search={searchControl}
                 details={<span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span>{total.toLocaleString("en")} {total === 1 ? "bookmarked song" : "bookmarked songs"}</span>
                     {reviewCount > 0 && <span className="text-success">{reviewCount} ready to review</span>}

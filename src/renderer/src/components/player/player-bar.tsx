@@ -39,7 +39,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                     className="transport-buttons mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-content">
                     <div className="flex justify-end">
                         <Button
-                            size="icon"
+                            size="icon-xl"
                             variant="plain"
                             aria-label="Shuffle"
                             title="Shuffle"
@@ -52,7 +52,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                     </div>
                     <div className="flex items-center gap-2" aria-label="Playback controls">
                         <Button
-                            size="icon"
+                            size="icon-xl"
                             variant="ghost"
                             disabled={!current}
                             aria-label="Previous track"
@@ -62,10 +62,10 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                             <SkipBack/>
                         </Button>
                         <Button
-                            size="icon"
+                            size="icon-2xl"
                             variant="default"
                             disabled={!current}
-                            className="play-toggle size-10 rounded-full shadow-sm"
+                            className="play-toggle rounded-full shadow-sm"
                             onClick={player.toggle}
                             aria-label={player.playing ? "Pause" : "Play"}
                             title={player.playing ? "Pause" : "Play"}
@@ -76,7 +76,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                             }
                         </Button>
                         <Button
-                            size="icon"
+                            size="icon-xl"
                             variant="ghost"
                             disabled={!current}
                             aria-label="Next track"
@@ -88,7 +88,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                     </div>
                     <div className="flex items-center gap-1">
                         <Button
-                            size="icon"
+                            size="icon-xl"
                             variant="plain"
                             aria-label="Repeat"
                             title={"Repeat: " + player.repeat}
@@ -101,7 +101,7 @@ export function PlayerBar({ player, current, queueOpen, onQueue, onReveal }: Pla
                         </Button>
                         <Separator orientation="vertical" className="mx-1 h-4 data-vertical:self-center"/>
                         <Button
-                            size="icon"
+                            size="icon-xl"
                             variant="ghost"
                             aria-label="Stop"
                             title="Stop"

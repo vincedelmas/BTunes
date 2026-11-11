@@ -1,17 +1,19 @@
-import {smartMixes} from "../../../../shared/smart-mixes";
-import {PlaylistItem} from "@/components/library/playlist-item";
-import {useState} from "react";
-import type {CSSProperties} from "react";
 import {Settings} from "lucide-react";
-import {cn} from "@/lib/utils";
-import {Button} from "@/components/ui/button";
+import {Fragment, useState} from "react";
+
 import {PlaylistBrowser} from "@/components/library/playlist-browser";
+import {PlaylistItem} from "@/components/library/playlist-item";
 import {SidebarNowPlaying} from "@/components/player/sidebar-now-playing";
+import {Button} from "@/components/ui/button";
 import {navigationGroups, navigationItems} from "@/lib/sidebar-navigation";
+import {cn} from "@/lib/utils";
+
+import {smartMixes} from "../../../../shared/smart-mixes";
+
 import type {Snapshot, Track} from "../../../../shared/types/library";
-import type {TrackActions} from "@/types/track-actions";
-import {LibrarySearch} from "@/components/library/library-search";
 import type {SidebarLayout} from "@/types/sidebar";
+import type {TrackActions} from "@/types/track-actions";
+import type {CSSProperties} from "react";
 
 
 interface SidebarProps {
@@ -20,9 +22,6 @@ interface SidebarProps {
     data: Snapshot;
     genres: string[];
     current?: Track;
-    search: string;
-    onSearch: (value: string) => void;
-    onClearSearch: () => void;
     actions: TrackActions;
     artworkExpanded: boolean;
     onArtworkToggle: () => void;
@@ -34,8 +33,25 @@ interface SidebarProps {
 }
 
 
-export function Sidebar({ data, view, layout, genres, current, artworkExpanded, onArtworkToggle, onReveal, onNavigate, onSettings, onRefresh, onError, search, onSearch, onClearSearch, actions }: SidebarProps) {
+export function Sidebar({ data, view, layout, genres, current, artworkExpanded, onArtworkToggle, onReveal, onNavigate, onSettings, onRefresh, onError, actions }: SidebarProps) {
     const [playlistsOpen, setPlaylistsOpen] = useState(false);
+    const pinnedPlaylists = layout.pinnedIds.length > 0 && <div aria-label="Pinned playlists">
+        {layout.pinnedIds.map((id) => {
+            const playlist = data.playlists.find((entry) => "playlist:" + entry.id === id);
+            const mix = smartMixes.find((entry) => entry.id === id);
+
+            return <PlaylistItem
+                key={id}
+                name={playlist?.name ?? mix?.name ?? "Playlist"}
+                smart={Boolean(mix || playlist?.rule)}
+                active={view === id}
+                pinned
+                canPin
+                onPin={() => layout.setPinned(id, false)}
+                onNavigate={() => onNavigate(id)}
+            />;
+        })}
+    </div>;
 
     return (
         <aside
@@ -58,15 +74,6 @@ export function Sidebar({ data, view, layout, genres, current, artworkExpanded, 
                     <span className="sr-only">Settings</span>
                 </Button>
             </div>
-            <div className="mb-3 shrink-0">
-                <LibrarySearch
-                    value={search}
-                    onChange={onSearch}
-                    onClear={onClearSearch}
-                    placeholder={view === "settings" ? "Search disabled" : "Search this page"}
-                    disabled={view === "settings"}
-                />
-            </div>
             {playlistsOpen ? <PlaylistBrowser
                 view={view}
                 playlists={data.playlists}
@@ -82,49 +89,35 @@ export function Sidebar({ data, view, layout, genres, current, artworkExpanded, 
                     aria-label="Library navigation"
                 >
                     {navigationGroups.map((group) => (
-                        <div key={group.id} className={cn("flex flex-col gap-1", group.id !== "library" && "mt-3")}>
-                            {group.id !== "library" && <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">{group.label}</p>}
+                        <div key={group.id} data-navigation-group={group.id} className={cn("flex flex-col gap-1", group.id !== "library" && "mt-3")}>
+                            {group.id !== "library" && <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">{group.label}</p>}
                             {layout.navigationIds.map((id) => navigationItems.find((item) => item.id === id)!)
                                 .filter((item) => item.group === group.id)
                                 .map((item) => {
                                     const active = item.id === "playlists" ? view.startsWith("playlist:") : view === item.id;
 
                                     return (
-                                        <Button
-                                            key={item.id}
-                                            className="nav-item h-9 w-full justify-start gap-3 [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
-                                            onClick={() => item.id === "playlists" ? setPlaylistsOpen(true) : onNavigate(item.id)}
-                                            variant={active ? "secondary" : "ghost"}
-                                            aria-current={active ? "page" : undefined}
-                                            aria-label={item.id === "playlists" ? "Open playlists" : undefined}
-                                        >
-                                            <item.icon data-icon="inline-start" className={item.tone}/>
-                                            {item.label}
-                                            {item.id === "playlists" && <span className="ml-auto text-xs text-muted-foreground">{data.playlists.length}</span>}
-                                        </Button>
+                                        <Fragment key={item.id}>
+                                            <Button
+                                                size="navigation"
+                                                data-navigation-id={item.id}
+                                                className="nav-item w-full justify-start [&[data-variant=ghost]]:text-muted-foreground [&[data-variant=ghost]:hover]:text-foreground aria-[current=page]:bg-selection aria-[current=page]:text-selection-foreground aria-[current=page]:shadow-[inset_2px_0_0_var(--primary)]"
+                                                onClick={() => item.id === "playlists" ? setPlaylistsOpen(true) : onNavigate(item.id)}
+                                                variant={active ? "secondary" : "ghost"}
+                                                aria-current={active ? "page" : undefined}
+                                                aria-label={item.id === "playlists" ? "Open playlists" : undefined}
+                                            >
+                                                <item.icon data-icon="inline-start" className={item.tone}/>
+                                                {item.label}
+                                                {item.id === "playlists" && <span className="ml-auto text-xs text-muted-foreground">{data.playlists.length}</span>}
+                                            </Button>
+                                            {item.id === "playlists" && pinnedPlaylists}
+                                        </Fragment>
                                     );
                                 })}
                         </div>
                     ))}
                 </nav>
-                {layout.pinnedIds.length > 0 && <section className="mt-4" aria-label="Pinned playlists">
-                    <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Pinned</p>
-                    {layout.pinnedIds.map((id) => {
-                        const playlist = data.playlists.find((entry) => "playlist:" + entry.id === id);
-                        const mix = smartMixes.find((entry) => entry.id === id);
-
-                        return <PlaylistItem
-                            key={id}
-                            name={playlist?.name ?? mix?.name ?? "Playlist"}
-                            smart={Boolean(mix || playlist?.rule)}
-                            active={view === id}
-                            pinned
-                            canPin
-                            onPin={() => layout.setPinned(id, false)}
-                            onNavigate={() => onNavigate(id)}
-                        />;
-                    })}
-                </section>}
             </div>}
             <SidebarNowPlaying
                 current={current}

@@ -12,11 +12,12 @@ import type {ReactNode} from "react";
 
 interface DevicesPageProps {
     visualizer: ReactNode;
+    searchControl: ReactNode;
     query: string;
 }
 
 
-export function DevicesPage({ visualizer, query }: DevicesPageProps) {
+export function DevicesPage({ visualizer, searchControl, query }: DevicesPageProps) {
     const phone = useDevices();
     const folders = phone.files.filter((file) => file.directory).sort((first, second) => first.name.localeCompare(second.name));
     const selectedDevice = phone.devices.find((device) => device.storages.some((storage) => storage.id === phone.storageId));
@@ -32,6 +33,9 @@ export function DevicesPage({ visualizer, query }: DevicesPageProps) {
             <PageHeader
                 visualizer={visualizer}
                 title="Devices"
+                eyebrow="Take your music with you"
+                icon={Smartphone}
+                search={searchControl}
                 details={<span className="inline-flex items-center gap-2">
                     <Usb className="size-3.5 text-info" aria-hidden="true"/>
                     USB music sync · {phone.devices.length} connected

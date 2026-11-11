@@ -102,8 +102,8 @@ app.on('browser-window-created', (_, win) => {
     await waitFor(()=>button('Downloads'));
     button('Downloads').click();
     await waitFor(()=>document.querySelector('.download-row')?.textContent.includes('Fixture Song'));
-    const search=document.querySelector('.sidebar [aria-label="Search your library"]');
-    if(!search)throw new Error('Sidebar search is missing');
+    const search=document.querySelector('.page-header [aria-label="Search your library"]');
+    if(!search)throw new Error('Header search is missing');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(search,'Nothing matches');
     search.dispatchEvent(new Event('input',{bubbles:true}));
     await waitFor(()=>!document.querySelector('.download-row'));
