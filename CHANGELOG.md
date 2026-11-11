@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/vincedelmas/BTunes/compare/v1.1.2...v1.1.3) (2026-11-11)
+
+
+### Bug Fixes
+
+* avoid incompatible native D-Bus sockets ([aa2b833](https://github.com/vincedelmas/BTunes/commit/aa2b83347cb2af8258419761b692ee0ec1447c4a))
+
 ## [1.1.2](https://github.com/vincedelmas/BTunes/compare/v1.1.1...v1.1.2) (2026-11-11)
 
 
