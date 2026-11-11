@@ -1,27 +1,29 @@
 import {GripVertical} from "lucide-react";
-import type {DragEventHandler, KeyboardEventHandler} from "react";
 import {Button} from "@/components/ui/button";
+import type {DragEventHandler, KeyboardEventHandler} from "react";
+
 
 interface ReorderHandleProps {
     label: string;
-    onDragStart: DragEventHandler;
     onDragEnd: DragEventHandler;
+    onDragStart: DragEventHandler;
     onKeyDown: KeyboardEventHandler;
 }
+
 
 export function ReorderHandle({ label, onDragStart, onDragEnd, onKeyDown }: ReorderHandleProps) {
     return (
         <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            className="reorder-handle w-5 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-primary focus-visible:text-primary"
             draggable
+            type="button"
+            size="icon-xs"
+            variant="ghost"
             aria-label={label}
-            title="Drag to reorder, or hold Alt and use the arrow keys"
-            onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onKeyDown={onKeyDown}
+            onDragStart={onDragStart}
+            title="Drag to reorder, or hold Alt and use the arrow keys"
+            className="reorder-handle w-5 text-muted-foreground cursor-grab active:cursor-grabbing hover:text-primary focus-visible:text-primary"
         >
             <GripVertical/>
         </Button>

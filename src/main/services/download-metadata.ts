@@ -1,6 +1,6 @@
 import {setTimeout} from "node:timers/promises";
-import {recordingResponseSchema, storeMetadataResponseSchema} from "../../shared/schemas/downloads.ts";
 import type {TagPatch} from "../../shared/types/tags.ts";
+import {recordingResponseSchema, storeMetadataResponseSchema} from "../../shared/schemas/downloads.ts";
 
 export class DownloadMetadata {
     private readonly request: typeof fetch;

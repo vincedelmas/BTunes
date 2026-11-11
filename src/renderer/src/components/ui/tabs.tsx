@@ -1,12 +1,12 @@
+import {cn} from "@/lib/utils"
 import {Tabs as TabsPrimitive} from "@base-ui/react/tabs"
 import {cva, type VariantProps} from "class-variance-authority"
-import {cn} from "@/lib/utils"
 
 function Tabs({
-                  className,
-                  orientation = "horizontal",
-                  ...props
-              }: TabsPrimitive.Root.Props) {
+    className,
+    orientation = "horizontal",
+    ...props
+}: TabsPrimitive.Root.Props) {
     return (
         <TabsPrimitive.Root
             data-slot="tabs"
@@ -36,10 +36,10 @@ const tabsListVariants = cva(
 )
 
 function TabsList({
-                      className,
-                      variant = "default",
-                      ...props
-                  }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
+    className,
+    variant = "default",
+    ...props
+}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
     return (
         <TabsPrimitive.List
             data-slot="tabs-list"

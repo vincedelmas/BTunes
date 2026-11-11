@@ -1,9 +1,9 @@
-import {mkdir, readFile, rename, rm, writeFile} from "node:fs/promises";
 import {dirname} from "node:path";
 import {randomUUID} from "node:crypto";
 import {getErrorMessage} from "../../shared/errors.ts";
-import {persistedUpdateStateSchema} from "../../shared/schemas/updates.ts";
 import type {UpdateState} from "../../shared/types/updates.ts";
+import {mkdir, readFile, rename, rm, writeFile} from "node:fs/promises";
+import {persistedUpdateStateSchema} from "../../shared/schemas/updates.ts";
 
 const day = 24 * 60 * 60 * 1000;
 
@@ -14,25 +14,25 @@ interface UpdateCheckResult {
 
 interface AppUpdateAdapter {
     autoDownload: boolean;
-    autoInstallOnAppQuit: boolean;
-    allowPrerelease: boolean;
     allowDowngrade: boolean;
-    checkForUpdates: () => Promise<UpdateCheckResult | null>;
+    allowPrerelease: boolean;
+    autoInstallOnAppQuit: boolean;
     downloadUpdate: () => Promise<string[]>;
-    quitAndInstall: (isSilent: boolean, isForceRunAfter: boolean) => void;
-    on(ev: "download-progress", listener: (progress: { percent: number }) => void): unknown;
+    checkForUpdates: () => Promise<UpdateCheckResult | null>;
     on(ev: "error", listener: (error: Error) => void): unknown;
-    removeListener(ev: "download-progress", listener: (progress: { percent: number }) => void): unknown;
+    quitAndInstall: (isSilent: boolean, isForceRunAfter: boolean) => void;
     removeListener(ev: "error", listener: (error: Error) => void): unknown;
+    on(ev: "download-progress", listener: (progress: { percent: number }) => void): unknown;
+    removeListener(ev: "download-progress", listener: (progress: { percent: number }) => void): unknown;
 }
 
 interface AppUpdateOptions {
-    adapter?: AppUpdateAdapter;
     version: string;
     enabled: boolean;
     stateFile: string;
-    beforeInstall: () => Promise<void>;
     now?: () => number;
+    adapter?: AppUpdateAdapter;
+    beforeInstall: () => Promise<void>;
 }
 
 function isNewerStable(candidate: string, installed: string) {

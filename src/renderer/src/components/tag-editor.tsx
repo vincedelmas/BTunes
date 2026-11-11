@@ -1,19 +1,19 @@
-import {coverSearchQuery} from "@/lib/artwork";
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Check} from "lucide-react";
 import {Cover} from "@/components/cover";
-import {ArtworkPicker} from "@/components/artwork-picker";
-import {getErrorMessage} from "../../../shared/errors";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {TagForm} from "@/components/tag-form";
+import {coverSearchQuery} from "@/lib/artwork";
 import {tagFields} from "../../../shared/tags";
-import type {ArtworkCandidate} from "../../../shared/types/artwork";
+import {getErrorMessage} from "../../../shared/errors";
 import type {Track} from "../../../shared/types/library";
 import type {TagPatch} from "../../../shared/types/tags";
-import {tagPatchFieldsSchema} from "../../../shared/schemas/tags";
+import {ArtworkPicker} from "@/components/artwork-picker";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import {tagPatchFieldsSchema} from "../../../shared/schemas/tags";
+import type {ArtworkCandidate} from "../../../shared/types/artwork";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
@@ -107,13 +107,16 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
             }}
         >
             <DialogContent
-                initialFocus={() => document.getElementById("tag-title")}
                 showCloseButton={!busy}
+                initialFocus={() => document.getElementById("tag-title")}
                 className="tag-editor max-h-[90vh] flex flex-col gap-0 p-0 w-[min(700px,_calc(100vw_-_40px))] max-w-175 overflow-hidden border border-border rounded-2xl bg-card shadow-[0_30px_100px_#000b] [&[data-open]]:[animation:none] sm:max-w-[700px] data-open:animate-none data-closed:animate-none"
             >
-                <DialogHeader className="tag-editor-header shrink-0 pt-7 px-7 pb-0 bg-linear-to-r from-primary/8 to-card text-left">
+                <DialogHeader
+                    className="tag-editor-header shrink-0 pt-7 px-7 pb-0 bg-linear-to-r from-primary/8 to-card text-left"
+                >
                     <div
-                        className="tag-summary flex items-center gap-[18px] pb-6 [&_.cover]:w-18 [&_.cover]:h-18 [&_.cover]:rounded-[10px] [&_.cover]:shadow-[0_6px_20px_#0005]">
+                        className="tag-summary flex items-center gap-[18px] pb-6 [&_.cover]:w-18 [&_.cover]:h-18 [&_.cover]:rounded-[10px] [&_.cover]:shadow-[0_6px_20px_#0005]"
+                    >
                         <Cover
                             track={first}
                             source={artwork?.thumbnail}
@@ -142,32 +145,33 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                 </DialogHeader>
                 <div className="tag-editor-body min-h-0 overflow-auto pt-[18px] px-7 pb-7">
                     <TagForm
-                        genres={genres}
                         busy={busy}
                         batch={batch}
+                        genres={genres}
                         values={values}
                         onReset={reset}
                         enabled={enabled}
                         onChange={change}
                         onToggle={toggle}
                     />
-
                     <ArtworkPicker
-                        query={coverSearchQuery(first.title, values)}
                         track={first}
-                        selected={artwork}
                         disabled={busy}
+                        selected={artwork}
                         onSelect={setArtwork}
+                        query={coverSearchQuery(first.title, values)}
                     />
-                    {error &&
+                    {error && (
                         <Alert variant="destructive">
                             <AlertDescription>
                                 {error}
                             </AlertDescription>
                         </Alert>
-                    }
+                    )}
                 </div>
-                <DialogFooter className="tag-editor-footer shrink-0 flex items-center gap-[10px] m-0 py-[18px] px-6 border-t border-border bg-muted/20">
+                <DialogFooter
+                    className="tag-editor-footer shrink-0 flex items-center gap-[10px] m-0 py-[18px] px-6 border-t border-border bg-muted/20"
+                >
                     <Button
                         variant="ghost"
                         disabled={busy}
@@ -176,8 +180,8 @@ export function TagEditor({ genres, tracks, onClose, onSaved }: TagEditorProps) 
                         Cancel
                     </Button>
                     <Button
-                        disabled={busy || (!enabled.size && !artwork)}
                         onClick={() => void save()}
+                        disabled={busy || (!enabled.size && !artwork)}
                     >
                         <Check data-icon="inline-start"/>
                         {busy ? "Saving…" : "Save"}

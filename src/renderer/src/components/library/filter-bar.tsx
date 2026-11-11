@@ -1,5 +1,6 @@
-import {Button} from "@/components/ui/button";
 import {ArrowLeft, X} from "lucide-react";
+import {Button} from "@/components/ui/button";
+
 
 interface FilterBarProps {
     artist: string;
@@ -14,8 +15,8 @@ export function FilterBar({ artist, search, onArtist, onClear }: FilterBarProps)
 
     return (
         <div
-            className="filter-bar mb-3 flex shrink-0 flex-wrap items-center gap-2"
             aria-label="Active filters"
+            className="filter-bar mb-3 flex shrink-0 flex-wrap items-center gap-2"
         >
             <Button
                 size="sm"
@@ -26,16 +27,24 @@ export function FilterBar({ artist, search, onArtist, onClear }: FilterBarProps)
                 <ArrowLeft data-icon="inline-start"/>
                 All songs
             </Button>
-            {artist && <Button
-                size="sm"
-                variant="secondary"
-                aria-label="Clear artist filter"
-                onClick={() => onArtist("")}
-            >
-                {artist}
-                <X data-icon="inline-end"/>
-            </Button>}
-            {search && <span className="text-xs text-muted-foreground">Search: "{search}"</span>}
+            {artist && (
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onArtist("")}
+                    aria-label="Clear artist filter"
+                >
+                    {artist}
+                    <X data-icon="inline-end"/>
+                </Button>
+            )}
+            {search && (
+                <span className="text-xs text-muted-foreground">
+                    Search: "
+                    {search}
+                    "
+                </span>
+            )}
         </div>
     );
 }

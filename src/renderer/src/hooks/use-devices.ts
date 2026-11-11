@@ -1,7 +1,7 @@
+import {rpc} from "@/lib/rpc";
+import {getErrorMessage} from "../../../shared/errors";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "../../../shared/types/devices";
-import {getErrorMessage} from "../../../shared/errors";
-import {rpc} from "@/lib/rpc";
 
 export function useDevices() {
     const [devices, setDevices] = useState<MusicDevice[]>([]);

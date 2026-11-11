@@ -1,6 +1,6 @@
 import {z} from "zod";
-import {compileBookmarkPattern} from "../bookmarks.ts";
 import {tagPatchFieldsSchema} from "./tags.ts";
+import {compileBookmarkPattern} from "../bookmarks.ts";
 
 export const downloaderSettingsSchema = z.object({
     bookmarksFile: z.string().max(4096).default(""),

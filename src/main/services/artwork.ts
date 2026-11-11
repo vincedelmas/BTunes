@@ -1,8 +1,8 @@
 import {execFile} from "node:child_process";
 import {createHash, randomUUID} from "node:crypto";
 import type {ArtworkCandidate} from "../../shared/types/artwork.ts";
-import type {ArtworkImage, CachedArtwork, CachedArtworkSearch, EmbeddedArtwork} from "../types/artwork.ts";
 import {artworkSearchResponseSchema, releaseGroupSearchSchema} from "../../shared/schemas/artwork.ts";
+import type {ArtworkImage, CachedArtwork, CachedArtworkSearch, EmbeddedArtwork} from "../types/artwork.ts";
 
 
 const maxImageBytes = 10 * 1024 * 1024;

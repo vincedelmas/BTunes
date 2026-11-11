@@ -1,22 +1,23 @@
+import {rpc} from "@/lib/rpc";
 import {useState} from "react";
 import {Check} from "lucide-react";
-import type {DownloadItem} from "../../../../shared/types/downloads";
+import {TagForm} from "@/components/tag-form";
+import {Button} from "@/components/ui/button";
+import {coverSearchQuery} from "@/lib/artwork";
+import {tagFields} from "../../../../shared/tags";
+import {CoverSearch} from "@/components/cover-search";
+import {getErrorMessage} from "../../../../shared/errors";
 import type {Track} from "../../../../shared/types/library";
 import type {TagPatch} from "../../../../shared/types/tags";
-import {tagFields} from "../../../../shared/tags";
-import {tagPatchFieldsSchema} from "../../../../shared/schemas/tags";
-import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "../../../../shared/errors";
-import {coverSearchQuery} from "@/lib/artwork";
-import {TagForm} from "@/components/tag-form";
-import {CoverSearch} from "@/components/cover-search";
-import {Button} from "@/components/ui/button";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import type {DownloadItem} from "../../../../shared/types/downloads";
+import {tagPatchFieldsSchema} from "../../../../shared/schemas/tags";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
 
+
 interface DownloadReviewProps {
-    item: DownloadItem;
     genres: string[];
+    item: DownloadItem;
     onClose: () => void;
     onSaved: () => Promise<void>;
 }
@@ -71,45 +72,62 @@ export function DownloadReview({ item, genres, onClose, onSaved }: DownloadRevie
             }}
         >
             <DialogContent
-                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]"
                 showCloseButton={!busy}
+                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[700px]"
             >
                 <DialogHeader className="shrink-0 bg-linear-to-br from-primary/10 to-card px-7 py-6">
-                    <DialogTitle>Ready for your library</DialogTitle>
-                    <DialogDescription>Review the tags and cover for {item.title}. The finished MP3 will be added when you save.</DialogDescription>
+                    <DialogTitle>
+                        Ready for your library
+                    </DialogTitle>
+                    <DialogDescription>
+                        Review the tags and cover for
+                        {" "}
+                        {item.title}
+                        . The finished MP3 will be added when you save.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 overflow-y-auto px-7 py-6">
-                    {item.message && <p className="mb-5 text-sm text-muted-foreground">{item.message}</p>}
+                    {item.message && (
+                        <p className="mb-5 text-sm text-muted-foreground">
+                            {item.message}
+                        </p>
+                    )}
                     <TagForm
-                        genres={genres}
                         busy={busy}
                         batch={false}
+                        genres={genres}
                         values={values}
                         enabled={enabled}
+                        onToggle={() => undefined}
                         onChange={(field, value) => setValues((previous) => ({ ...previous, [field]: value }))}
                         onReset={(field) => setValues((previous) => ({ ...previous, [field]: initial[field] }))}
-                        onToggle={() => undefined}
                     />
                     <CoverSearch
-                        query={coverSearchQuery(item.title, values)}
                         track={track}
-                        selected={artwork}
                         disabled={busy}
+                        selected={artwork}
                         onSelect={setArtwork}
+                        query={coverSearchQuery(item.title, values)}
                     />
-                    {error && <Alert
-                        variant="destructive"
-                        className="mt-4"
-                    >
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>}
+                    {error && (
+                        <Alert
+                            className="mt-4"
+                            variant="destructive"
+                        >
+                            <AlertDescription>
+                                {error}
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 </div>
                 <DialogFooter className="m-0 shrink-0 rounded-none px-7 py-4">
                     <Button
                         variant="ghost"
                         disabled={busy}
                         onClick={onClose}
-                    >Review later</Button>
+                    >
+                        Review later
+                    </Button>
                     <Button
                         disabled={busy}
                         onClick={() => void save()}

@@ -1,8 +1,8 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {mkdtemp, writeFile, rm} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
+import assert from "node:assert/strict";
+import {mkdtemp, writeFile, rm} from "node:fs/promises";
 import {serveAudio} from "../src/main/services/audio.ts";
 
 void test("audio streaming serves exact byte ranges, suffixes, HEAD, and invalid-range responses", async () => {

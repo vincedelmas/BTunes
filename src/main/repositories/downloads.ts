@@ -1,9 +1,9 @@
 import {eq, like} from "drizzle-orm";
-import {drizzle} from "drizzle-orm/node-sqlite";
 import type {DatabaseSync} from "node:sqlite";
+import {drizzle} from "drizzle-orm/node-sqlite";
 import {appSettings, downloadHistory} from "../database/schema.ts";
-import {downloaderSettingsSchema, stagedDownloadSchema} from "../../shared/schemas/downloads.ts";
 import type {DownloadItem, DownloaderSettings} from "../../shared/types/downloads.ts";
+import {downloaderSettingsSchema, stagedDownloadSchema} from "../../shared/schemas/downloads.ts";
 
 export class DownloadRepository {
     private readonly queries: ReturnType<typeof drizzle>;

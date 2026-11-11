@@ -1,27 +1,27 @@
 import {cn} from "@/lib/utils";
-import {useItemReveal} from "@/hooks/use-item-reveal";
-import {ShowPlayingButton} from "@/components/player/show-playing-button";
 import {useState} from "react";
 import {Cover} from "@/components/cover";
 import {Pencil, Play} from "lucide-react";
 import {getAlbumArtist} from "@/lib/music";
 import {Button} from "@/components/ui/button";
 import {TagEditor} from "@/components/tag-editor";
+import {useItemReveal} from "@/hooks/use-item-reveal";
 import type {TrackActions} from "@/types/track-actions";
 import {TrackTable} from "@/components/library/track-table";
 import {compareTracks} from "../../../../shared/track-sorting";
 import {LibraryStats} from "@/components/library/library-stats";
 import type {TrackSort} from "../../../../shared/types/track-sorting";
 import type {Playlist, Track} from "../../../../shared/types/library";
+import {ShowPlayingButton} from "@/components/player/show-playing-button";
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 
 
 interface TrackCollectionDialogProps {
     tracks: Track[];
-    artistName?: string;
     genres: string[];
     playing: boolean;
     currentId?: number;
+    artistName?: string;
     onClose: () => void;
     playlists: Playlist[];
     actions: TrackActions;
@@ -81,7 +81,6 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
                             <DialogDescription className="mt-2 truncate">
                                 {artistName ? "Songs in your library" : getAlbumArtist(first)}
                             </DialogDescription>
-
                             <LibraryStats
                                 tracks={tracks}
                                 className="mt-3"
@@ -92,8 +91,8 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
                 <div className="flex shrink-0 items-center gap-2 border-b border-border px-5 py-3">
                     <Button onClick={() => actions.onPlay(orderedTracks[0], orderedTracks)}>
                         <Play
-                            data-icon="inline-start"
                             fill="currentColor"
+                            data-icon="inline-start"
                         />
                         {artistName ? "Play artist" : "Play album"}
                     </Button>
@@ -104,9 +103,14 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
                         <Pencil data-icon="inline-start"/>
                         {selectedTracks.length ? "Edit selected songs" : editLabel}
                     </Button>
-
                     <div className="ml-auto flex items-center gap-3">
-                        {selectedTracks.length > 0 && <p className="text-xs text-muted-foreground">{selectedTracks.length} selected</p>}
+                        {selectedTracks.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                                {selectedTracks.length}
+                                {" "}
+                                selected
+                            </p>
+                        )}
                         <ShowPlayingButton
                             disabled={!tracks.some((track) => track.id === currentId)}
                             onClick={() => {
@@ -123,21 +127,21 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
                         selected={selected}
                         playlists={playlists}
                         currentId={currentId}
+                        tracks={orderedTracks}
+                        onSelect={setSelected}
                         reveal={locator.target}
                         onRevealed={locator.clear}
-                        tracks={orderedTracks}
                         actions={collectionActions}
-                        onSelect={setSelected}
                     />
                 </div>
-                {editing &&
+                {editing && (
                     <TagEditor
                         genres={genres}
                         tracks={editing}
                         onSaved={onSaved}
                         onClose={() => setEditing(undefined)}
                     />
-                }
+                )}
             </DialogContent>
         </Dialog>
     );

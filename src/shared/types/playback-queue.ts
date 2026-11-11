@@ -7,6 +7,6 @@ export interface QueuedTrack {
 }
 
 export interface PlaybackQueue {
-    entries: QueuedTrack[];
     index: number;
+    entries: QueuedTrack[];
 }

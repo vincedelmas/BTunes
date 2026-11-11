@@ -1,12 +1,12 @@
-import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../../../shared/playback-queue";
-import type {PlaybackQueue} from "../../../shared/types/playback-queue";
+import {rpc} from "@/lib/rpc";
 import type {RepeatMode} from "@/types/player";
 import {usePreference} from "@/hooks/use-preference";
-import {volumeSchema} from "../../../shared/schemas/preferences";
-import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "../../../shared/errors";
 import type {Track} from "../../../shared/types/library";
+import {volumeSchema} from "../../../shared/schemas/preferences";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
+import type {PlaybackQueue} from "../../../shared/types/playback-queue";
+import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../../../shared/playback-queue";
 
 
 export function usePlayer(onError: (message: string) => void) {

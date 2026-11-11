@@ -1,5 +1,5 @@
-import {useEffect, useState} from "react";
 import type {z} from "zod";
+import {useEffect, useState} from "react";
 import {readPreference, writePreference} from "@/lib/preferences";
 
 export function usePreference<T>(key: string, schema: z.ZodType<T>, fallback: T) {

@@ -18,21 +18,21 @@ export interface DeviceFile {
 }
 
 interface DeviceComparison {
+    bytes: number;
     missing: number;
     present: number;
     different: number;
     phoneOnly: number;
-    bytes: number;
     preview: { title: string; artist: string }[];
 }
 
 export interface DeviceSyncState {
-    folder?: string;
-    storageId?: string;
-    phase: "idle" | "comparing" | "ready" | "syncing" | "complete" | "cancelled" | "error";
-    completed: number;
     total: number;
+    folder?: string;
     current: string;
-    comparison?: DeviceComparison;
     errors: string[];
+    completed: number;
+    storageId?: string;
+    comparison?: DeviceComparison;
+    phase: "idle" | "comparing" | "ready" | "syncing" | "complete" | "cancelled" | "error";
 }

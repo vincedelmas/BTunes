@@ -1,5 +1,5 @@
-import {useEffect, useState} from "react";
 import {rpc} from "@/lib/rpc";
+import {useEffect, useState} from "react";
 import {getErrorMessage} from "../../../shared/errors";
 import {downloaderSettingsSchema} from "../../../shared/schemas/downloads";
 import type {BookmarkFolder, DownloaderSettings} from "../../../shared/types/downloads";

@@ -1,19 +1,20 @@
-import {ArrowDownToLine, Check, LoaderCircle, TriangleAlert} from "lucide-react";
-import type {DownloadItem} from "../../../../shared/types/downloads";
-import type {SelectionModifiers} from "@/types/selection";
-import {canDownload, downloadStatusLabels} from "@/lib/downloads";
 import {cn} from "@/lib/utils";
 import {Cover} from "@/components/cover";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
+import type {SelectionModifiers} from "@/types/selection";
+import {canDownload, downloadStatusLabels} from "@/lib/downloads";
+import type {DownloadItem} from "../../../../shared/types/downloads";
+import {ArrowDownToLine, Check, LoaderCircle, TriangleAlert} from "lucide-react";
+
 
 interface DownloadRowProps {
-    item: DownloadItem;
-    selected: boolean;
     busy: boolean;
-    onSelect: (ev: SelectionModifiers) => void;
-    onDownload: () => void;
+    selected: boolean;
+    item: DownloadItem;
     onReview: () => void;
+    onDownload: () => void;
+    onSelect: (ev: SelectionModifiers) => void;
 }
 
 
@@ -35,9 +36,9 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
 
     return (
         <div
+            tabIndex={0}
             role="option"
             aria-selected={selected}
-            tabIndex={0}
             onClick={(ev) => {
                 if (!(ev.target as HTMLElement).closest("button")) onSelect(ev);
             }}
@@ -51,41 +52,60 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
         >
             <Cover source={item.artwork?.thumbnail}/>
             <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium">{item.title}</p>
-                <p className="mt-1 truncate text-xs text-muted-foreground">{item.artist || item.name}</p>
+                <p className="truncate text-base font-medium">
+                    {item.title}
+                </p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {item.artist || item.name}
+                </p>
             </div>
             <div className="download-status min-w-0 max-w-[35%] text-right">
-                <Badge variant={variant} className="max-w-full">
-                    {working && <LoaderCircle className="animate-spin"/>}
-                    {needsAttention && <TriangleAlert/>}
+                <Badge
+                    variant={variant}
+                    className="max-w-full"
+                >
+                    {working && (
+                        <LoaderCircle className="animate-spin"/>
+                    )}
+                    {needsAttention && (
+                        <TriangleAlert/>
+                    )}
                     <span className="truncate">
                         {label}
                         {item.status === "downloading" && " · " + item.progress.toFixed(0) + "%"}
                     </span>
                 </Badge>
-                {detail && <p
-                    className="mt-1 truncate text-xs text-muted-foreground"
-                    title={item.message}
-                >{detail}</p>}
+                {detail && (
+                    <p
+                        title={item.message}
+                        className="mt-1 truncate text-xs text-muted-foreground"
+                    >
+                        {detail}
+                    </p>
+                )}
             </div>
             <div className="flex min-w-36 shrink-0 justify-end">
-                {item.status === "review" && <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onReview}
-                >
-                    <Check data-icon="inline-start"/>
-                    Review & save
-                </Button>}
-                {canDownload(item) && <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={"Download " + item.title}
-                    disabled={busy}
-                    onClick={onDownload}
-                >
-                    <ArrowDownToLine/>
-                </Button>}
+                {item.status === "review" && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={onReview}
+                    >
+                        <Check data-icon="inline-start"/>
+                        Review & save
+                    </Button>
+                )}
+                {canDownload(item) && (
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={onDownload}
+                        aria-label={"Download " + item.title}
+                    >
+                        <ArrowDownToLine/>
+                    </Button>
+                )}
             </div>
         </div>
     );

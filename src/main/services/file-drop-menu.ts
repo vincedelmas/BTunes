@@ -1,7 +1,7 @@
-import {basename} from "node:path";
 import {Menu} from "electron";
-import type {BrowserWindow, MenuItemConstructorOptions} from "electron";
+import {basename} from "node:path";
 import type {FileImportChoice} from "../../shared/types/file-import";
+import type {BrowserWindow, MenuItemConstructorOptions} from "electron";
 
 export function fileDropMenu(win: BrowserWindow, folders: string[], x: number, y: number) {
     if (!folders.length) throw new Error("Add a music folder in Settings before dropping songs.");

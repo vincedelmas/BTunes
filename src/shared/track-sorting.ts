@@ -1,5 +1,4 @@
 import type {Track} from "./types/library";
-
 import type {TrackSort, TrackSortField} from "./types/track-sorting";
 
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });

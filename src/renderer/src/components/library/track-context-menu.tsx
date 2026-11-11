@@ -1,7 +1,10 @@
-import type {TrackActions} from "@/types/track-actions";
+import {rpc} from "@/lib/rpc";
 import type {ReactElement} from "react";
-import {Clipboard, Disc3, FolderOpen, ListEnd, ListPlus, Pencil, Play, UserRound, X} from "lucide-react";
+import {getAlbumArtist} from "@/lib/music";
+import type {TrackActions} from "@/types/track-actions";
+import {getErrorMessage} from "../../../../shared/errors";
 import type {Playlist, Track} from "../../../../shared/types/library";
+import {Clipboard, Disc3, FolderOpen, ListEnd, ListPlus, Pencil, Play, UserRound, X} from "lucide-react";
 import {
     ContextMenu,
     ContextMenuContent,
@@ -14,9 +17,7 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger
 } from "@/components/ui/context-menu";
-import {rpc} from "@/lib/rpc";
-import {getErrorMessage} from "../../../../shared/errors";
-import {getAlbumArtist} from "@/lib/music";
+
 
 interface TrackContextMenuProps {
     tracks: Track[];
@@ -35,7 +36,9 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: Track
             <ContextMenuTrigger render={children}/>
             <ContextMenuContent className="track-menu">
                 <ContextMenuGroup>
-                    <ContextMenuLabel>{tracks.length === 1 ? first.title : tracks.length + " songs"}</ContextMenuLabel>
+                    <ContextMenuLabel>
+                        {tracks.length === 1 ? first.title : tracks.length + " songs"}
+                    </ContextMenuLabel>
                     <ContextMenuItem onClick={() => actions.onPlay(first, tracks)}>
                         <Play/>
                         Play now
@@ -93,12 +96,15 @@ export function TrackContextMenu({ tracks, playlists, actions, children }: Track
                         <Disc3/>
                         Go to album
                     </ContextMenuItem>
-                    <ContextMenuItem onClick={() => void rpc("track.reveal", { id: first.id }).catch((error) => actions.onError(getErrorMessage(error)))}>
+                    <ContextMenuItem
+                        onClick={() => void rpc("track.reveal", { id: first.id }).catch((error) => actions.onError(getErrorMessage(error)))}
+                    >
                         <FolderOpen/>
                         Show in folder
                     </ContextMenuItem>
                     <ContextMenuItem
-                        onClick={() => void navigator.clipboard.writeText(tracks.map((track) => track.path).join("\n")).catch((error) => actions.onError(getErrorMessage(error)))}>
+                        onClick={() => void navigator.clipboard.writeText(tracks.map((track) => track.path).join("\n")).catch((error) => actions.onError(getErrorMessage(error)))}
+                    >
                         <Clipboard/>
                         Copy file path
                         {tracks.length > 1 ? "s" : ""}

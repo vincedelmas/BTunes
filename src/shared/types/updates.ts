@@ -1,10 +1,10 @@
 export interface UpdateState {
+    error?: string;
     version: string;
     enabled: boolean;
-    status: "idle" | "checking" | "available" | "downloading" | "downloaded" | "up-to-date" | "error";
-    availableVersion?: string;
     progress?: number;
-    error?: string;
-    lastCheckedAt?: number;
     showPrompt: boolean;
+    lastCheckedAt?: number;
+    availableVersion?: string;
+    status: "idle" | "checking" | "available" | "downloading" | "downloaded" | "up-to-date" | "error";
 }

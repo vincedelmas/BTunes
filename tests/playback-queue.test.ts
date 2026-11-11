@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
 import {test} from "node:test";
-import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../src/shared/playback-queue.ts";
-import type {PlaybackQueue} from "../src/shared/types/playback-queue.ts";
+import assert from "node:assert/strict";
 import type {Track} from "../src/shared/types/library.ts";
+import type {PlaybackQueue} from "../src/shared/types/playback-queue.ts";
+import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../src/shared/playback-queue.ts";
 
 const track: Track = {
     id: 1, path: "/song.mp3", title: "Song", artist: "Artist", albumArtist: "Artist", album: "Album",

@@ -3,6 +3,7 @@ import {FolderInput, X} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {useSongDrop} from "@/hooks/use-song-drop";
 
+
 interface SongDropZoneProps {
     children: ReactNode;
     onImported: () => Promise<void>;
@@ -20,10 +21,16 @@ export function SongDropZone({ children, onImported, onError }: SongDropZoneProp
         >
             {children}
             {drop.dragging && (
-                <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg border border-primary bg-background/95">
+                <div
+                    className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg border border-primary bg-background/95"
+                >
                     <FolderInput className="size-9 text-primary"/>
-                    <p className="font-semibold">Drop songs to import</p>
-                    <p className="text-xs text-muted-foreground">Choose Copy here or Move here after dropping.</p>
+                    <p className="font-semibold">
+                        Drop songs to import
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Choose Copy here or Move here after dropping.
+                    </p>
                 </div>
             )}
             {(drop.importing || drop.message) && (
@@ -36,8 +43,8 @@ export function SongDropZone({ children, onImported, onError }: SongDropZoneProp
                         <Button
                             size="icon-xs"
                             variant="ghost"
-                            aria-label="Dismiss import result"
                             onClick={drop.dismiss}
+                            aria-label="Dismiss import result"
                         >
                             <X/>
                         </Button>

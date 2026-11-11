@@ -1,7 +1,7 @@
-import {selectSmartMix} from "../src/shared/smart-mixes.ts";
-import assert from "node:assert/strict";
 import {test} from "node:test";
+import assert from "node:assert/strict";
 import type {Track} from "../src/shared/types/library.ts";
+import {selectSmartMix} from "../src/shared/smart-mixes.ts";
 import {compareTracks} from "../src/shared/track-sorting.ts";
 import type {TrackSortField} from "../src/shared/types/track-sorting.ts";
 

@@ -1,24 +1,24 @@
-import {smartMixes} from "../../../../shared/smart-mixes";
-import {useState} from "react";
-import {ArrowLeft, Brain, ListMusic, Plus} from "lucide-react";
 import {rpc} from "@/lib/rpc";
+import {useState} from "react";
 import {Button} from "@/components/ui/button";
+import type {SidebarLayout} from "@/types/sidebar";
+import {smartMixes} from "../../../../shared/smart-mixes";
+import {ArrowLeft, Brain, ListMusic, Plus} from "lucide-react";
+import type {Playlist} from "../../../../shared/types/library";
 import {PlaylistForm} from "@/components/library/playlist-form";
 import {PlaylistItem} from "@/components/library/playlist-item";
-import type {Playlist} from "../../../../shared/types/library";
-import type {SidebarLayout} from "@/types/sidebar";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter} from "@/components/ui/dialog";
 
 
 interface PlaylistBrowserProps {
     view: string;
-    playlists: Playlist[];
-    layout: SidebarLayout;
     genres: string[];
     onBack: () => void;
-    onNavigate: (view: string) => void;
+    playlists: Playlist[];
+    layout: SidebarLayout;
     onRefresh: () => Promise<void>;
     onError: (error: unknown) => void;
+    onNavigate: (view: string) => void;
 }
 
 
@@ -49,31 +49,56 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
     }
 
     return (
-        <section id="playlist-browser" className="playlist-browser flex min-h-0 flex-1 flex-col" aria-label="Playlist browser">
+        <section
+            id="playlist-browser"
+            aria-label="Playlist browser"
+            className="playlist-browser flex min-h-0 flex-1 flex-col"
+        >
             <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-                <Button variant="ghost" size="sm" onClick={onBack}>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onBack}
+                >
                     <ArrowLeft data-icon="inline-start"/>
                     Library
                 </Button>
-                <Button size="icon" variant="ghost" aria-label="Create playlist" onClick={() => setCreating(true)}>
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Create playlist"
+                    onClick={() => setCreating(true)}
+                >
                     <Plus/>
                 </Button>
             </div>
-            <h2 className="mb-3 px-2 text-lg font-semibold">Playlists</h2>
+            <h2 className="mb-3 px-2 text-lg font-semibold">
+                Playlists
+            </h2>
             <div className="playlists min-h-0 flex-1 overflow-y-auto">
-                <p className="mb-2 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Smart mixes</p>
-                {smartMixes.map((mix) => <PlaylistItem
-                    key={mix.id}
-                    name={mix.name}
-                    smart
-                    active={view === mix.id}
-                    pinned={layout.pinnedIds.includes(mix.id)}
-                    canPin={layout.pinnedIds.length < 3}
-                    onPin={() => layout.setPinned(mix.id, !layout.pinnedIds.includes(mix.id))}
-                    onNavigate={() => onNavigate(mix.id)}
-                />)}
-                <p className="mb-2 mt-5 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Your playlists</p>
-                {!playlists.length && <p className="px-2 text-xs text-muted-foreground">Create a playlist or choose a genre rule.</p>}
+                <p className="mb-2 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    Smart mixes
+                </p>
+                {smartMixes.map((mix) => (
+                    <PlaylistItem
+                        smart
+                        key={mix.id}
+                        name={mix.name}
+                        active={view === mix.id}
+                        canPin={layout.pinnedIds.length < 3}
+                        onNavigate={() => onNavigate(mix.id)}
+                        pinned={layout.pinnedIds.includes(mix.id)}
+                        onPin={() => layout.setPinned(mix.id, !layout.pinnedIds.includes(mix.id))}
+                    />
+                ))}
+                <p className="mb-2 mt-5 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    Your playlists
+                </p>
+                {!playlists.length && (
+                    <p className="px-2 text-xs text-muted-foreground">
+                        Create a playlist or choose a genre rule.
+                    </p>
+                )}
                 {layout.playlistIds.map((id) => {
                     const playlist = playlists.find((entry) => String(entry.id) === id)!;
                     return (
@@ -81,18 +106,17 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                             key={id}
                             name={playlist.name}
                             smart={Boolean(playlist.rule)}
-                            pinned={layout.pinnedIds.includes("playlist:" + id)}
-                            canPin={layout.pinnedIds.length < 3}
-                            onPin={() => layout.setPinned("playlist:" + id, !layout.pinnedIds.includes("playlist:" + id))}
                             active={view === "playlist:" + id}
-                            onNavigate={() => onNavigate("playlist:" + id)}
                             onEdit={() => setEditing(playlist)}
+                            canPin={layout.pinnedIds.length < 3}
                             onDelete={() => setDeleting(playlist)}
+                            onNavigate={() => onNavigate("playlist:" + id)}
+                            pinned={layout.pinnedIds.includes("playlist:" + id)}
+                            onPin={() => layout.setPinned("playlist:" + id, !layout.pinnedIds.includes("playlist:" + id))}
                         />
                     );
                 })}
             </div>
-
             {(creating || editing) && (
                 <Dialog
                     open
@@ -104,23 +128,33 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                 >
                     <DialogContent className="playlist-dialog gap-0 overflow-hidden p-0 sm:max-w-[560px]">
                         <DialogHeader className="bg-linear-to-br from-primary/10 to-card px-7 py-6">
-                            <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                {editing?.rule ? <Brain className="size-6"/> : <ListMusic className="size-6"/>}
+                            <div
+                                className="mb-3 flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                            >
+                                {editing?.rule ? (
+                                    <Brain className="size-6"/>
+                                ) : (
+                                    <ListMusic className="size-6"/>
+                                )}
                             </div>
-                            <DialogTitle className="text-2xl font-bold">{editing ? "Edit playlist" : "Create playlist"}</DialogTitle>
-                            <DialogDescription>Set a name and choose whether to add songs manually or by genre.</DialogDescription>
+                            <DialogTitle className="text-2xl font-bold">
+                                {editing ? "Edit playlist" : "Create playlist"}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Set a name and choose whether to add songs manually or by genre.
+                            </DialogDescription>
                         </DialogHeader>
                         <PlaylistForm
-                            key={editing?.id ?? "new"}
-                            playlist={editing}
-                            pinned={Boolean(editing && layout.pinnedIds.includes("playlist:" + editing.id))}
-                            canPin={layout.pinnedIds.length < 3}
                             genres={genres}
+                            onError={onError}
+                            playlist={editing}
+                            key={editing?.id ?? "new"}
+                            canPin={layout.pinnedIds.length < 3}
                             onCancel={() => {
                                 setCreating(false);
                                 setEditing(undefined);
                             }}
-                            onError={onError}
+                            pinned={Boolean(editing && layout.pinnedIds.includes("playlist:" + editing.id))}
                             onSaved={async (id, pinned) => {
                                 await onRefresh();
                                 layout.setPinned("playlist:" + id, pinned);
@@ -132,32 +166,43 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                     </DialogContent>
                 </Dialog>
             )}
-
-            {deleting && <Dialog
-                open
-                onOpenChange={(open) => {
-                    if (!open && !removing) setDeleting(undefined);
-                }}
-            >
-                <DialogContent showCloseButton={!removing}>
-                    <DialogHeader>
-                        <DialogTitle>Delete playlist?</DialogTitle>
-                        <DialogDescription>Remove “{deleting.name}”? Your songs and audio files stay in the library.</DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            disabled={removing}
-                            onClick={() => setDeleting(undefined)}
-                        >Cancel</Button>
-                        <Button
-                            variant="destructive"
-                            disabled={removing}
-                            onClick={() => void deletePlaylist()}
-                        >{removing ? "Deleting…" : "Delete playlist"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>}
+            {deleting && (
+                <Dialog
+                    open
+                    onOpenChange={(open) => {
+                        if (!open && !removing) setDeleting(undefined);
+                    }}
+                >
+                    <DialogContent showCloseButton={!removing}>
+                        <DialogHeader>
+                            <DialogTitle>
+                                Delete playlist?
+                            </DialogTitle>
+                            <DialogDescription>
+                                Remove “
+                                {deleting.name}
+                                ”? Your songs and audio files stay in the library.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button
+                                variant="ghost"
+                                disabled={removing}
+                                onClick={() => setDeleting(undefined)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                disabled={removing}
+                                variant="destructive"
+                                onClick={() => void deletePlaylist()}
+                            >
+                                {removing ? "Deleting…" : "Delete playlist"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </section>
     );
 }

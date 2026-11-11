@@ -1,15 +1,15 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm, stat, utimes} from "node:fs/promises";
-import {setImmediate} from "node:timers/promises";
-import {join, basename} from "node:path";
 import {tmpdir} from "node:os";
-import {DeviceSyncService} from "../src/main/services/device-sync.ts";
+import assert from "node:assert/strict";
+import {join, basename} from "node:path";
+import {setImmediate} from "node:timers/promises";
 import {MtpClient} from "../src/main/services/mtp.ts";
-import {LibraryRepository} from "../src/main/repositories/library.ts";
-import type {DeviceTransport} from "../src/main/types/devices.ts";
 import type {DeviceFile} from "../src/shared/types/devices.ts";
+import type {DeviceTransport} from "../src/main/types/devices.ts";
 import {deviceFolderSchema} from "../src/shared/schemas/devices.ts";
+import {DeviceSyncService} from "../src/main/services/device-sync.ts";
+import {LibraryRepository} from "../src/main/repositories/library.ts";
+import {mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm, stat, utimes} from "node:fs/promises";
 
 const storageId = "/modules/kmtpd/device0/storage0";
 

@@ -1,5 +1,5 @@
-import {useEffect, useEffectEvent, useRef} from "react";
 import type {RefObject} from "react";
+import {useEffect, useEffectEvent, useRef} from "react";
 
 
 export function usePlaybackFollow(

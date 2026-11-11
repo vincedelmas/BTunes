@@ -8,12 +8,12 @@ export interface EmbeddedArtwork {
 
 export interface CachedArtwork {
     url: string;
+    expiresAt: number;
     previewUrl: string;
     preview?: ArtworkImage;
-    previewLoading?: Promise<ArtworkImage>;
-    expiresAt: number;
     artwork?: EmbeddedArtwork;
     loading?: Promise<EmbeddedArtwork>;
+    previewLoading?: Promise<ArtworkImage>;
 }
 
 export interface ArtworkImage {

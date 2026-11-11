@@ -1,5 +1,8 @@
 import {posix} from "node:path";
 import {pathToFileURL} from "node:url";
+import {runCommand} from "./commands.ts";
+import type {CommandRunner, DeviceTransport} from "../types/devices.ts";
+import type {DeviceFile, MusicDevice} from "../../shared/types/devices.ts";
 import {
     deviceFolderSchema,
     mtpBytesSchema,
@@ -10,9 +13,6 @@ import {
     mtpPathsSchema,
     mtpResponseSchema
 } from "../../shared/schemas/devices.ts";
-import type {DeviceFile, MusicDevice} from "../../shared/types/devices.ts";
-import type {CommandRunner, DeviceTransport} from "../types/devices.ts";
-import {runCommand} from "./commands.ts";
 
 const service = "org.kde.kmtpd5";
 const daemonPath = "/modules/kmtpd";

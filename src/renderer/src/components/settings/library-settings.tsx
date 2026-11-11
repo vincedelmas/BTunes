@@ -1,12 +1,13 @@
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {EmptyState} from "@/components/empty-state";
 import {Folder, FolderPlus, RefreshCw} from "lucide-react";
 import {SettingsSection} from "@/components/settings/settings-section";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {EmptyState} from "@/components/empty-state";
+
 
 interface LibrarySettingsProps {
-    folders: string[];
     busy: boolean;
+    folders: string[];
     songCount: number;
     onImport: () => void;
     onRefresh: () => void;
@@ -37,17 +38,25 @@ export function LibrarySettings({ folders, busy, songCount, onImport, onRefresh 
                                 key={folder}
                                 className="flex items-center gap-4 py-4 first:pt-0 last:pb-0"
                             >
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+                                <div
+                                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground"
+                                >
                                     <Folder className="size-5"/>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="font-medium">{folder.split("/").filter(Boolean).at(-1) || folder}</p>
+                                    <p className="font-medium">
+                                        {folder.split("/").filter(Boolean).at(-1) || folder}
+                                    </p>
                                     <p
-                                        className="mt-1 truncate text-xs text-muted-foreground"
                                         title={folder}
-                                    >{folder}</p>
+                                        className="mt-1 truncate text-xs text-muted-foreground"
+                                    >
+                                        {folder}
+                                    </p>
                                 </div>
-                                <Badge variant="outline">Watching</Badge>
+                                <Badge variant="outline">
+                                    Watching
+                                </Badge>
                             </li>
                         ))}
                     </ul>
@@ -65,14 +74,16 @@ export function LibrarySettings({ folders, busy, songCount, onImport, onRefresh 
             >
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <p className="library-stat text-muted-foreground">
-                        <strong className="mr-2 text-2xl font-semibold tracking-tight text-foreground">{songCount.toLocaleString("en")}</strong>
+                        <strong className="mr-2 text-2xl font-semibold tracking-tight text-foreground">
+                            {songCount.toLocaleString("en")}
+                        </strong>
                         {songCount === 1 ? "song indexed" : "songs indexed"}
                     </p>
                     <Button
-                        variant="outline"
-                        aria-label="Refresh library"
                         disabled={busy}
+                        variant="outline"
                         onClick={onRefresh}
+                        aria-label="Refresh library"
                     >
                         <RefreshCw data-icon="inline-start"/>
                         Refresh library

@@ -1,11 +1,11 @@
+import {stat} from "node:fs/promises";
+import {basename, posix} from "node:path";
 import {getErrorMessage} from "../../shared/errors.ts";
 import {compareDeviceMusic} from "./device-matching.ts";
-import {basename, posix} from "node:path";
-import {stat} from "node:fs/promises";
 import {isAudioFile} from "../../shared/audio-files.ts";
-import type {DeviceFile, DeviceSyncState} from "../../shared/types/devices.ts";
-import type {DeviceSyncPlan, DeviceTransport} from "../types/devices.ts";
 import type {LibraryRepository} from "../repositories/library.ts";
+import type {DeviceSyncPlan, DeviceTransport} from "../types/devices.ts";
+import type {DeviceFile, DeviceSyncState} from "../../shared/types/devices.ts";
 
 export class DeviceSyncService {
     private readonly repo: Pick<LibraryRepository, "snapshot">;

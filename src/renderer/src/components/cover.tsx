@@ -13,21 +13,22 @@ interface CoverProps {
 export function Cover({ track, large = false, source }: CoverProps) {
     return (
         <div
-            className={cn("cover size-[42px] rounded-md bg-secondary flex items-center justify-center shrink-0 overflow-hidden text-muted-foreground", large && "cover-large w-full h-auto aspect-square bg-linear-to-br from-secondary to-card")}>
-            {source || track?.cover ?
+            className={cn("cover size-[42px] rounded-md bg-secondary flex items-center justify-center shrink-0 overflow-hidden text-muted-foreground", large && "cover-large w-full h-auto aspect-square bg-linear-to-br from-secondary to-card")}
+        >
+            {source || track?.cover ? (
                 <img
-                    className="size-full object-cover"
                     loading="lazy"
                     decoding="async"
-                    alt={(track?.album ?? "Selected") + " album artwork"}
+                    className="size-full object-cover"
                     src={source ?? "btunes://cover/" + track?.cover}
+                    alt={(track?.album ?? "Selected") + " album artwork"}
                 />
-                :
+            ) : (
                 <Disc3
                     aria-hidden="true"
                     className={cn(large && "size-[44%] stroke-[0.8]")}
                 />
-            }
+            )}
         </div>
     );
 }

@@ -1,13 +1,12 @@
-import type {UpdateState} from "./updates";
-import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
-import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
-import type {FileImportResult} from "./file-import";
 import type {z} from "zod";
-import type {rpcSchemas} from "../schemas/rpc.ts";
 import type {Snapshot} from "./library";
-import type {TagPreview, TagSaveResult} from "./tags";
-
+import type {UpdateState} from "./updates";
 import type {ArtworkCandidate} from "./artwork";
+import type {rpcSchemas} from "../schemas/rpc.ts";
+import type {FileImportResult} from "./file-import";
+import type {TagPreview, TagSaveResult} from "./tags";
+import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
+import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
 
 type RpcOutputs = {
     "updates.get": UpdateState;

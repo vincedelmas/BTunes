@@ -1,15 +1,15 @@
-import {readFile, stat} from "node:fs/promises";
 import {join} from "node:path";
 import {app, dialog} from "electron";
+import {readFile, stat} from "node:fs/promises";
 import {rpcSchemas} from "../../shared/schemas/rpc";
-import {downloaderSettingsSchema, goDownloaderSettingsSchema} from "../../shared/schemas/downloads";
-import type {RpcInput, RpcRoutes} from "../../shared/types/rpc";
-import type {DownloaderService} from "../services/downloads";
-import type {DownloadRepository} from "../repositories/downloads";
 import type {LibraryService} from "../services/library";
-import type {DownloadTools} from "../services/download-tools";
 import type {ArtworkService} from "../services/artwork";
 import {readBookmarkFolders} from "../services/bookmarks";
+import type {DownloaderService} from "../services/downloads";
+import type {DownloadTools} from "../services/download-tools";
+import type {RpcInput, RpcRoutes} from "../../shared/types/rpc";
+import type {DownloadRepository} from "../repositories/downloads";
+import {downloaderSettingsSchema, goDownloaderSettingsSchema} from "../../shared/schemas/downloads";
 
 export function downloadRoutes(downloads: DownloaderService, downloadRepo: DownloadRepository, library: LibraryService, tools: DownloadTools, artwork: ArtworkService) {
     return {

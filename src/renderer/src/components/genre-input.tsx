@@ -1,6 +1,7 @@
 import {resolveGenre} from "../../../shared/genres";
 import {Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList} from "@/components/ui/combobox";
 
+
 interface GenreInputProps {
     id: string;
     value: string;
@@ -18,20 +19,20 @@ export function GenreInput({ id, value, genres, disabled, placeholder, onChange 
         <Combobox
             items={genres}
             value={selected}
-            inputValue={value}
-            disabled={disabled}
-            autoComplete="off"
             openOnInputClick
-            onInputValueChange={(next, details) => {
-                if (details.reason === "input-change" || details.reason === "input-clear") onChange(next);
-            }}
+            inputValue={value}
+            autoComplete="off"
+            disabled={disabled}
             onValueChange={(next) => {
                 if (next) onChange(next);
             }}
+            onInputValueChange={(next, details) => {
+                if (details.reason === "input-change" || details.reason === "input-clear") onChange(next);
+            }}
         >
             <ComboboxInput
-                disabled={disabled}
                 id={id}
+                disabled={disabled}
                 placeholder={placeholder}
                 className="h-[42px] w-full"
                 onBlur={() => {
@@ -40,12 +41,18 @@ export function GenreInput({ id, value, genres, disabled, placeholder, onChange 
                 }}
             />
             <ComboboxContent>
-                <ComboboxEmpty>No matching genre. Keep typing to add a new one.</ComboboxEmpty>
+                <ComboboxEmpty>
+                    No matching genre. Keep typing to add a new one.
+                </ComboboxEmpty>
                 <ComboboxList>
-                    {(genre: string) => <ComboboxItem
-                        key={genre}
-                        value={genre}
-                    >{genre}</ComboboxItem>}
+                    {(genre: string) => (
+                        <ComboboxItem
+                            key={genre}
+                            value={genre}
+                        >
+                            {genre}
+                        </ComboboxItem>
+                    )}
                 </ComboboxList>
             </ComboboxContent>
         </Combobox>

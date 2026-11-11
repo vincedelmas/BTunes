@@ -1,9 +1,9 @@
-import {smartMixes} from "../../../shared/smart-mixes";
-import type {Playlist} from "../../../shared/types/library";
-import {itemOrderSchema, pinnedPlaylistsSchema} from "../../../shared/schemas/preferences";
-import {navigationItems} from "@/lib/sidebar-navigation";
 import {normalizeOrder} from "@/lib/preferences";
 import {usePreference} from "@/hooks/use-preference";
+import {smartMixes} from "../../../shared/smart-mixes";
+import {navigationItems} from "@/lib/sidebar-navigation";
+import type {Playlist} from "../../../shared/types/library";
+import {itemOrderSchema, pinnedPlaylistsSchema} from "../../../shared/schemas/preferences";
 
 export function useSidebarLayout(playlists: Playlist[]) {
     const [navigationOrder, setNavigationOrder] = usePreference("btunes.sidebar-order.v1", itemOrderSchema, navigationItems.map((item) => item.id));

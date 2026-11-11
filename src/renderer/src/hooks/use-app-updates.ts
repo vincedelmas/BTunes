@@ -1,8 +1,8 @@
-import {useEffect, useRef, useState} from "react";
 import {rpc} from "@/lib/rpc";
+import {useEffect, useRef, useState} from "react";
 import {getErrorMessage} from "../../../shared/errors";
-import type {UpdateState} from "../../../shared/types/updates";
 import type {AppUpdateController} from "@/types/updates";
+import type {UpdateState} from "../../../shared/types/updates";
 
 export function useAppUpdates(): AppUpdateController {
     const [state, setState] = useState<UpdateState>();

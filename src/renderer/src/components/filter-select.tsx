@@ -5,12 +5,12 @@ import {Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, C
 
 interface FilterSelectProps {
     id?: string;
-    className?: string;
     label: string;
     value: string;
+    className?: string;
     disabled?: boolean;
-    allowEmpty?: boolean;
     placeholder: string;
+    allowEmpty?: boolean;
     onChange: (value: string) => void;
     options: { value: string; label: string }[];
 }
@@ -40,18 +40,21 @@ export function FilterSelect({ className, id, label, placeholder, options, value
                     className={cn("filter-combobox min-w-[155px] max-w-65 h-[38px] rounded-[9px] text-sm", className)}
                 />
                 <ComboboxContent
-                    className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]">
+                    className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
+                >
                     <ComboboxEmpty>
                         No matches found.
                     </ComboboxEmpty>
                     <ComboboxList>
                         {(item: { value: string; label: string }) =>
-                            <ComboboxItem
-                                key={item.value}
-                                value={item}
-                            >
-                                {item.label}
-                            </ComboboxItem>
+                            (
+                                <ComboboxItem
+                                    value={item}
+                                    key={item.value}
+                                >
+                                    {item.label}
+                                </ComboboxItem>
+                            )
                         }
                     </ComboboxList>
                 </ComboboxContent>
@@ -74,18 +77,20 @@ export function FilterSelect({ className, id, label, placeholder, options, value
                 <SelectValue placeholder={placeholder}/>
             </SelectTrigger>
             <SelectContent
-                className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
                 align="start"
                 alignItemWithTrigger={false}
+                className="filter-popup min-w-55 p-[6px] border border-border rounded-xl bg-popover shadow-[0_12px_45px_#0009] [&_[data-slot=select-item]]:min-h-9 [&_[data-slot=select-item]]:py-[9px] [&_[data-slot=select-item]]:rounded-[6px] [&_[data-slot=combobox-item]]:min-h-9 [&_[data-slot=combobox-item]]:py-[9px] [&_[data-slot=combobox-item]]:rounded-[6px]"
             >
                 <SelectGroup>
                     {items.map((item) =>
-                        <SelectItem
-                            key={item.value}
-                            value={item.value}
-                        >
-                            {item.label}
-                        </SelectItem>
+                        (
+                            <SelectItem
+                                key={item.value}
+                                value={item.value}
+                            >
+                                {item.label}
+                            </SelectItem>
+                        )
                     )}
                 </SelectGroup>
             </SelectContent>

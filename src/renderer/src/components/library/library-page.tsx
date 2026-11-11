@@ -1,63 +1,61 @@
-import {Brain, ListMusic, Play, Shuffle} from "lucide-react";
-
+import type {ReactNode} from "react";
 import {Cover} from "@/components/cover";
+import {Button} from "@/components/ui/button";
+import type {ItemReveal} from "@/types/reveal";
+import {PageHeader} from "@/components/page-header";
+import type {CollectionState} from "@/types/collection";
+import type {TrackActions} from "@/types/track-actions";
+import {navigationItems} from "@/lib/sidebar-navigation";
 import {AlbumGrid} from "@/components/library/album-grid";
-import {ArtistGrid} from "@/components/library/artist-grid";
-import {CollectionEmptyState} from "@/components/library/collection-empty-state";
 import {FilterBar} from "@/components/library/filter-bar";
+import {getErrorMessage} from "../../../../shared/errors";
+import {ArtistGrid} from "@/components/library/artist-grid";
+import {TrackTable} from "@/components/library/track-table";
+import {Brain, ListMusic, Play, Shuffle} from "lucide-react";
 import {LibraryStats} from "@/components/library/library-stats";
 import {SongDropZone} from "@/components/library/song-drop-zone";
-import {TrackTable} from "@/components/library/track-table";
-import {PageHeader} from "@/components/page-header";
-import {Button} from "@/components/ui/button";
-import {navigationItems} from "@/lib/sidebar-navigation";
-
-import {getErrorMessage} from "../../../../shared/errors";
-
 import type {Snapshot, Track} from "../../../../shared/types/library";
-import type {CollectionState} from "@/types/collection";
-import type {ItemReveal} from "@/types/reveal";
-import type {TrackActions} from "@/types/track-actions";
-import type {ReactNode} from "react";
+import {CollectionEmptyState} from "@/components/library/collection-empty-state";
 
 
 interface LibraryPageProps {
-    collection: CollectionState;
     data: Snapshot;
     current?: Track;
     playing: boolean;
-    actions: TrackActions;
     reveal?: ItemReveal;
+    feedback: ReactNode;
+    actions: TrackActions;
+    visualizer: ReactNode;
     onRevealed: () => void;
-    onOpenAlbum: (tracks: Track[]) => void;
-    onOpenArtist: (name: string) => void;
     onSettings: () => void;
+    searchControl: ReactNode;
+    collection: CollectionState;
     onImported: () => Promise<void>;
     onPlay: (shuffle: boolean) => void;
-    visualizer: ReactNode;
-    searchControl: ReactNode;
-    feedback: ReactNode;
+    onOpenArtist: (name: string) => void;
+    onOpenAlbum: (tracks: Track[]) => void;
 }
 
 
 export function LibraryPage({
-                                collection,
-                                data,
-                                current,
-                                playing,
-                                actions,
-                                reveal,
-                                onRevealed,
-                                onOpenAlbum,
-                                onOpenArtist,
-                                onSettings,
-                                onImported,
-                                onPlay,
-                                visualizer,
-                                searchControl,
-                                feedback
-                            }: LibraryPageProps) {
+    collection,
+    data,
+    current,
+    playing,
+    actions,
+    reveal,
+    onRevealed,
+    onOpenAlbum,
+    onOpenArtist,
+    onSettings,
+    onImported,
+    onPlay,
+    visualizer,
+    searchControl,
+    feedback
+}: LibraryPageProps) {
     const { view, title, tracks, albums, sort, selected, search, artist, setSort, setSelected, setArtist, clearFilters } = collection;
+
     const navigation = navigationItems.find((item) => item.id === view);
     let icon = navigation?.icon ?? ListMusic;
 
@@ -74,95 +72,141 @@ export function LibraryPage({
 
     function renderCollection() {
         if (!tracks.length) {
-            return <CollectionEmptyState
-                view={view}
-                onClearFilters={clearFilters}
-                hasFilters={Boolean(search || artist)}
-                hasTracks={Boolean(data.tracks.length)}
-                hasFolders={Boolean(data.folders.length)}
-                onSettings={onSettings}
-            />;
+            return (
+                <CollectionEmptyState
+                    view={view}
+                    onSettings={onSettings}
+                    onClearFilters={clearFilters}
+                    hasFilters={Boolean(search || artist)}
+                    hasTracks={Boolean(data.tracks.length)}
+                    hasFolders={Boolean(data.folders.length)}
+                />
+            );
         }
 
         if (view === "albums") {
-            return <AlbumGrid
-                currentTrack={current}
-                reveal={reveal}
-                onRevealed={onRevealed}
-                albums={albums}
-                actions={actions}
-                playlists={data.playlists}
-                onOpen={onOpenAlbum}
-            />;
+            return (
+                <AlbumGrid
+                    reveal={reveal}
+                    albums={albums}
+                    actions={actions}
+                    onOpen={onOpenAlbum}
+                    currentTrack={current}
+                    onRevealed={onRevealed}
+                    playlists={data.playlists}
+                />
+            );
         }
 
         if (view === "artists") {
-            return <ArtistGrid
-                tracks={tracks}
-                currentTrack={current}
-                reveal={reveal}
-                onRevealed={onRevealed}
-                onArtist={onOpenArtist}
-            />;
+            return (
+                <ArtistGrid
+                    tracks={tracks}
+                    reveal={reveal}
+                    currentTrack={current}
+                    onRevealed={onRevealed}
+                    onArtist={onOpenArtist}
+                />
+            );
         }
 
-        return <TrackTable
-            reveal={reveal}
-            onRevealed={onRevealed}
-            sort={sort}
-            tracks={tracks}
-            onSort={setSort}
-            actions={actions}
-            selected={selected}
-            onSelect={setSelected}
-            currentId={current?.id}
-            playing={playing}
-            playlists={data.playlists}
-        />;
+        return (
+            <TrackTable
+                sort={sort}
+                reveal={reveal}
+                tracks={tracks}
+                onSort={setSort}
+                actions={actions}
+                playing={playing}
+                selected={selected}
+                onSelect={setSelected}
+                onRevealed={onRevealed}
+                currentId={current?.id}
+                playlists={data.playlists}
+            />
+        );
     }
 
     return (
         <>
-            <div className="library-hero shrink-0 border-b border-border/60 bg-linear-to-br from-primary/4 via-background to-background px-6 py-5">
+            <div
+                className="library-hero shrink-0 border-b border-border/60 bg-linear-to-br from-primary/4 via-background to-background px-6 py-5"
+            >
                 <PageHeader
                     icon={icon}
                     title={title}
-                    artwork={coverTrack ? <Cover track={coverTrack} large/> : undefined}
                     search={searchControl}
                     visualizer={visualizer}
-                    details={<div className="flex flex-col gap-1">
-                        <LibraryStats tracks={tracks}/>
-                        {collection.smartMix && <p>{collection.smartMix.description}</p>}
-                    </div>}
-                    actions={<>
-                        <Button size="lg" className="rounded-full px-4" disabled={!tracks.length} onClick={() => onPlay(false)}>
-                            <Play data-icon="inline-start" fill="currentColor"/>
-                            Play all
-                        </Button>
-                        <Button variant="secondary" size="lg" className="rounded-full px-4" disabled={!tracks.length} onClick={() => onPlay(true)}>
-                            <Shuffle data-icon="inline-start"/>
-                            Shuffle
-                        </Button>
-                    </>}
+                    artwork={coverTrack ? (
+                        <Cover
+                            large
+                            track={coverTrack}
+                        />
+                    ) : undefined}
+                    details={
+                        <div className="flex flex-col gap-1">
+                            <LibraryStats tracks={tracks}/>
+                            {collection.smartMix && (
+                                <p>
+                                    {collection.smartMix.description}
+                                </p>
+                            )}
+                        </div>
+                    }
+                    actions={
+                        <>
+                            <Button
+                                size="lg"
+                                disabled={!tracks.length}
+                                className="rounded-full px-4"
+                                onClick={() => onPlay(false)}
+                            >
+                                <Play
+                                    fill="currentColor"
+                                    data-icon="inline-start"
+                                />
+                                Play all
+                            </Button>
+                            <Button
+                                size="lg"
+                                variant="secondary"
+                                disabled={!tracks.length}
+                                onClick={() => onPlay(true)}
+                                className="rounded-full px-4"
+                            >
+                                <Shuffle data-icon="inline-start"/>
+                                Shuffle
+                            </Button>
+                        </>
+                    }
                 />
             </div>
             <div className="content flex min-h-0 flex-1 flex-col overflow-hidden px-5 py-3">
                 {feedback}
-                <FilterBar artist={artist} search={search} onArtist={setArtist} onClear={clearFilters}/>
+                <FilterBar
+                    artist={artist}
+                    search={search}
+                    onArtist={setArtist}
+                    onClear={clearFilters}
+                />
                 <div className="collection-results flex min-h-0 flex-1 flex-col">
-                    {view === "tracks" ? <SongDropZone
-                        onImported={async () => {
-                            clearFilters();
-                            await onImported();
-                        }}
-                        onError={(error) => actions.onError(getErrorMessage(error))}
-                    >
-                        {renderCollection()}
-                    </SongDropZone> : renderCollection()}
+                    {view === "tracks" ? (
+                        <SongDropZone
+                            onError={(error) => actions.onError(getErrorMessage(error))}
+                            onImported={async () => {
+                                clearFilters();
+                                await onImported();
+                            }}
+                        >
+                            {renderCollection()}
+                        </SongDropZone>
+                    ) : renderCollection()}
                 </div>
-                {view === "duplicates" && tracks.length > 0 && <p className="duplicate-note mx-2 mb-0 mt-3.5 shrink-0 text-xs text-muted-foreground">
-                    Matches use title, artist, and rounded duration. No files are deleted.
-                </p>}
+                {view === "duplicates" && tracks.length > 0 && (
+                    <p className="duplicate-note mx-2 mb-0 mt-3.5 shrink-0 text-xs text-muted-foreground">
+                        Matches use title, artist, and rounded duration. No files are deleted.
+                    </p>
+                )}
             </div>
         </>
     );

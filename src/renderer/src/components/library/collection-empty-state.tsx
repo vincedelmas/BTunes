@@ -62,11 +62,13 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
     }
 
     if (view.startsWith("mix:")) {
-        return <EmptyState
-            icon={Brain}
-            title="No songs in this mix"
-            description="This mix updates automatically as you add music and listen."
-        />;
+        return (
+            <EmptyState
+                icon={Brain}
+                title="No songs in this mix"
+                description="This mix updates automatically as you add music and listen."
+            />
+        );
     }
 
     if (!hasTracks && hasFolders) {

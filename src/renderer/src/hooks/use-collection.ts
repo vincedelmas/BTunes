@@ -1,14 +1,14 @@
-import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
-import type {CollectionLocation} from "@/types/collection";
-import {genreChoices} from "../../../shared/genres";
-import {useDeferredValue, useEffect, useRef, useState} from "react";
-import type {Snapshot} from "../../../shared/types/library";
-import type {TrackSort} from "../../../shared/types/track-sorting";
-import {compareTracks} from "../../../shared/track-sorting";
-import {duplicateKey, groupAlbums, getAlbumArtist} from "@/lib/music";
 import {rpc} from "@/lib/rpc";
+import {genreChoices} from "../../../shared/genres";
 import {usePreference} from "@/hooks/use-preference";
+import type {CollectionLocation} from "@/types/collection";
+import type {Snapshot} from "../../../shared/types/library";
+import {compareTracks} from "../../../shared/track-sorting";
+import type {TrackSort} from "../../../shared/types/track-sorting";
+import {useDeferredValue, useEffect, useRef, useState} from "react";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
+import {duplicateKey, groupAlbums, getAlbumArtist} from "@/lib/music";
+import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
 
 const viewTitles: Record<string, string> = {
     albums: "Albums",

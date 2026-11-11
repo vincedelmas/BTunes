@@ -1,6 +1,6 @@
 import {basename, extname, posix} from "node:path";
-import type {DeviceFile} from "../../shared/types/devices.ts";
 import type {Track} from "../../shared/types/library.ts";
+import type {DeviceFile} from "../../shared/types/devices.ts";
 
 const filenameKey = (name: string) => name.normalize("NFC").toLocaleLowerCase();
 const musicKey = (value: string) => value.normalize("NFKD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, "");

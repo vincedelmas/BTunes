@@ -5,8 +5,8 @@ export interface SelectionModifiers {
 }
 
 export interface SelectionRectangle {
-    left: number;
     top: number;
+    left: number;
     width: number;
     height: number;
 }
@@ -17,7 +17,7 @@ export interface GridSelection {
 }
 
 export interface GridGeometry {
+    width: number;
     columns: number;
     rowHeight: number;
-    width: number;
 }

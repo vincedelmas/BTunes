@@ -1,5 +1,5 @@
-import type {ComponentProps, CSSProperties} from "react";
 import {cn} from "@/lib/utils";
+import type {ComponentProps, CSSProperties} from "react";
 
 
 interface RangeInputProps extends Omit<ComponentProps<"input">, "type" | "value"> {
@@ -14,12 +14,12 @@ export function RangeInput({ min = 0, max = 100, value, style, className, ...pro
     return (
         <input
             {...props}
-            type="range"
             min={min}
             max={max}
+            type="range"
             value={value}
-            className={cn("h-4 cursor-pointer disabled:cursor-default", className)}
             style={{ ...style, "--range-fill": progress + "%" } as CSSProperties}
+            className={cn("h-4 cursor-pointer disabled:cursor-default", className)}
         />
     );
 }

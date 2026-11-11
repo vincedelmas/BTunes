@@ -1,7 +1,8 @@
 import {useState} from "react";
+import {Input} from "@/components/ui/input";
 import {compileBookmarkPattern} from "../../../../shared/bookmarks";
 import {Field, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/field";
-import {Input} from "@/components/ui/input";
+
 
 interface BookmarkPatternFieldsProps {
     pattern: string;
@@ -28,23 +29,45 @@ export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkP
     return (
         <FieldGroup className="grid gap-5 sm:grid-cols-2">
             <Field data-invalid={Boolean(error)}>
-                <FieldLabel htmlFor="download-pattern">Bookmark name pattern</FieldLabel>
+                <FieldLabel htmlFor="download-pattern">
+                    Bookmark name pattern
+                </FieldLabel>
                 <Input
-                    id="download-pattern"
-                    disabled={disabled}
                     value={pattern}
+                    disabled={disabled}
+                    id="download-pattern"
                     aria-invalid={Boolean(error)}
                     onChange={(ev) => onChange(ev.target.value)}
                 />
-                <FieldDescription>Use {'{artist}'} and {'{title}'} to read names. Add {'{skip}'} for sections to ignore.</FieldDescription>
-                {error && <p className="text-xs text-destructive">{error}</p>}
+                <FieldDescription>
+                    Use
+                    {" "}
+                    {'{artist}'}
+                    {" "}
+                    and
+                    {" "}
+                    {'{title}'}
+                    {" "}
+                    to read names. Add
+                    {" "}
+                    {'{skip}'}
+                    {" "}
+                    for sections to ignore.
+                </FieldDescription>
+                {error && (
+                    <p className="text-xs text-destructive">
+                        {error}
+                    </p>
+                )}
             </Field>
             <Field>
-                <FieldLabel htmlFor="download-example">Try a bookmark name</FieldLabel>
+                <FieldLabel htmlFor="download-example">
+                    Try a bookmark name
+                </FieldLabel>
                 <Input
-                    id="download-example"
-                    disabled={disabled}
                     value={example}
+                    disabled={disabled}
+                    id="download-example"
                     onChange={(ev) => setExample(ev.target.value)}
                 />
                 <div
@@ -54,15 +77,31 @@ export function BookmarkPatternFields({ pattern, disabled, onChange }: BookmarkP
                     {artist && title ? (
                         <>
                             <p
-                                className="truncate"
                                 title={artist}
-                            >Artist <span className="ml-2 text-foreground">{artist}</span></p>
-                            <p
                                 className="truncate"
+                            >
+                                Artist
+                                {" "}
+                                <span className="ml-2 text-foreground">
+                                    {artist}
+                                </span>
+                            </p>
+                            <p
                                 title={title}
-                            >Title <span className="ml-2 text-foreground">{title}</span></p>
+                                className="truncate"
+                            >
+                                Title
+                                {" "}
+                                <span className="ml-2 text-foreground">
+                                    {title}
+                                </span>
+                            </p>
                         </>
-                    ) : <p>Try a name that matches your pattern to see the result.</p>}
+                    ) : (
+                        <p>
+                            Try a name that matches your pattern to see the result.
+                        </p>
+                    )}
                 </div>
             </Field>
         </FieldGroup>

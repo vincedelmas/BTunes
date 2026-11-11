@@ -1,16 +1,16 @@
-import {useEffect, useId, useRef, useState} from "react";
+import {cn} from "@/lib/utils";
 import {Search, X} from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {useEffect, useId, useRef, useState} from "react";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
-import {cn} from "@/lib/utils";
 
 
 interface LibrarySearchProps {
     scope: string;
     value: string;
+    onClear: () => void;
     placeholder?: string;
     onChange: (value: string) => void;
-    onClear: () => void;
 }
 
 
@@ -58,29 +58,29 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
         >
             <Button
                 ref={trigger}
-                variant="ghost"
                 size="icon-lg"
-                className="rounded-full"
-                aria-label={expanded ? "Close search" : "Open search"}
-                aria-expanded={expanded}
+                variant="ghost"
                 aria-controls={id}
+                className="rounded-full"
+                aria-expanded={expanded}
                 title="Search this page (Ctrl+F)"
+                aria-label={expanded ? "Close search" : "Open search"}
                 onClick={() => expanded ? closeSearch() : setOpenScope(scope)}
             >
                 <Search/>
             </Button>
             <div
                 id={id}
-                aria-hidden={!expanded}
                 inert={!expanded}
+                aria-hidden={!expanded}
                 className={cn("overflow-hidden transition-[width,opacity] duration-200 ease-out motion-reduce:transition-none", expanded ? "w-[clamp(180px,24vw,280px)] opacity-100" : "w-0 opacity-0")}
             >
                 <InputGroup className="search ml-2 h-9 w-[calc(100%-0.5rem)] rounded-full bg-control">
                     <InputGroupInput
                         ref={input}
                         value={value}
-                        aria-label="Search your library"
                         placeholder={placeholder}
+                        aria-label="Search your library"
                         onChange={(ev) => {
                             setOpenScope(scope);
                             onChange(ev.target.value);
@@ -92,16 +92,18 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
                             closeSearch();
                         }}
                     />
-                    {value && <InputGroupAddon align="inline-end">
-                        <InputGroupButton
-                            size="icon-xs"
-                            aria-label="Clear search"
-                            title="Clear search"
-                            onClick={closeSearch}
-                        >
-                            <X aria-hidden="true"/>
-                        </InputGroupButton>
-                    </InputGroupAddon>}
+                    {value && (
+                        <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                                size="icon-xs"
+                                title="Clear search"
+                                onClick={closeSearch}
+                                aria-label="Clear search"
+                            >
+                                <X aria-hidden="true"/>
+                            </InputGroupButton>
+                        </InputGroupAddon>
+                    )}
                 </InputGroup>
             </div>
         </div>

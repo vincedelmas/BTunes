@@ -1,8 +1,8 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {mkdtempSync, rmSync} from "node:fs";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
+import assert from "node:assert/strict";
+import {mkdtempSync, rmSync} from "node:fs";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
 
 void test("library data and playlists survive reopening the database", () => {

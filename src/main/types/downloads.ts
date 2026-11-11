@@ -7,10 +7,10 @@ interface DownloadToolPaths {
 }
 
 export interface DownloadToolProvider {
-    acquire: () => Promise<DownloadToolPaths>;
     check: () => Promise<void>;
     snapshot: () => ToolStatus;
     close: () => Promise<void>;
+    acquire: () => Promise<DownloadToolPaths>;
 }
 
 export type DownloadRunner = (command: string, args: string[], signal: AbortSignal, onLine?: (line: string) => void) => Promise<void>;

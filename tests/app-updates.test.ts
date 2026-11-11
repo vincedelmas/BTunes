@@ -1,10 +1,10 @@
-import assert from "node:assert/strict";
 import {test} from "node:test";
-import {EventEmitter} from "node:events";
-import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
+import assert from "node:assert/strict";
+import {EventEmitter} from "node:events";
 import {AppUpdateService} from "../src/main/services/app-updates.ts";
+import {mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 
 const day = 24 * 60 * 60 * 1000;
 

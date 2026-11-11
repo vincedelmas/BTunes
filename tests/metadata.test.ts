@@ -1,15 +1,15 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {execFile} from "node:child_process";
-import {promisify} from "node:util";
-import {mkdtemp, readFile, writeFile, stat, rm} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
+import {promisify} from "node:util";
+import assert from "node:assert/strict";
 import {parseFile} from "music-metadata";
+import {execFile} from "node:child_process";
 import {readTags} from "../src/main/services/metadata.ts";
+import {groupAlbums} from "../src/renderer/src/lib/music.ts";
 import {LibraryService} from "../src/main/services/library.ts";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
-import {groupAlbums} from "../src/renderer/src/lib/music.ts";
+import {mkdtemp, readFile, writeFile, stat, rm} from "node:fs/promises";
 
 const run = promisify(execFile);
 

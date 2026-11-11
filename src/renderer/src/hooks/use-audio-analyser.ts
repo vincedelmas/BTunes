@@ -1,5 +1,5 @@
-import {useEffect, useRef} from "react";
 import type {RefObject} from "react";
+import {useEffect, useRef} from "react";
 
 
 export function useAudioAnalyser(audio: RefObject<HTMLAudioElement | null>, enabled: boolean) {

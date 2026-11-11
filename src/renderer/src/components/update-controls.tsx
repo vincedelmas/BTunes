@@ -1,11 +1,12 @@
-import {Download, LoaderCircle, RefreshCw, RotateCw} from "lucide-react";
 import {Button} from "@/components/ui/button";
-import {Alert, AlertDescription} from "@/components/ui/alert";
 import type {AppUpdateController} from "@/types/updates";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Download, LoaderCircle, RefreshCw, RotateCw} from "lucide-react";
+
 
 interface UpdateControlsProps {
-    updates: AppUpdateController;
     showCheck?: boolean;
+    updates: AppUpdateController;
 }
 
 
@@ -22,34 +23,61 @@ export function UpdateControls({ updates, showCheck = false }: UpdateControlsPro
         <div className="flex flex-col gap-4">
             {downloading && (
                 <div className="flex flex-col gap-2">
-                    <p role="status" className="text-sm text-muted-foreground">Downloading update… {progress}%</p>
+                    <p
+                        role="status"
+                        className="text-sm text-muted-foreground"
+                    >
+                        Downloading update…
+                        {" "}
+                        {progress}
+                        %
+                    </p>
                     <progress
-                        aria-label="Update download progress"
-                        className="h-2 w-full [accent-color:var(--primary)]"
                         max={100}
                         value={progress}
+                        aria-label="Update download progress"
+                        className="h-2 w-full [accent-color:var(--primary)]"
                     />
                 </div>
             )}
             {state?.status === "up-to-date" && (
-                <p role="status" className="text-sm text-muted-foreground">BTunes is up to date.</p>
+                <p
+                    role="status"
+                    className="text-sm text-muted-foreground"
+                >
+                    BTunes is up to date.
+                </p>
             )}
             {downloaded && (
-                <p role="status" className="text-sm text-muted-foreground">Update downloaded. Restart BTunes to install it.</p>
+                <p
+                    role="status"
+                    className="text-sm text-muted-foreground"
+                >
+                    Update downloaded. Restart BTunes to install it.
+                </p>
             )}
             {error && (
                 <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription>
+                        {error}
+                    </AlertDescription>
                 </Alert>
             )}
             <div className="flex flex-wrap items-center gap-3">
                 {showCheck && (
                     <Button
                         variant="outline"
-                        disabled={!state?.enabled || pending || checking || downloading || downloaded}
                         onClick={() => void updates.check()}
+                        disabled={!state?.enabled || pending || checking || downloading || downloaded}
                     >
-                        {checking ? <LoaderCircle data-icon="inline-start" className="animate-spin"/> : <RefreshCw data-icon="inline-start"/>}
+                        {checking ? (
+                            <LoaderCircle
+                                data-icon="inline-start"
+                                className="animate-spin"
+                            />
+                        ) : (
+                            <RefreshCw data-icon="inline-start"/>
+                        )}
                         {checking ? "Checking…" : "Check for updates"}
                     </Button>
                 )}

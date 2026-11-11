@@ -1,11 +1,11 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {execFileSync} from "node:child_process";
-import {mkdtemp, mkdir, rename, copyFile, rm} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
+import assert from "node:assert/strict";
 import {parseFile} from "music-metadata";
+import {execFileSync} from "node:child_process";
 import {LibraryService} from "../src/main/services/library.ts";
+import {mkdtemp, mkdir, rename, copyFile, rm} from "node:fs/promises";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
 
 function deferred() {

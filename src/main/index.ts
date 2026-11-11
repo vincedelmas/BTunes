@@ -1,23 +1,23 @@
-import {version as applicationVersion} from "../../package.json";
-import electronUpdater from "electron-updater";
-import {AppUpdateService} from "./services/app-updates";
-import {downloadRoutes} from "./rpc/downloads";
-import {DownloadRepository} from "./repositories/downloads";
-import {DownloaderService} from "./services/downloads";
-import {DownloadTools} from "./services/download-tools";
-import {MtpClient} from "./services/mtp";
-import {DeviceSyncService} from "./services/device-sync";
-import {fileDropMenu} from "./services/file-drop-menu";
-import {FileImportService} from "./services/file-import";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
+import {MtpClient} from "./services/mtp";
 import {TagService} from "./services/tags";
 import {serveAudio} from "./services/audio";
+import electronUpdater from "electron-updater";
+import {downloadRoutes} from "./rpc/downloads";
 import {rpcSchemas} from "../shared/schemas/rpc";
-import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {ArtworkService} from "./services/artwork";
 import {LibraryService} from "./services/library";
+import {DownloaderService} from "./services/downloads";
+import {fileDropMenu} from "./services/file-drop-menu";
+import {AppUpdateService} from "./services/app-updates";
+import {DownloadTools} from "./services/download-tools";
+import {DeviceSyncService} from "./services/device-sync";
+import {FileImportService} from "./services/file-import";
 import {LibraryRepository} from "./repositories/library";
+import {DownloadRepository} from "./repositories/downloads";
+import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
+import {version as applicationVersion} from "../../package.json";
 import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell} from "electron";
 
 

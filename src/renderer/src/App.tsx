@@ -1,37 +1,33 @@
-import {useEffect, useRef, useState} from "react";
-
-import {DevicesPage} from "@/components/devices/devices-page";
-import {DownloadsPage} from "@/components/downloads/downloads-page";
-import {LibrarySearch} from "@/components/library/library-search";
-import {LibraryPage} from "@/components/library/library-page";
-import {Sidebar} from "@/components/library/sidebar";
-import {TrackCollectionDialog} from "@/components/library/track-collection-dialog";
-import {PlayerBar} from "@/components/player/player-bar";
-import {QueuePanel} from "@/components/player/queue-panel";
-import {SoundVisualizer} from "@/components/player/sound-visualizer";
-import {SettingsPage} from "@/components/settings-page";
-import {TagEditor} from "@/components/tag-editor";
-import {Alert, AlertDescription} from "@/components/ui/alert";
-import {Button} from "@/components/ui/button";
-import {UpdateNotification} from "@/components/update-notification";
-
-import {useAppUpdates} from "@/hooks/use-app-updates";
-import {useAppearance} from "@/hooks/use-appearance";
-import {useAudioAnalyser} from "@/hooks/use-audio-analyser";
-import {useCollection} from "@/hooks/use-collection";
-import {useItemReveal} from "@/hooks/use-item-reveal";
-import {useLibrary} from "@/hooks/use-library";
-import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
-import {usePlaybackFollow} from "@/hooks/use-playback-follow";
 import {usePlayer} from "@/hooks/use-player";
-import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
-
-import {albumKey, getAlbumArtist} from "@/lib/music";
-
-import type {Track} from "../../shared/types/library";
-import type {OpenedCollection} from "@/types/collection";
+import {Button} from "@/components/ui/button";
+import {useLibrary} from "@/hooks/use-library";
+import {useEffect, useRef, useState} from "react";
+import {TagEditor} from "@/components/tag-editor";
 import type {SettingsTab} from "@/types/settings";
+import {Sidebar} from "@/components/library/sidebar";
+import {useAppearance} from "@/hooks/use-appearance";
+import {useCollection} from "@/hooks/use-collection";
+import {albumKey, getAlbumArtist} from "@/lib/music";
+import {useAppUpdates} from "@/hooks/use-app-updates";
+import {useItemReveal} from "@/hooks/use-item-reveal";
+import type {Track} from "../../shared/types/library";
+import {SettingsPage} from "@/components/settings-page";
 import type {TrackActions} from "@/types/track-actions";
+import {PlayerBar} from "@/components/player/player-bar";
+import type {OpenedCollection} from "@/types/collection";
+import {QueuePanel} from "@/components/player/queue-panel";
+import {useAudioAnalyser} from "@/hooks/use-audio-analyser";
+import {useSidebarLayout} from "@/hooks/use-sidebar-layout";
+import {DevicesPage} from "@/components/devices/devices-page";
+import {LibraryPage} from "@/components/library/library-page";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {usePlaybackFollow} from "@/hooks/use-playback-follow";
+import {useMouseNavigation} from "@/hooks/use-mouse-navigation";
+import {LibrarySearch} from "@/components/library/library-search";
+import {DownloadsPage} from "@/components/downloads/downloads-page";
+import {UpdateNotification} from "@/components/update-notification";
+import {SoundVisualizer} from "@/components/player/sound-visualizer";
+import {TrackCollectionDialog} from "@/components/library/track-collection-dialog";
 
 
 export function App() {
@@ -67,9 +63,22 @@ export function App() {
         : [];
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
     const visualizer = appearance.visualizer !== "off"
-        ? <SoundVisualizer analyser={analyser} style={appearance.visualizer} playing={player.playing}/>
+        ? (
+            <SoundVisualizer
+                analyser={analyser}
+                playing={player.playing}
+                style={appearance.visualizer}
+            />
+        )
         : undefined;
-    const searchControl = <LibrarySearch scope={view} value={search} onChange={setSearch} onClear={clearSearch}/>;
+    const searchControl = (
+        <LibrarySearch
+            scope={view}
+            value={search}
+            onChange={setSearch}
+            onClear={clearSearch}
+        />
+    );
 
     const actions: TrackActions = {
         onEdit: setEditing,
@@ -123,74 +132,103 @@ export function App() {
         player.start(tracks[index], tracks, index);
     }
 
-    const feedback = <>
-        {library.error && <Alert variant="destructive">
-            <AlertDescription>
-                {library.error}
-                <Button variant="ghost" size="sm" onClick={() => library.setError("")}>Dismiss</Button>
-            </AlertDescription>
-        </Alert>}
-        {library.notice && <p role="status" className="notice mb-5 max-h-16 shrink-0 overflow-auto text-xs text-primary [overflow-wrap:anywhere]">
-            {library.notice}
-        </p>}
-    </>;
+    const feedback = (
+        <>
+            {library.error && (
+                <Alert variant="destructive">
+                    <AlertDescription>
+                        {library.error}
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => library.setError("")}
+                        >
+                            Dismiss
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+            {library.notice && (
+                <p
+                    role="status"
+                    className="notice mb-5 max-h-16 shrink-0 overflow-auto text-xs text-primary [overflow-wrap:anywhere]"
+                >
+                    {library.notice}
+                </p>
+            )}
+        </>
+    );
 
     function renderPage() {
         if (view === "settings") {
-            return <SettingsPage
-                appearance={appearance}
-                analyser={analyser}
-                playing={player.playing}
-                onAppearanceChange={setAppearance}
-                updates={updates}
-                tab={settingsTab}
-                onTabChange={setSettingsTab}
-                busy={library.busy}
-                error={library.error}
-                notice={library.notice}
-                sidebarLayout={sidebarLayout}
-                folders={library.data.folders}
-                playlists={library.data.playlists}
-                songCount={library.data.tracks.length}
-                onImport={() => void library.importFolder()}
-                onRefresh={() => void library.reconcile().catch(library.reportError)}
-            />;
+            return (
+                <SettingsPage
+                    updates={updates}
+                    tab={settingsTab}
+                    analyser={analyser}
+                    busy={library.busy}
+                    error={library.error}
+                    appearance={appearance}
+                    notice={library.notice}
+                    playing={player.playing}
+                    onTabChange={setSettingsTab}
+                    sidebarLayout={sidebarLayout}
+                    folders={library.data.folders}
+                    onAppearanceChange={setAppearance}
+                    playlists={library.data.playlists}
+                    songCount={library.data.tracks.length}
+                    onImport={() => void library.importFolder()}
+                    onRefresh={() => void library.reconcile().catch(library.reportError)}
+                />
+            );
         }
 
         if (view === "android" || view === "downloads") {
-            return <div className="content flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-3 pt-5">
-                {feedback}
-                {view === "downloads" ? <DownloadsPage
-                    visualizer={visualizer}
-                    searchControl={searchControl}
-                    query={search}
-                    genres={genres}
-                    onSettings={() => showSettings("downloads")}
-                    onSaved={library.refresh}
-                /> : <DevicesPage query={search} visualizer={visualizer} searchControl={searchControl}/>}
-            </div>;
+            return (
+                <div className="content flex min-h-0 flex-1 flex-col overflow-hidden px-5 pb-3 pt-5">
+                    {feedback}
+                    {view === "downloads" ? (
+                        <DownloadsPage
+                            query={search}
+                            genres={genres}
+                            visualizer={visualizer}
+                            onSaved={library.refresh}
+                            searchControl={searchControl}
+                            onSettings={() => showSettings("downloads")}
+                        />
+                    ) : (
+                        <DevicesPage
+                            query={search}
+                            visualizer={visualizer}
+                            searchControl={searchControl}
+                        />
+                    )}
+                </div>
+            );
         }
 
-        return <LibraryPage
-            collection={collection}
-            data={library.data}
-            current={current}
-            playing={player.playing}
-            actions={actions}
-            reveal={locator.target}
-            onRevealed={locator.clear}
-            onOpenAlbum={(tracks) => setOpenedCollection({ ids: tracks.map((track) => track.id) })}
-            onOpenArtist={(name) => setOpenedCollection({
-                artistName: name,
-                ids: library.data.tracks.filter((track) => getAlbumArtist(track) === name).map((track) => track.id),
-            })}
-            onSettings={() => showSettings()}
-            onImported={library.refresh}
-            onPlay={playCollection}
-            visualizer={visualizer}
-            searchControl={searchControl}
-            feedback={feedback}
-        />;
+        return (
+            <LibraryPage
+                current={current}
+                actions={actions}
+                data={library.data}
+                feedback={feedback}
+                collection={collection}
+                reveal={locator.target}
+                onPlay={playCollection}
+                visualizer={visualizer}
+                playing={player.playing}
+                onRevealed={locator.clear}
+                onImported={library.refresh}
+                searchControl={searchControl}
+                onSettings={() => showSettings()}
+                onOpenAlbum={(tracks) => setOpenedCollection({ ids: tracks.map((track) => track.id) })}
+                onOpenArtist={(name) => setOpenedCollection({
+                    artistName: name,
+                    ids: library.data.tracks.filter((track) => getAlbumArtist(track) === name).map((track) => track.id),
+                })}
+            />
+        );
     }
 
     return (
@@ -201,65 +239,69 @@ export function App() {
             <Sidebar
                 view={view}
                 genres={genres}
+                current={current}
                 data={library.data}
                 onNavigate={navigate}
                 layout={sidebarLayout}
+                onReveal={revealPlaying}
                 onRefresh={library.refresh}
                 onError={library.reportError}
                 onSettings={() => showSettings()}
-                actions={{ ...actions, onRemove: undefined }}
-                current={current}
                 artworkExpanded={appearance.sidebarArtwork}
+                actions={{ ...actions, onRemove: undefined }}
                 onArtworkToggle={() => setAppearance({ ...appearance, sidebarArtwork: !appearance.sidebarArtwork })}
-                onReveal={revealPlaying}
             />
-
-            <main ref={main} className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col">
+            <main
+                ref={main}
+                className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col"
+            >
                 {renderPage()}
             </main>
-            {showQueue &&
+            {showQueue && (
                 <QueuePanel
                     player={player}
                     onClose={() => setShowQueue(false)}
                 />
-            }
+            )}
             <PlayerBar
                 player={player}
                 current={current}
-                onReveal={revealPlaying}
                 queueOpen={showQueue}
+                onReveal={revealPlaying}
                 onQueue={() => setShowQueue(!showQueue)}
             />
-            {openedCollectionTracks.length > 0 && <TrackCollectionDialog
-                key={openedCollection?.artistName ?? albumKey(openedCollectionTracks[0])}
-                artistName={openedCollection?.artistName}
-                genres={genres}
-                actions={actions}
-                onSaved={library.refresh}
-                currentId={current?.id}
-                playing={player.playing}
-                tracks={openedCollectionTracks}
-                playlists={library.data.playlists}
-                onClose={() => setOpenedCollection(undefined)}
-            />}
-            {editing &&
+            {openedCollectionTracks.length > 0 && (
+                <TrackCollectionDialog
+                    genres={genres}
+                    actions={actions}
+                    currentId={current?.id}
+                    playing={player.playing}
+                    onSaved={library.refresh}
+                    tracks={openedCollectionTracks}
+                    playlists={library.data.playlists}
+                    artistName={openedCollection?.artistName}
+                    onClose={() => setOpenedCollection(undefined)}
+                    key={openedCollection?.artistName ?? albumKey(openedCollectionTracks[0])}
+                />
+            )}
+            {editing && (
                 <TagEditor
                     genres={genres}
-                    key={editing.map((track) => track.id).join(",")}
                     tracks={editing}
                     onSaved={library.refresh}
                     onClose={() => setEditing(undefined)}
+                    key={editing.map((track) => track.id).join(",")}
                 />
-            }
+            )}
             <UpdateNotification
                 updates={updates}
                 blocked={Boolean(editing || openedCollectionTracks.length)}
             />
             <audio
                 ref={audioRef}
+                onEnded={player.ended}
                 crossOrigin="anonymous"
                 onTimeUpdate={player.updateTime}
-                onEnded={player.ended}
                 onPlay={() => player.setPlaying(true)}
                 onPause={() => player.setPlaying(false)}
                 src={player.currentTrack ? "btunes://audio/" + player.currentTrack.id : undefined}

@@ -4,9 +4,9 @@ import type {BookmarkFolder, DownloaderSettings, DownloadItem} from "../../share
 
 interface BookmarkNode {
     id?: string;
+    url?: string;
     name?: string;
     type?: string;
-    url?: string;
     children?: BookmarkNode[]
 }
 

@@ -1,7 +1,7 @@
-import {coverSearchQuery} from "../src/renderer/src/lib/artwork.ts";
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {ArtworkService} from "../src/main/services/artwork.ts";
+import {coverSearchQuery} from "../src/renderer/src/lib/artwork.ts";
 
 function archiveRequest(imageUrl: string, imageResponse: () => Response) {
     return (async (input, options) => {

@@ -1,19 +1,20 @@
-import type {Header} from "@tanstack/react-table";
-import type {KeyboardEvent} from "react";
-import {ChevronDown, ChevronUp, ChevronsUpDown, Image} from "lucide-react";
-import type {Track} from "../../../../shared/types/library";
-import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
-import type {songTableFeatures} from "@/lib/song-columns";
-import type {useDragOrder} from "@/hooks/use-drag-order";
-import {TableHead} from "@/components/ui/table";
 import {cn} from "@/lib/utils";
+import type {KeyboardEvent} from "react";
+import {TableHead} from "@/components/ui/table";
+import type {Header} from "@tanstack/react-table";
+import type {useDragOrder} from "@/hooks/use-drag-order";
+import type {songTableFeatures} from "@/lib/song-columns";
+import type {Track} from "../../../../shared/types/library";
+import {ChevronDown, ChevronUp, ChevronsUpDown, Image} from "lucide-react";
+import type {TrackSort, TrackSortField} from "../../../../shared/types/track-sorting";
+
 
 interface SongColumnHeaderProps {
-    header: Header<typeof songTableFeatures, Track>;
     sort: TrackSort;
+    resizeOffset: number;
     onSort: (sort: TrackSort) => void;
     reordering: ReturnType<typeof useDragOrder>;
-    resizeOffset: number;
+    header: Header<typeof songTableFeatures, Track>;
 }
 
 
@@ -45,45 +46,54 @@ export function SongColumnHeader({ header, sort, onSort, reordering, resizeOffse
 
     return (
         <TableHead
-            className="relative h-9 min-w-0 overflow-hidden border-b px-2 py-0 text-xs font-medium text-muted-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground data-[dragging=true]:bg-secondary data-[dragging=true]:opacity-60"
             data-column={column.id}
             onDragOver={reordering.over}
+            aria-sort={active ? direction : undefined}
             onDrop={(ev) => reordering.drop(ev, column.id)}
             data-dragging={reordering.dragging === column.id || undefined}
-            aria-sort={active ? direction : undefined}
+            className="relative h-9 min-w-0 overflow-hidden border-b px-2 py-0 text-xs font-medium text-muted-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground data-[dragging=true]:bg-secondary data-[dragging=true]:opacity-60"
         >
             <button
-                className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 hover:text-foreground active:cursor-grabbing", active && "is-sorted text-foreground")}
                 draggable
-                title={sortable ? "Click to sort; drag to reorder. Alt+arrow keys also reorder." : "Drag to reorder. Alt+arrow keys also reorder."}
-                onDragStart={(ev) => reordering.start(ev, column.id)}
                 onDragEnd={reordering.end}
+                onDragStart={(ev) => reordering.start(ev, column.id)}
                 onKeyDown={(ev) => reordering.keyDown(ev, column.id)}
                 aria-label={sortable ? "Sort by " + label : "Move Artwork column"}
                 onClick={() => {
                     if (sortable) onSort({ field, descending: active ? !sort.descending : false });
                 }}
+                title={sortable ? "Click to sort; drag to reorder. Alt+arrow keys also reorder." : "Drag to reorder. Alt+arrow keys also reorder."}
+                className={cn("column-sort pl-0 flex items-center gap-2 w-full h-9 text-left bg-transparent border-0 text-[inherit] cursor-grab min-w-0 hover:text-foreground active:cursor-grabbing", active && "is-sorted text-foreground")}
             >
-                {sortable ? <>
-                    <span className="truncate">{label}</span>
-                    <SortIcon className={cn("size-[13px] shrink-0", active && "text-primary")}/>
-                </> : <Image className="mx-auto size-3.5 text-info" aria-hidden="true"/>}
+                {sortable ? (
+                    <>
+                        <span className="truncate">
+                            {label}
+                        </span>
+                        <SortIcon className={cn("size-[13px] shrink-0", active && "text-primary")}/>
+                    </>
+                ) : (
+                    <Image
+                        aria-hidden="true"
+                        className="mx-auto size-3.5 text-info"
+                    />
+                )}
             </button>
             <div
-                role="separator"
                 tabIndex={0}
+                role="separator"
+                onKeyDown={resizeWithKeys}
                 aria-orientation="vertical"
-                aria-label={"Resize " + label + " column"}
+                aria-valuenow={column.getSize()}
+                onMouseDown={header.getResizeHandler()}
                 aria-valuemin={column.columnDef.minSize}
                 aria-valuemax={column.columnDef.maxSize}
-                aria-valuenow={column.getSize()}
-                title="Drag to resize. Double-click to reset."
-                className={cn("column-resizer absolute right-[-4px] top-[9px] bottom-[9px] w-2 cursor-col-resize touch-none z-[2] after:content-[''] after:absolute after:left-[3px] after:w-[2px] after:h-full after:bg-input after:rounded-[2px] [&:hover::after]:bg-primary [&:focus-visible::after]:bg-primary [&.is-resizing::after]:bg-primary", column.getIsResizing() && "is-resizing")}
-                onMouseDown={header.getResizeHandler()}
                 onTouchStart={header.getResizeHandler()}
                 onDoubleClick={() => column.resetSize()}
-                onKeyDown={resizeWithKeys}
+                aria-label={"Resize " + label + " column"}
+                title="Drag to resize. Double-click to reset."
                 style={{ transform: column.getIsResizing() ? "translateX(" + resizeOffset + "px)" : undefined }}
+                className={cn("column-resizer absolute right-[-4px] top-[9px] bottom-[9px] w-2 cursor-col-resize touch-none z-[2] after:content-[''] after:absolute after:left-[3px] after:w-[2px] after:h-full after:bg-input after:rounded-[2px] [&:hover::after]:bg-primary [&:focus-visible::after]:bg-primary [&.is-resizing::after]:bg-primary", column.getIsResizing() && "is-resizing")}
             />
         </TableHead>
     );

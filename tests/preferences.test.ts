@@ -1,7 +1,7 @@
-import assert from "node:assert/strict";
 import {test} from "node:test";
-import {readPreference, writePreference, normalizeOrder, moveItem} from "../src/renderer/src/lib/preferences.ts";
+import assert from "node:assert/strict";
 import {appearanceSchema, trackSortSchema, volumeSchema} from "../src/shared/schemas/preferences.ts";
+import {readPreference, writePreference, normalizeOrder, moveItem} from "../src/renderer/src/lib/preferences.ts";
 
 void test("preferences persist valid sort values and reject corrupt or obsolete data", () => {
     const storage = new Map<string, string>();

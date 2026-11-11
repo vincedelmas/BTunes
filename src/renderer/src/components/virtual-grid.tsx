@@ -1,21 +1,22 @@
-import type {ItemReveal} from "@/types/reveal";
-import {useMarqueeSelection} from "@/hooks/use-marquee-selection";
-import type {GridSelection} from "@/types/selection";
-import {useCallback, useEffect, useRef, useState} from "react";
 import type {ReactNode} from "react";
+import type {ItemReveal} from "@/types/reveal";
+import type {GridSelection} from "@/types/selection";
 import {useVirtualizer} from "@tanstack/react-virtual";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useMarqueeSelection} from "@/hooks/use-marquee-selection";
+
 
 interface VirtualGridProps<T> {
     items: T[];
-    getKey: (item: T) => string | number;
-    renderItem: (item: T) => ReactNode;
-    selection?: GridSelection;
-    minColumnWidth?: number;
+    label: string;
     itemHeight?: number;
     maxColumns?: number;
-    label: string;
     reveal?: ItemReveal;
+    minColumnWidth?: number;
     onRevealed?: () => void;
+    selection?: GridSelection;
+    renderItem: (item: T) => ReactNode;
+    getKey: (item: T) => string | number;
 }
 
 
@@ -62,16 +63,16 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
 
     return (
         <div
-            ref={container}
-            className="virtual-grid-scroll relative h-full min-h-0 overflow-auto overscroll-contain outline-none focus-visible:outline-1 focus-visible:outline-primary focus-visible:-outline-offset-1 [scrollbar-gutter:stable]"
-            aria-label={label}
-            role={selection ? "grid" : undefined}
-            aria-multiselectable={selection ? true : undefined}
             tabIndex={0}
+            ref={container}
+            aria-label={label}
+            onPointerUp={marquee.onPointerUp}
+            role={selection ? "grid" : undefined}
             onPointerDown={marquee.onPointerDown}
             onPointerMove={marquee.onPointerMove}
-            onPointerUp={marquee.onPointerUp}
             onPointerCancel={marquee.onPointerCancel}
+            aria-multiselectable={selection ? true : undefined}
+            className="virtual-grid-scroll relative h-full min-h-0 overflow-auto overscroll-contain outline-none focus-visible:outline-1 focus-visible:outline-primary focus-visible:-outline-offset-1 [scrollbar-gutter:stable]"
             onKeyDown={(ev) => {
                 if (!selection || (ev.target as HTMLElement).closest("button,input")) return;
                 if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") {
@@ -100,16 +101,20 @@ export function VirtualGrid<T>({ items, getKey, renderItem, minColumnWidth = 180
                             <div
                                 key={getKey(item)}
                                 className="virtual-grid-cell min-w-0 overflow-hidden"
-                            >{renderItem(item)}</div>
+                            >
+                                {renderItem(item)}
+                            </div>
                         ))}
                     </div>
                 ))}
-                {marquee.rectangle && <div
-                    aria-hidden="true"
-                    data-slot="selection-marquee"
-                    className="pointer-events-none absolute border border-primary bg-primary/10"
-                    style={marquee.rectangle}
-                />}
+                {marquee.rectangle && (
+                    <div
+                        aria-hidden="true"
+                        style={marquee.rectangle}
+                        data-slot="selection-marquee"
+                        className="pointer-events-none absolute border border-primary bg-primary/10"
+                    />
+                )}
             </div>
         </div>
     );

@@ -13,8 +13,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, description, children }: EmptyStateProps) {
     return (
-        <Empty
-            className="empty min-h-45 h-full gap-5 p-8">
+        <Empty className="empty min-h-45 h-full gap-5 p-8">
             <EmptyHeader>
                 <EmptyMedia variant="icon">
                     <Icon/>
@@ -26,12 +25,11 @@ export function EmptyState({ icon: Icon, title, description, children }: EmptySt
                     {description}
                 </EmptyDescription>
             </EmptyHeader>
-
-            {children &&
+            {children && (
                 <EmptyContent>
                     {children}
                 </EmptyContent>
-            }
+            )}
         </Empty>
     );
 }

@@ -1,5 +1,5 @@
-import {execFile} from "node:child_process";
 import {promisify} from "node:util";
+import {execFile} from "node:child_process";
 import type {CommandRunner} from "../types/devices.ts";
 
 const execute = promisify(execFile);

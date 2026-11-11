@@ -2,10 +2,10 @@ import type {Track} from "../../../shared/types/library";
 
 
 export interface TrackActions {
+    onAlbum: (track: Track) => void;
     onEdit: (tracks: Track[]) => void;
     onError: (message: string) => void;
     onArtist: (artist: string) => void;
-    onAlbum: (track: Track) => void;
     onRemove?: (trackIds: number[]) => void;
     onPlay: (track: Track, tracks?: Track[]) => void;
     onAdd: (playlistId: number, trackIds: number[]) => void;

@@ -1,10 +1,10 @@
+import {cn} from "@/lib/utils";
 import type {SidebarLayout} from "@/types/sidebar";
 import {useDragOrder} from "@/hooks/use-drag-order";
-import {navigationGroups, navigationItems} from "@/lib/sidebar-navigation";
 import {ReorderHandle} from "@/components/reorder-handle";
 import type {Playlist} from "../../../shared/types/library";
 import {SettingsSection} from "@/components/settings/settings-section";
-import {cn} from "@/lib/utils";
+import {navigationGroups, navigationItems} from "@/lib/sidebar-navigation";
 
 
 interface OrderListProps {
@@ -20,7 +20,9 @@ function OrderList({ title, group, items, onChange }: OrderListProps) {
 
     return (
         <section>
-            <h3 className="mb-3 text-xs font-medium text-muted-foreground">{title}</h3>
+            <h3 className="mb-3 text-xs font-medium text-muted-foreground">
+                {title}
+            </h3>
             <ul
                 aria-label={title}
                 className="settings-order-list flex flex-col gap-1"
@@ -28,11 +30,13 @@ function OrderList({ title, group, items, onChange }: OrderListProps) {
                 {items.map((item) => (
                     <li
                         key={item.id}
-                        className={cn("flex items-center justify-between gap-4 rounded-lg border border-border bg-control px-4 py-3", ordering.dragging === item.id && "opacity-40")}
                         onDragOver={ordering.over}
                         onDrop={(ev) => ordering.drop(ev, item.id)}
+                        className={cn("flex items-center justify-between gap-4 rounded-lg border border-border bg-control px-4 py-3", ordering.dragging === item.id && "opacity-40")}
                     >
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate">
+                            {item.label}
+                        </span>
                         <ReorderHandle
                             onDragEnd={ordering.end}
                             label={"Move " + item.label + " " + group}
@@ -74,22 +78,24 @@ export function SidebarOrderSettings({ layout, playlists }: SidebarOrderSettings
                 {navigationGroups.map((group) => (
                     <OrderList
                         key={group.id}
-                        title={group.label}
                         group={group.id}
+                        title={group.label}
                         onChange={(ids) => reorderNavigation(group.id, ids)}
                         items={orderedItems.filter((item) => item.group === group.id)}
                     />
                 ))}
-                {playlists.length > 0 &&
+                {playlists.length > 0 && (
                     <OrderList
                         group="playlist"
                         title="Playlists"
                         onChange={layout.setPlaylistOrder}
                         items={layout.playlistIds.map((id) => ({ id, label: playlists.find((item) => String(item.id) === id)!.name }))}
                     />
-                }
+                )}
             </div>
-            <p className="mt-5 text-xs text-muted-foreground">Focus a drag handle and press Alt + ↑ or ↓ to reorder.</p>
+            <p className="mt-5 text-xs text-muted-foreground">
+                Focus a drag handle and press Alt + ↑ or ↓ to reorder.
+            </p>
         </SettingsSection>
     );
 }

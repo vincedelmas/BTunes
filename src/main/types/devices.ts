@@ -5,14 +5,14 @@ export type CommandRunner = (command: string, args: string[], timeout?: number) 
 
 export interface DeviceTransport {
     devices: () => Promise<MusicDevice[]>;
-    files: (storageId: string, path: string) => Promise<DeviceFile[]>;
-    metadata: (storageId: string, path: string) => Promise<DeviceFile | undefined>;
-    copy: (storageId: string, source: string, path: string) => Promise<void>;
     mkdir: (storageId: string, path: string) => Promise<void>;
+    files: (storageId: string, path: string) => Promise<DeviceFile[]>;
+    copy: (storageId: string, source: string, path: string) => Promise<void>;
+    metadata: (storageId: string, path: string) => Promise<DeviceFile | undefined>;
 }
 
 export interface DeviceSyncPlan {
-    storageId: string;
     path: string;
     tracks: Track[];
+    storageId: string;
 }

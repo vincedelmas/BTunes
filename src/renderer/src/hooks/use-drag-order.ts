@@ -1,6 +1,6 @@
 import {useState} from "react";
-import type {DragEvent, KeyboardEvent} from "react";
 import {moveItem} from "@/lib/preferences";
+import type {DragEvent, KeyboardEvent} from "react";
 
 export function useDragOrder(order: string[], onChange: (order: string[]) => void, group: string) {
     const [dragging, setDragging] = useState<string>();

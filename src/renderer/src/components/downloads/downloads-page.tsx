@@ -1,24 +1,25 @@
-import {PageHeader} from "@/components/page-header";
 import {useState} from "react";
 import type {ReactNode} from "react";
-import {ArrowDownToLine, Bookmark, RefreshCw, Settings, Square, X} from "lucide-react";
-import {useDownloads} from "@/hooks/use-downloads";
-import {useListSelection} from "@/hooks/use-list-selection";
-import {VirtualGrid} from "@/components/virtual-grid";
-import {Button} from "@/components/ui/button";
-import {Alert, AlertDescription} from "@/components/ui/alert";
-import {EmptyState} from "@/components/empty-state";
-import {FilterSelect} from "@/components/filter-select";
-import {DownloadReview} from "@/components/downloads/download-review";
 import {canDownload} from "@/lib/downloads";
+import {Button} from "@/components/ui/button";
+import {useDownloads} from "@/hooks/use-downloads";
+import {PageHeader} from "@/components/page-header";
+import {EmptyState} from "@/components/empty-state";
+import {VirtualGrid} from "@/components/virtual-grid";
+import {FilterSelect} from "@/components/filter-select";
+import {useListSelection} from "@/hooks/use-list-selection";
+import {Alert, AlertDescription} from "@/components/ui/alert";
 import {DownloadRow} from "@/components/downloads/download-row";
+import {DownloadReview} from "@/components/downloads/download-review";
+import {ArrowDownToLine, Bookmark, RefreshCw, Settings, Square, X} from "lucide-react";
+
 
 interface DownloadsPageProps {
-    visualizer: ReactNode;
-    searchControl: ReactNode;
     query: string;
     genres: string[];
+    visualizer: ReactNode;
     onSettings: () => void;
+    searchControl: ReactNode;
     onSaved: () => Promise<void>;
 }
 
@@ -48,29 +49,47 @@ export function DownloadsPage({ visualizer, searchControl, query, genres, onSett
     return (
         <div className="downloads-page flex min-h-0 flex-1 flex-col gap-3">
             <PageHeader
-                visualizer={visualizer}
                 title="Downloads"
-                eyebrow="Bring music into your library"
                 icon={ArrowDownToLine}
                 search={searchControl}
-                details={<span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span>{total.toLocaleString("en")} {total === 1 ? "bookmarked song" : "bookmarked songs"}</span>
-                    {reviewCount > 0 && <span className="text-success">{reviewCount} ready to review</span>}
-                </span>}
-                actions={<>
-                    <Button
-                        variant="ghost"
-                        disabled={snapshot?.busy || snapshot?.scanning}
-                        onClick={() => void downloads.refresh()}
-                    >
-                        <RefreshCw data-icon="inline-start"/>
-                        {snapshot?.scanning ? "Scanning…" : "Refresh bookmarks"}
-                    </Button>
-                    <Button variant="outline" aria-label="Download settings" onClick={onSettings}>
-                        <Settings data-icon="inline-start"/>
-                        Download settings
-                    </Button>
-                </>}
+                visualizer={visualizer}
+                eyebrow="Bring music into your library"
+                details={
+                    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span>
+                            {total.toLocaleString("en")}
+                            {" "}
+                            {total === 1 ? "bookmarked song" : "bookmarked songs"}
+                        </span>
+                        {reviewCount > 0 && (
+                            <span className="text-success">
+                                {reviewCount}
+                                {" "}
+                                ready to review
+                            </span>
+                        )}
+                    </span>
+                }
+                actions={
+                    <>
+                        <Button
+                            variant="ghost"
+                            onClick={() => void downloads.refresh()}
+                            disabled={snapshot?.busy || snapshot?.scanning}
+                        >
+                            <RefreshCw data-icon="inline-start"/>
+                            {snapshot?.scanning ? "Scanning…" : "Refresh bookmarks"}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={onSettings}
+                            aria-label="Download settings"
+                        >
+                            <Settings data-icon="inline-start"/>
+                            Download settings
+                        </Button>
+                    </>
+                }
             />
             <div className="flex shrink-0 flex-wrap items-center gap-3">
                 <Button
@@ -80,33 +99,43 @@ export function DownloadsPage({ visualizer, searchControl, query, genres, onSett
                     <ArrowDownToLine data-icon="inline-start"/>
                     {visibleSelection.size ? "Download selected" : "Download available"}
                 </Button>
-                {snapshot?.busy && <Button
-                    variant="outline"
-                    onClick={() => void downloads.cancel()}
-                >
-                    <Square data-icon="inline-start"/>
-                    Stop downloads
-                </Button>}
+                {snapshot?.busy && (
+                    <Button
+                        variant="outline"
+                        onClick={() => void downloads.cancel()}
+                    >
+                        <Square data-icon="inline-start"/>
+                        Stop downloads
+                    </Button>
+                )}
                 <FilterSelect
-                    className="ml-auto"
-                    label="Download status"
                     value={filter}
+                    className="ml-auto"
                     onChange={setFilter}
+                    label="Download status"
                     placeholder="All statuses"
                     options={[{ value: "available", label: "Available / retry" }, { value: "review", label: "Ready to review" }, { value: "done", label: "In your library" }]}
                 />
-                {visibleSelection.size > 0 && <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setSelected([])}
-                >
-                    <X data-icon="inline-start"/>
-                    Clear selection ({visibleSelection.size})
-                </Button>}
+                {visibleSelection.size > 0 && (
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelected([])}
+                    >
+                        <X data-icon="inline-start"/>
+                        Clear selection (
+                        {visibleSelection.size}
+                        )
+                    </Button>
+                )}
             </div>
-            {(downloads.error || snapshot?.error) && <Alert variant="destructive">
-                <AlertDescription>{downloads.error || snapshot?.error}</AlertDescription>
-            </Alert>}
+            {(downloads.error || snapshot?.error) && (
+                <Alert variant="destructive">
+                    <AlertDescription>
+                        {downloads.error || snapshot?.error}
+                    </AlertDescription>
+                </Alert>
+            )}
             {!items.length ? (
                 <EmptyState
                     icon={Bookmark}
@@ -116,29 +145,35 @@ export function DownloadsPage({ visualizer, searchControl, query, genres, onSett
                     <Button
                         variant="outline"
                         onClick={onSettings}
-                    >Download settings</Button>
+                    >
+                        Download settings
+                    </Button>
                 </EmptyState>
             ) : (
                 <VirtualGrid
                     items={items}
-                    label="Downloadable songs"
                     maxColumns={1}
                     itemHeight={76}
+                    label="Downloadable songs"
                     getKey={(item) => item.id}
                     renderItem={(item) => (
                         <DownloadRow
                             item={item}
-                            selected={visibleSelection.has(item.id)}
                             busy={Boolean(snapshot?.busy)}
+                            onReview={() => setReviewing(item.id)}
+                            selected={visibleSelection.has(item.id)}
                             onSelect={(ev) => selection.select(item.id, ev)}
                             onDownload={() => void downloads.start([item.id])}
-                            onReview={() => setReviewing(item.id)}
                         />
                     )}
                 />
             )}
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-3 text-xs text-muted-foreground">
-                <p role="status">{snapshot?.tools.message || "Checking download tools…"}</p>
+            <div
+                className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-3 text-xs text-muted-foreground"
+            >
+                <p role="status">
+                    {snapshot?.tools.message || "Checking download tools…"}
+                </p>
                 <Button
                     size="sm"
                     variant="ghost"
@@ -149,13 +184,15 @@ export function DownloadsPage({ visualizer, searchControl, query, genres, onSett
                     Check tools
                 </Button>
             </div>
-            {review && (review.status === "review" || review.status === "publishing") && <DownloadReview
-                key={review.id}
-                item={review}
-                genres={genres}
-                onClose={() => setReviewing(undefined)}
-                onSaved={onSaved}
-            />}
+            {review && (review.status === "review" || review.status === "publishing") && (
+                <DownloadReview
+                    item={review}
+                    key={review.id}
+                    genres={genres}
+                    onSaved={onSaved}
+                    onClose={() => setReviewing(undefined)}
+                />
+            )}
         </div>
     );
 }

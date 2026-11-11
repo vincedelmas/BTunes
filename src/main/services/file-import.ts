@@ -1,11 +1,11 @@
-import {getErrorMessage} from "../../shared/errors.ts";
 import {constants} from "node:fs";
-import {copyFile, lstat, realpath, rm, stat, unlink} from "node:fs/promises";
-import {basename, dirname, extname, join} from "node:path";
-import {isAudioFile} from "../../shared/audio-files.ts";
-import type {FileImportChoice, FileImportResult} from "../../shared/types/file-import.ts";
-import type {LibraryService} from "./library.ts";
 import {fileHash} from "./file-hash.ts";
+import type {LibraryService} from "./library.ts";
+import {getErrorMessage} from "../../shared/errors.ts";
+import {isAudioFile} from "../../shared/audio-files.ts";
+import {basename, dirname, extname, join} from "node:path";
+import {copyFile, lstat, realpath, rm, stat, unlink} from "node:fs/promises";
+import type {FileImportChoice, FileImportResult} from "../../shared/types/file-import.ts";
 
 export class FileImportService {
     private readonly library: Pick<LibraryService, "repo" | "index" | "remove">;

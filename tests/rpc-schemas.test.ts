@@ -1,5 +1,5 @@
-import assert from "node:assert/strict";
 import {test} from "node:test";
+import assert from "node:assert/strict";
 import {rpcSchemas} from "../src/shared/schemas/rpc.ts";
 
 void test("RPC schemas validate identifiers, playlist mutations, and batch limits", () => {

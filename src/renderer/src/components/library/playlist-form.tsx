@@ -1,20 +1,20 @@
-import {Checkbox} from "@/components/ui/checkbox";
-import {DialogFooter} from "@/components/ui/dialog";
-import {Check, Plus} from "lucide-react";
 import {rpc} from "@/lib/rpc";
 import {useState} from "react";
+import {Check, Plus} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
+import {Checkbox} from "@/components/ui/checkbox";
+import {DialogFooter} from "@/components/ui/dialog";
 import {FilterSelect} from "@/components/filter-select";
 import type {Playlist} from "../../../../shared/types/library";
 import {Field, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/field";
 
 
 interface PlaylistFormProps {
-    genres: string[];
-    playlist?: Playlist;
     pinned: boolean;
     canPin: boolean;
+    genres: string[];
+    playlist?: Playlist;
     onCancel: () => void;
     onError: (error: unknown) => void;
     onSaved: (id: number, pinned: boolean) => Promise<void>;
@@ -69,9 +69,9 @@ export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCanc
                         Playlist name
                     </FieldLabel>
                     <Input
-                        className="h-11"
                         value={name}
                         maxLength={100}
+                        className="h-11"
                         disabled={saving}
                         id="playlist-name"
                         placeholder="My playlist"
@@ -83,27 +83,33 @@ export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCanc
                         Automatic rule
                     </FieldLabel>
                     <FilterSelect
-                        className="h-11 w-full max-w-none"
                         value={rule}
                         disabled={saving}
                         id="playlist-rule"
                         onChange={setRule}
                         label="Automatic genre rule"
                         placeholder="Classic playlist"
+                        className="h-11 w-full max-w-none"
                         options={rules.map((genre) => ({ value: genre, label: genre }))}
                     />
-                    <FieldDescription>{rule ? "Songs matching this genre appear here automatically." : "Add and remove songs manually."}</FieldDescription>
+                    <FieldDescription>
+                        {rule ? "Songs matching this genre appear here automatically." : "Add and remove songs manually."}
+                    </FieldDescription>
                 </Field>
                 <Field orientation="horizontal">
                     <Checkbox
-                        id="playlist-pin"
                         checked={pin}
+                        id="playlist-pin"
                         disabled={saving || (!pinned && !canPin)}
                         onCheckedChange={(checked) => setPin(Boolean(checked))}
                     />
                     <div className="flex flex-col gap-1">
-                        <FieldLabel htmlFor="playlist-pin">Pin to main sidebar</FieldLabel>
-                        <FieldDescription>{!pinned && !canPin ? "Three playlists are already pinned. Unpin one to make room." : "Keep this playlist at hand. Up to three playlists can be pinned."}</FieldDescription>
+                        <FieldLabel htmlFor="playlist-pin">
+                            Pin to main sidebar
+                        </FieldLabel>
+                        <FieldDescription>
+                            {!pinned && !canPin ? "Three playlists are already pinned. Unpin one to make room." : "Keep this playlist at hand. Up to three playlists can be pinned."}
+                        </FieldDescription>
                     </div>
                 </Field>
             </FieldGroup>
@@ -120,7 +126,11 @@ export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCanc
                     type="submit"
                     disabled={saving || !name.trim()}
                 >
-                    {playlist ? <Check data-icon="inline-start"/> : <Plus data-icon="inline-start"/>}
+                    {playlist ? (
+                        <Check data-icon="inline-start"/>
+                    ) : (
+                        <Plus data-icon="inline-start"/>
+                    )}
                     {saving ? "Saving…" : saveLabel}
                 </Button>
             </DialogFooter>

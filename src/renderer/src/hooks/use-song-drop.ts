@@ -1,6 +1,6 @@
-import {useRef, useState} from "react";
-import type {DragEvent} from "react";
 import {rpc} from "@/lib/rpc";
+import type {DragEvent} from "react";
+import {useRef, useState} from "react";
 
 export function useSongDrop(onImported: () => Promise<void>, onError: (error: unknown) => void) {
     const depth = useRef(0);

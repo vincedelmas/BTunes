@@ -1,9 +1,9 @@
-import {downloaderSettingsSchema, downloadIdsSchema, downloadRevisionSchema, publishDownloadSchema} from "./downloads.ts";
-import {deviceFolderSchema} from "./devices.ts";
-import {fileDropSchema} from "./file-import.ts";
 import {z} from "zod";
 import {tagPatchFieldsSchema} from "./tags.ts";
+import {deviceFolderSchema} from "./devices.ts";
+import {fileDropSchema} from "./file-import.ts";
 import {artworkSearchSchema} from "./artwork.ts";
+import {downloaderSettingsSchema, downloadIdsSchema, downloadRevisionSchema, publishDownloadSchema} from "./downloads.ts";
 
 const trackId = z.number().int().positive();
 const idSchema = z.object({ id: trackId });

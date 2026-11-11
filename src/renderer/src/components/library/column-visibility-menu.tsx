@@ -19,15 +19,17 @@ export function ColumnVisibilityMenu({ columns, onChange, children }: ColumnVisi
                         Visible columns
                     </ContextMenuLabel>
                     {columns.map((column) =>
-                        <ContextMenuCheckboxItem
-                            key={column.id}
-                            closeOnClick={false}
-                            checked={column.visible}
-                            disabled={!column.canHide}
-                            onCheckedChange={(checked) => onChange(column.id, checked)}
-                        >
-                            {column.label}
-                        </ContextMenuCheckboxItem>
+                        (
+                            <ContextMenuCheckboxItem
+                                key={column.id}
+                                closeOnClick={false}
+                                checked={column.visible}
+                                disabled={!column.canHide}
+                                onCheckedChange={(checked) => onChange(column.id, checked)}
+                            >
+                                {column.label}
+                            </ContextMenuCheckboxItem>
+                        )
                     )}
                 </ContextMenuGroup>
             </ContextMenuContent>

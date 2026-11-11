@@ -1,13 +1,13 @@
-import {useEffect, useRef} from "react";
 import type {RefObject} from "react";
-import type {VisualizerStyle} from "@/types/appearance";
+import {useEffect, useRef} from "react";
 import {drawVisualizer} from "@/lib/visualizer";
+import type {VisualizerStyle} from "@/types/appearance";
 
 
 interface SoundVisualizerProps {
-    analyser: RefObject<AnalyserNode | null>;
-    style: VisualizerStyle;
     playing: boolean;
+    style: VisualizerStyle;
+    analyser: RefObject<AnalyserNode | null>;
 }
 
 
@@ -78,11 +78,13 @@ export function SoundVisualizer({ analyser, style, playing }: SoundVisualizerPro
 
     if (style === "off") return null;
 
-    return <canvas
-        ref={canvas}
-        className="sound-visualizer h-28 w-full"
-        role="img"
-        aria-label={"Sound visualizer: " + style}
-        data-style={style}
-    />;
+    return (
+        <canvas
+            role="img"
+            ref={canvas}
+            data-style={style}
+            className="sound-visualizer h-28 w-full"
+            aria-label={"Sound visualizer: " + style}
+        />
+    );
 }

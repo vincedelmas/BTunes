@@ -9,8 +9,13 @@ Use English for code, UI text, documentation, and communication. Use Bun for pro
 - Write readable, well-spaced code with descriptive names, one statement per line, early returns, and blank lines between logical steps.
   Avoid compressed JSX, nested ternaries, and oversized components.
 - Name event parameters `ev`, not `event`.
-- Declare each component's props interface immediately above the component. Leave two blank lines between the interface and the component
-  declaration.
+- Sort imports, interface members, and JSX attributes by ascending rendered length, shortest first. Keep ties stable. For multiline
+  declarations, measure the full declaration with whitespace collapsed. Preserve side-effect import order, prop spread boundaries, and any
+  other order that affects behavior.
+- Declare each component's props interface immediately above the component. Leave two blank lines before the interface and between the
+  interface and the component declaration. Inline prop types are allowed only for one or two short types or fields.
+- Wrap returned JSX in parentheses, including early returns. Put the JSX on its own indented lines.
+- Put opening tags, text content, and closing tags on separate lines. Preserve meaningful spaces between text and inline elements.
 
 ## Reuse and organization
 

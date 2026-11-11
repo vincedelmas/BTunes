@@ -1,13 +1,13 @@
-import {isAudioFile} from "../../shared/audio-files.ts";
-import type {FSWatcher} from "chokidar";
 import {watch} from "chokidar";
 import type {Stats} from "node:fs";
 import {createHash} from "node:crypto";
 import {readTags} from "./metadata.ts";
+import type {FSWatcher} from "chokidar";
 import {parseFile} from "music-metadata";
+import {isAudioFile} from "../../shared/audio-files.ts";
 import {basename, extname, join, resolve, sep} from "node:path";
-import type {LibraryRepository} from "../repositories/library.ts";
 import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
+import type {LibraryRepository} from "../repositories/library.ts";
 
 const folderIdentity = (info: Stats) => info.dev + ":" + info.ino;
 

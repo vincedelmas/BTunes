@@ -1,12 +1,12 @@
 import {test} from "node:test";
-import assert from "node:assert/strict";
-import {execFileSync} from "node:child_process";
-import {mkdtemp, mkdir, readFile, writeFile, rm, stat} from "node:fs/promises";
 import {join} from "node:path";
 import {tmpdir} from "node:os";
-import {LibraryRepository} from "../src/main/repositories/library.ts";
+import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
 import {LibraryService} from "../src/main/services/library.ts";
+import {LibraryRepository} from "../src/main/repositories/library.ts";
 import {FileImportService} from "../src/main/services/file-import.ts";
+import {mkdtemp, mkdir, readFile, writeFile, rm, stat} from "node:fs/promises";
 
 void test("dropped music copies or moves without overwriting files, and appears in the library", async () => {
     const root = await mkdtemp(join(tmpdir(), "btunes-drop-"));

@@ -1,37 +1,38 @@
-import {PageHeader} from "@/components/page-header";
-import {Badge} from "@/components/ui/badge";
-import {FolderOpen, SlidersHorizontal} from "lucide-react";
 import type {RefObject} from "react";
-import type {Appearance} from "@/types/appearance";
-import {AppearanceSettings} from "@/components/settings/appearance-settings";
-import type {Playlist} from "../../../shared/types/library";
-import type {SidebarLayout} from "@/types/sidebar";
-import {AppUpdates} from "@/components/settings/app-updates";
-import type {AppUpdateController} from "@/types/updates";
+import {Badge} from "@/components/ui/badge";
 import type {SettingsTab} from "@/types/settings";
-import {DownloadSettings} from "@/components/downloads/download-settings";
+import type {Appearance} from "@/types/appearance";
+import type {SidebarLayout} from "@/types/sidebar";
+import {PageHeader} from "@/components/page-header";
+import type {AppUpdateController} from "@/types/updates";
+import {FolderOpen, SlidersHorizontal} from "lucide-react";
+import type {Playlist} from "../../../shared/types/library";
+import {AppUpdates} from "@/components/settings/app-updates";
+import {Alert, AlertDescription} from "@/components/ui/alert";
 import {LibrarySettings} from "@/components/settings/library-settings";
 import {SidebarOrderSettings} from "@/components/sidebar-order-settings";
-import {Alert, AlertDescription} from "@/components/ui/alert";
+import {DownloadSettings} from "@/components/downloads/download-settings";
+import {AppearanceSettings} from "@/components/settings/appearance-settings";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 
+
 interface SettingsPageProps {
-    appearance: Appearance;
-    analyser: RefObject<AnalyserNode | null>;
-    playing: boolean;
-    onAppearanceChange: (appearance: Appearance) => void;
-    tab: SettingsTab;
-    updates: AppUpdateController;
-    onTabChange: (tab: SettingsTab) => void;
     busy: boolean;
     error: string;
     notice: string;
+    playing: boolean;
+    tab: SettingsTab;
     folders: string[];
     songCount: number;
     onImport: () => void;
     onRefresh: () => void;
     playlists: Playlist[];
+    appearance: Appearance;
+    updates: AppUpdateController;
     sidebarLayout: SidebarLayout;
+    onTabChange: (tab: SettingsTab) => void;
+    analyser: RefObject<AnalyserNode | null>;
+    onAppearanceChange: (appearance: Appearance) => void;
 }
 
 
@@ -41,77 +42,104 @@ export function SettingsPage({ appearance, analyser, playing, onAppearanceChange
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
                 <PageHeader
                     title="Settings"
-                    eyebrow="Make BTunes yours"
                     icon={SlidersHorizontal}
+                    eyebrow="Make BTunes yours"
                     details="Library, downloads, navigation, and app updates."
-                    actions={<Badge variant="outline">
-                        <FolderOpen data-icon="inline-start"/>
-                        {songCount.toLocaleString("en")} songs · {folders.length} {folders.length === 1 ? "folder" : "folders"}
-                    </Badge>}
+                    actions={
+                        <Badge variant="outline">
+                            <FolderOpen data-icon="inline-start"/>
+                            {songCount.toLocaleString("en")}
+                            {" "}
+                            songs ·
+                            {" "}
+                            {folders.length}
+                            {" "}
+                            {folders.length === 1 ? "folder" : "folders"}
+                        </Badge>
+                    }
                 />
-                {error && <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>}
-                {notice && <p
-                    role="status"
-                    className="text-xs text-muted-foreground"
-                >{notice}</p>}
+                {error && (
+                    <Alert variant="destructive">
+                        <AlertDescription>
+                            {error}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {notice && (
+                    <p
+                        role="status"
+                        className="text-xs text-muted-foreground"
+                    >
+                        {notice}
+                    </p>
+                )}
                 <Tabs
                     value={tab}
+                    className="gap-6"
                     onValueChange={(value) => {
                         if (value === "library" || value === "downloads" || value === "appearance" || value === "sidebar" || value === "about") onTabChange(value);
                     }}
-                    className="gap-6"
                 >
                     <TabsList
                         variant="line"
-                        aria-label="Settings sections"
                         className="mb-1 gap-4"
+                        aria-label="Settings sections"
                     >
-                        <TabsTrigger value="library">Library</TabsTrigger>
-                        <TabsTrigger value="downloads">Downloads</TabsTrigger>
-                        <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                        <TabsTrigger value="sidebar">Sidebar</TabsTrigger>
-                        <TabsTrigger value="about">About</TabsTrigger>
+                        <TabsTrigger value="library">
+                            Library
+                        </TabsTrigger>
+                        <TabsTrigger value="downloads">
+                            Downloads
+                        </TabsTrigger>
+                        <TabsTrigger value="appearance">
+                            Appearance
+                        </TabsTrigger>
+                        <TabsTrigger value="sidebar">
+                            Sidebar
+                        </TabsTrigger>
+                        <TabsTrigger value="about">
+                            About
+                        </TabsTrigger>
                     </TabsList>
                     <TabsContent
-                        value="library"
                         keepMounted
+                        value="library"
                     >
                         <LibrarySettings
-                            folders={folders}
                             busy={busy}
-                            songCount={songCount}
+                            folders={folders}
                             onImport={onImport}
+                            songCount={songCount}
                             onRefresh={onRefresh}
                         />
                     </TabsContent>
                     <TabsContent
-                        value="downloads"
                         keepMounted
+                        value="downloads"
                     >
                         <DownloadSettings musicFolders={folders}/>
                     </TabsContent>
-                    <TabsContent
-                        value="appearance"
-                    >
+                    <TabsContent value="appearance">
                         <AppearanceSettings
-                            appearance={appearance}
-                            analyser={analyser}
                             playing={playing}
+                            analyser={analyser}
+                            appearance={appearance}
                             onChange={onAppearanceChange}
                         />
                     </TabsContent>
                     <TabsContent
-                        value="sidebar"
                         keepMounted
+                        value="sidebar"
                     >
                         <SidebarOrderSettings
                             playlists={playlists}
                             layout={sidebarLayout}
                         />
                     </TabsContent>
-                    <TabsContent value="about" keepMounted>
+                    <TabsContent
+                        keepMounted
+                        value="about"
+                    >
                         <AppUpdates updates={updates}/>
                     </TabsContent>
                 </Tabs>
