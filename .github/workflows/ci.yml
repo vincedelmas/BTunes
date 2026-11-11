@@ -34,7 +34,7 @@ jobs:
       - name: Install Linux build and test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y ffmpeg libasound2t64 libatk-bridge2.0-0 libgbm1 libgtk-3-0 libnss3 libxss1
+          sudo apt-get install --no-install-recommends -y dbus ffmpeg libasound2t64 libatk-bridge2.0-0 libgbm1 libgtk-3-0 libnss3 libxss1
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - run: bun install --frozen-lockfile

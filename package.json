@@ -18,7 +18,7 @@
         "test": "node --experimental-strip-types --test tests/*.test.ts",
         "package:appimage": "bun run build && bun run package:appimage:built",
         "package:appimage:built": "electron-builder --linux AppImage --x64 --publish never",
-        "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/downloader-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/dev-startup.cjs"
+        "test:electron": "bun run build && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/electron-smoke.cjs && dbus-run-session -- env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/library-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/downloader-ui.cjs && env -u ELECTRON_RUN_AS_NODE electron --ozone-platform=headless tests/dev-startup.cjs"
     },
     "dependencies": {
         "chokidar": "6.0.0",
