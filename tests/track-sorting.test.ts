@@ -1,3 +1,4 @@
+import {selectSmartMix} from "../src/shared/smart-mixes.ts";
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import type {Track} from "../src/shared/types/library.ts";
@@ -34,4 +35,17 @@ void test("zero plays are a real count and sort last when descending", () => {
     const tracks = [original, { ...original, id: 2, plays: 20 }];
     assert.deepEqual(ordered(tracks, "plays"), [1, 2]);
     assert.deepEqual(ordered(tracks, "plays", true), [2, 1]);
+});
+
+void test("smart mixes rank additions and plays, exclude unplayed songs from charts, and leave the source intact", () => {
+    const tracks = Array.from({ length: 120 }, (_, index) => ({ ...original, id: index + 1, plays: index, lastPlayed: index ? index * 1000 : 0 }));
+    const recent = selectSmartMix("mix:recently-added", tracks);
+    assert.equal(recent.length, 100);
+    assert.equal(recent[0].id, 120);
+    assert.equal(recent.at(-1)?.id, 21);
+    assert.equal(selectSmartMix("mix:most-played", tracks)[0].id, 120);
+    assert.deepEqual(selectSmartMix("mix:never-played", tracks).map((track) => track.id), [1]);
+    assert.equal(selectSmartMix("history", tracks).at(-1)?.id, 2);
+    assert.equal(tracks[0].id, 1);
+    assert.equal(tracks.length, 120);
 });

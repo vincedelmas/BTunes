@@ -1,4 +1,7 @@
+import {smartMixes} from "../../../../shared/smart-mixes";
+import {PlaylistItem} from "@/components/library/playlist-item";
 import {useState} from "react";
+import type {CSSProperties} from "react";
 import {Settings} from "lucide-react";
 import {cn} from "@/lib/utils";
 import {Button} from "@/components/ui/button";
@@ -35,7 +38,10 @@ export function Sidebar({ data, view, layout, genres, current, artworkExpanded, 
     const [playlistsOpen, setPlaylistsOpen] = useState(false);
 
     return (
-        <aside className="sidebar flex min-h-0 flex-col rounded-xl bg-canvas px-3 pb-2 pt-4">
+        <aside
+            className="sidebar flex min-h-0 flex-col rounded-xl bg-canvas px-3 pb-2 pt-4"
+            style={{ "--sidebar-pin-space": layout.pinnedIds.length * 36 + "px" } as CSSProperties}
+        >
             <div className="brand mx-2 mb-4 flex shrink-0 items-center gap-2.5">
                 <img className="size-8" src="./icon.svg" alt=""/>
                 <span className="text-xl font-semibold tracking-tight">BTunes</span>
@@ -101,6 +107,24 @@ export function Sidebar({ data, view, layout, genres, current, artworkExpanded, 
                         </div>
                     ))}
                 </nav>
+                {layout.pinnedIds.length > 0 && <section className="mt-4" aria-label="Pinned playlists">
+                    <p className="mb-2 px-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Pinned</p>
+                    {layout.pinnedIds.map((id) => {
+                        const playlist = data.playlists.find((entry) => "playlist:" + entry.id === id);
+                        const mix = smartMixes.find((entry) => entry.id === id);
+
+                        return <PlaylistItem
+                            key={id}
+                            name={playlist?.name ?? mix?.name ?? "Playlist"}
+                            smart={Boolean(mix || playlist?.rule)}
+                            active={view === id}
+                            pinned
+                            canPin
+                            onPin={() => layout.setPinned(id, false)}
+                            onNavigate={() => onNavigate(id)}
+                        />;
+                    })}
+                </section>}
             </div>}
             <SidebarNowPlaying
                 current={current}

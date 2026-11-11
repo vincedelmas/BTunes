@@ -1,3 +1,4 @@
+import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
 import type {CollectionLocation} from "@/types/collection";
 import {genreChoices} from "../../../shared/genres";
 import {useDeferredValue, useEffect, useRef, useState} from "react";
@@ -27,11 +28,12 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const deferredSearch = useDeferredValue(search);
     const [artist, setArtist] = useState("");
     const [savedSort, setSavedSort] = usePreference<TrackSort>("btunes.song-sort.v1", trackSortSchema, { field: "title", descending: false });
-    const [historySort, setHistorySort] = useState<TrackSort>({ field: "lastPlayed", descending: true });
-    const sort = view === "history" ? historySort : savedSort;
+    const [mixSorts, setMixSorts] = useState<Record<string, TrackSort>>({});
+    const smartMix = smartMixes.find((mix) => mix.id === view);
+    const sort = smartMix ? (mixSorts[view] ?? smartMix.sort) : savedSort;
 
     function setSort(next: TrackSort) {
-        if (view === "history") setHistorySort(next);
+        if (smartMix) setMixSorts((previous) => ({ ...previous, [view]: next }));
         else setSavedSort(next);
     }
 
@@ -70,7 +72,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         }
     }
 
-    const collectionTracks = view === "settings" || view === "android" || view === "downloads" ? [] : data.tracks;
+    const collectionTracks = view === "settings" || view === "android" || view === "downloads" ? [] : selectSmartMix(view, data.tracks);
     const tracks = collectionTracks.filter((track) => {
         if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
         if (artist && getAlbumArtist(track) !== artist) return false;
@@ -82,7 +84,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     }).sort((first, second) => compareTracks(first, second, sort));
 
     const albums = view === "albums" ? groupAlbums(tracks) : [];
-    const title = viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
+    const title = smartMix?.name ?? viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
 
     function clearFilters() {
         updateSearch("");
@@ -170,7 +172,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
 
     return {
         view, search, artist, sort, selected, tracks, albums, genres,
-        activePlaylist, title,
+        activePlaylist, title, smartMix,
         setSearch, setArtist, setSort, setSelected,
         navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
     };

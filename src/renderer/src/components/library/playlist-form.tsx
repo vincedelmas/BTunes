@@ -1,3 +1,4 @@
+import {Checkbox} from "@/components/ui/checkbox";
 import {DialogFooter} from "@/components/ui/dialog";
 import {Check, Plus} from "lucide-react";
 import {rpc} from "@/lib/rpc";
@@ -12,13 +13,16 @@ import {Field, FieldDescription, FieldGroup, FieldLabel} from "@/components/ui/f
 interface PlaylistFormProps {
     genres: string[];
     playlist?: Playlist;
+    pinned: boolean;
+    canPin: boolean;
     onCancel: () => void;
     onError: (error: unknown) => void;
-    onSaved: (id: number) => Promise<void>;
+    onSaved: (id: number, pinned: boolean) => Promise<void>;
 }
 
 
-export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: PlaylistFormProps) {
+export function PlaylistForm({ playlist, pinned, canPin, genres, onSaved, onCancel, onError }: PlaylistFormProps) {
+    const [pin, setPin] = useState(pinned);
     const [saving, setSaving] = useState(false);
     const [name, setName] = useState(playlist?.name ?? "");
     const [rule, setRule] = useState(playlist?.rule ?? "");
@@ -41,7 +45,7 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
                 id = await rpc("playlist.create", details);
             }
 
-            await onSaved(id);
+            await onSaved(id, pin);
         }
         catch (error) {
             onError(error);
@@ -89,6 +93,18 @@ export function PlaylistForm({ playlist, genres, onSaved, onCancel, onError }: P
                         options={rules.map((genre) => ({ value: genre, label: genre }))}
                     />
                     <FieldDescription>{rule ? "Songs matching this genre appear here automatically." : "Add and remove songs manually."}</FieldDescription>
+                </Field>
+                <Field orientation="horizontal">
+                    <Checkbox
+                        id="playlist-pin"
+                        checked={pin}
+                        disabled={saving || (!pinned && !canPin)}
+                        onCheckedChange={(checked) => setPin(Boolean(checked))}
+                    />
+                    <div className="flex flex-col gap-1">
+                        <FieldLabel htmlFor="playlist-pin">Pin to main sidebar</FieldLabel>
+                        <FieldDescription>{!pinned && !canPin ? "Three playlists are already pinned. Unpin one to make room." : "Keep this playlist at hand. Up to three playlists can be pinned."}</FieldDescription>
+                    </div>
                 </Field>
             </FieldGroup>
             <DialogFooter className="m-0 rounded-none px-7 py-4">

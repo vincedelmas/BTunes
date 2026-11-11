@@ -88,11 +88,14 @@ export function LibraryPage({ collection, data, current, playing, actions, revea
 
     return (
         <>
-            <div className="library-hero shrink-0 border-b border-primary/15 px-5 pb-4 pt-5">
+            <div className="library-hero shrink-0 border-b border-primary/15 px-5 py-5">
                 <PageHeader
                     title={title}
                     visualizer={visualizer}
-                    details={<LibraryStats tracks={tracks}/>}
+                    details={<div className="flex flex-col gap-1">
+                        <LibraryStats tracks={tracks}/>
+                        {collection.smartMix && <p>{collection.smartMix.description}</p>}
+                    </div>}
                     actions={<>
                         <Button disabled={!tracks.length} onClick={() => onPlay(false)}>
                             <Play data-icon="inline-start" fill="currentColor"/>

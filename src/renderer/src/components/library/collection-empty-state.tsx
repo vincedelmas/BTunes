@@ -1,6 +1,6 @@
 import {Button} from "@/components/ui/button";
 import {EmptyState} from "@/components/empty-state";
-import {CopyCheck, Disc3, FilterX, History, ListMusic, Settings} from "lucide-react";
+import {Brain, CopyCheck, Disc3, FilterX, History, ListMusic, Settings} from "lucide-react";
 
 
 interface CollectionEmptyStateProps {
@@ -59,6 +59,14 @@ export function CollectionEmptyState({ view, hasTracks, hasFolders, hasFilters, 
                 description="Right-click a song and choose Add to playlist. Automatic playlists fill when songs match their rule."
             />
         );
+    }
+
+    if (view.startsWith("mix:")) {
+        return <EmptyState
+            icon={Brain}
+            title="No songs in this mix"
+            description="This mix updates automatically as you add music and listen."
+        />;
     }
 
     if (!hasTracks && hasFolders) {

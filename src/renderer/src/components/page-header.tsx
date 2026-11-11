@@ -11,7 +11,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, details, actions, visualizer }: PageHeaderProps) {
     return (
-        <header className="page-header flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <header className="page-header flex min-h-[64px] w-full shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
             <div className="min-w-0">
                 <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
                 <div className="mt-1.5 text-xs text-muted-foreground">{details}</div>

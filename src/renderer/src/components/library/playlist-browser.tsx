@@ -1,3 +1,4 @@
+import {smartMixes} from "../../../../shared/smart-mixes";
 import {useState} from "react";
 import {ArrowLeft, Brain, ListMusic, Plus} from "lucide-react";
 import {rpc} from "@/lib/rpc";
@@ -34,6 +35,7 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
         try {
             if (view === "playlist:" + deleting.id) onNavigate("tracks");
             await rpc("playlist.delete", { id: deleting.id });
+            layout.setPinned("playlist:" + deleting.id, false);
 
             await onRefresh();
             setDeleting(undefined);
@@ -58,14 +60,30 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                 </Button>
             </div>
             <h2 className="mb-3 px-2 text-lg font-semibold">Playlists</h2>
-            {!playlists.length && <p className="px-2 text-xs text-muted-foreground">Create a playlist to collect your songs, or use a genre rule for a smart playlist.</p>}
-            <div className="playlists overflow-auto flex-1 min-h-0">
+            <div className="playlists min-h-0 flex-1 overflow-y-auto">
+                <p className="mb-2 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Smart mixes</p>
+                {smartMixes.map((mix) => <PlaylistItem
+                    key={mix.id}
+                    name={mix.name}
+                    smart
+                    active={view === mix.id}
+                    pinned={layout.pinnedIds.includes(mix.id)}
+                    canPin={layout.pinnedIds.length < 3}
+                    onPin={() => layout.setPinned(mix.id, !layout.pinnedIds.includes(mix.id))}
+                    onNavigate={() => onNavigate(mix.id)}
+                />)}
+                <p className="mb-2 mt-5 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Your playlists</p>
+                {!playlists.length && <p className="px-2 text-xs text-muted-foreground">Create a playlist or choose a genre rule.</p>}
                 {layout.playlistIds.map((id) => {
                     const playlist = playlists.find((entry) => String(entry.id) === id)!;
                     return (
                         <PlaylistItem
                             key={id}
-                            playlist={playlist}
+                            name={playlist.name}
+                            smart={Boolean(playlist.rule)}
+                            pinned={layout.pinnedIds.includes("playlist:" + id)}
+                            canPin={layout.pinnedIds.length < 3}
+                            onPin={() => layout.setPinned("playlist:" + id, !layout.pinnedIds.includes("playlist:" + id))}
                             active={view === "playlist:" + id}
                             onNavigate={() => onNavigate("playlist:" + id)}
                             onEdit={() => setEditing(playlist)}
@@ -95,14 +113,17 @@ export function PlaylistBrowser({ view, playlists, layout, genres, onBack, onNav
                         <PlaylistForm
                             key={editing?.id ?? "new"}
                             playlist={editing}
+                            pinned={Boolean(editing && layout.pinnedIds.includes("playlist:" + editing.id))}
+                            canPin={layout.pinnedIds.length < 3}
                             genres={genres}
                             onCancel={() => {
                                 setCreating(false);
                                 setEditing(undefined);
                             }}
                             onError={onError}
-                            onSaved={async (id) => {
+                            onSaved={async (id, pinned) => {
                                 await onRefresh();
+                                layout.setPinned("playlist:" + id, pinned);
                                 if (creating) onNavigate("playlist:" + id);
                                 setCreating(false);
                                 setEditing(undefined);
