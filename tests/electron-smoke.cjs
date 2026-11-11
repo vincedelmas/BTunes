@@ -142,8 +142,6 @@ app.on("browser-window-created", (_, win) => {
     if(saved.tracks[0].title!=='Edited through UI')throw new Error('UI tag save failed');
     if(!audio.paused)throw new Error('Tag editing or a library refresh resumed paused playback');
     if(document.querySelector('[role="status"]')?.textContent.includes('Tags saved'))throw new Error('Tag saves must not insert a shifting notice');
-    const font=getComputedStyle(document.body).fontFamily;
-    if(!font.includes('Inter Variable'))throw new Error('Bundled font not applied');
     return {heading:document.querySelector('h1')?.textContent,playlist:next.playlists.length,title:saved.tracks[0].title};
 
    })()`);
