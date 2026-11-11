@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/vincedelmas/BTunes/compare/v1.2.0...v1.2.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* avoid stalled Azure package downloads ([6010bb2](https://github.com/vincedelmas/BTunes/commit/6010bb2dc161cf3890d75a55081487dd51be0a76))
+
 ## [1.2.0](https://github.com/vincedelmas/BTunes/compare/v1.1.5...v1.2.0) (2026-11-11)
 
 
