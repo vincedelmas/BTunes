@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/vincedelmas/BTunes/compare/v1.1.0...v1.1.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* remember shuffle and repeat preferences ([31e0fe2](https://github.com/vincedelmas/BTunes/commit/31e0fe2376fa6cbba003e9494a4550d6a92803cf))
+* sync player volume with Linux media controls ([ddeffad](https://github.com/vincedelmas/BTunes/commit/ddeffadfdf8f85e4124a2edc067e4bb7c9dab81b))
+
 ## [1.1.0](https://github.com/vincedelmas/BTunes/compare/v1.0.1...v1.1.0) (2026-11-11)
 
 
