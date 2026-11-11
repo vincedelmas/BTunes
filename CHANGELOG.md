@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.0](https://github.com/vincedelmas/BTunes/compare/v1.0.1...v1.1.0) (2026-11-11)
+
+
+### Features
+
+* add pinned playlists and automatic library mixes ([4e7aceb](https://github.com/vincedelmas/BTunes/commit/4e7acebfd7c2456cd982683892cc4b44c0aea87c))
+* add queue editing and predictable shuffle playback ([4f7afca](https://github.com/vincedelmas/BTunes/commit/4f7afca5d057f296fbbcf17d356945d5af9aed0e))
+* redesign music headers and contextual search ([64a9b60](https://github.com/vincedelmas/BTunes/commit/64a9b60dd1422d1a886bf83fa0ada68c6d9dfc21))
+* refine library layouts and playback visuals ([9185d71](https://github.com/vincedelmas/BTunes/commit/9185d71648cf69fa556965c052d08f06e506087c))
+
+
+### Bug Fixes
+
+* always reveal songs after manual track skips ([1502db8](https://github.com/vincedelmas/BTunes/commit/1502db8c25d57e856ebb20ef9449faea03b3d6a6))
+* avoid Vulkan probing on Wayland ([f1321a0](https://github.com/vincedelmas/BTunes/commit/f1321a0f5929bd72205e583d77b8f7c561327a8c))
+* enable Linux desktop media controls ([ca73ebf](https://github.com/vincedelmas/BTunes/commit/ca73ebf2ed483b2794f2bc43e90ee966e74d1057))
+* enlarge header visualizer and dismiss empty search ([df0ed4f](https://github.com/vincedelmas/BTunes/commit/df0ed4f2529b75bb00ebeb468861b42a1db0fa17))
+* remove some eyebrows and descriptions ([401b548](https://github.com/vincedelmas/BTunes/commit/401b548cf2e8462ae788cff25ed4deb7c7b4cb3a))
+* remove stale mix details and preserve MTP field order ([34eca23](https://github.com/vincedelmas/BTunes/commit/34eca2380b0eaaddc4911ceedb3656445c736b8d))
+
 ## [1.0.1](https://github.com/vincedelmas/BTunes/compare/v1.0.0...v1.0.1) (2026-11-06)
 
 
