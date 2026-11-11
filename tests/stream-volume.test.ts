@@ -14,7 +14,7 @@ function fixture() {
             writes.push(args);
             const input = inputs.find((item) => item.index === Number(args[1]));
             if (input && args[0] === "set-sink-input-volume") {
-                input.volume.mono.value = Math.round(Number(args[2].replace("%", "")) / 100 * 65536);
+                input.volume.mono.value = Number(args[2]);
             }
             return "";
         },
@@ -37,14 +37,14 @@ function stream(index: number, pid: number, volume = 1, mute = false) {
 void test("app volume controls only its own stream and desktop changes return to the app", async () => {
     const state = fixture();
     await state.service.setVolume(0.4);
-    assert.deepEqual(state.writes, [["set-sink-input-volume", "1", "40%"]]);
+    assert.deepEqual(state.writes, [["set-sink-input-volume", "1", "48287"]]);
     assert.deepEqual(state.notifications, [{ volume: 0.4, native: true }]);
-    state.replace([stream(1, 10, 0.25), stream(2, 20)]);
+    state.replace([stream(1, 10, 0.5), stream(2, 20)]);
     await state.service.refresh();
-    assert.deepEqual(state.notifications.at(-1), { volume: 0.25, native: true });
+    assert.deepEqual(state.notifications.at(-1), { volume: 0.13, native: true });
     assert.equal(state.writes.length, 1, "Reading a desktop change must not apply volume a second time");
     await state.service.setVolume(0.8);
-    assert.deepEqual(state.writes.at(-1), ["set-sink-input-volume", "1", "80%"]);
+    assert.deepEqual(state.writes.at(-1), ["set-sink-input-volume", "1", "60838"]);
     state.service.close();
 });
 
@@ -57,7 +57,7 @@ void test("volume survives stream recreation and falls back when no stream is pr
     assert.deepEqual(state.notifications.at(-1), { volume: 0.3, native: false });
     state.replace([stream(9, 10)]);
     await state.service.refresh();
-    assert.deepEqual(state.writes.at(-1), ["set-sink-input-volume", "9", "30%"]);
+    assert.deepEqual(state.writes.at(-1), ["set-sink-input-volume", "9", "43872"]);
     assert.deepEqual(state.notifications.at(-1), { volume: 0.3, native: true });
     state.service.close();
 });
@@ -71,7 +71,7 @@ void test("desktop mute reaches the app and raising volume unmutes its stream", 
     assert.deepEqual(state.notifications.at(-1), { volume: 0, native: true });
     await state.service.setVolume(0.2);
     assert.deepEqual(state.writes.slice(-2), [
-        ["set-sink-input-volume", "1", "20%"],
+        ["set-sink-input-volume", "1", "38326"],
         ["set-sink-input-mute", "1", "0"],
     ]);
     state.service.close();
@@ -98,5 +98,18 @@ void test("a reopened renderer receives the active stream mode even when volume 
     state.notifications.length = 0;
     await state.service.setVolume(0.4);
     assert.deepEqual(state.notifications, [{ volume: 0.4, native: true }]);
+    state.service.close();
+});
+
+
+void test("low app volume preserves linear gain and mute and full volume remain exact", async () => {
+    const state = fixture();
+    // Reference values from libpulse's pa_sw_volume_from_linear, rather than percentages.
+    for (const [gain, raw] of [[0.1, 30419], [0, 0], [1, 65536]]) {
+        await state.service.setVolume(gain);
+        assert.deepEqual(state.writes.at(-1), ["set-sink-input-volume", "1", String(raw)]);
+        await state.service.refresh();
+        assert.deepEqual(state.notifications.at(-1), { volume: gain, native: true });
+    }
     state.service.close();
 });

@@ -115,8 +115,10 @@ export class StreamVolumeService {
             const added = streams.some((stream) => !this.streams.has(stream.index));
             if (this.dirty || added) {
                 const volume = this.volume;
+                // PulseAudio volume is cubic; the player preference is linear signal gain.
+                const streamVolume = Math.round(Math.cbrt(volume) * 65536);
                 for (const stream of streams) {
-                    await this.run(["set-sink-input-volume", String(stream.index), `${volume * 100}%`]);
+                    await this.run(["set-sink-input-volume", String(stream.index), String(streamVolume)]);
                     if (stream.mute && volume > 0) {
                         await this.run(["set-sink-input-mute", String(stream.index), "0"]);
                     }
@@ -130,7 +132,8 @@ export class StreamVolumeService {
                 const channels = Object.values(stream.volume);
                 if (!channels.length) return;
 
-                const observed = stream.mute ? 0 : Math.max(...channels.map((channel) => channel.value)) / 65536;
+                const streamVolume = Math.max(...channels.map((channel) => channel.value)) / 65536;
+                const observed = stream.mute ? 0 : streamVolume ** 3;
                 this.volume = Math.max(0, Math.min(1, Math.round(observed * 100) / 100));
             }
 
