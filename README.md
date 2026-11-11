@@ -22,6 +22,7 @@ BTunes checks for updates daily; you choose when to download and install them.
 
 A few features need system tools:
 
+- **Taskbar volume sync:** `pactl` with PipeWire-Pulse or PulseAudio. Without it, the in-app volume still works.
 - **Tag editing:** FFmpeg, until BTunes has installed its managed download tools.
 - **YouTube downloads:** Node.js.
 - **USB transfers:** KDE's MTP support (`kio-extras` and `kioclient`) and systemd's `busctl`.

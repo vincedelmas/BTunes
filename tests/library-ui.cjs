@@ -398,7 +398,7 @@ app.on("browser-window-created", (_, win) => {
                     const iface = "org.mpris.MediaPlayer2.Player";
                     await properties.Set(iface, "Volume", new dbus.Variant("d", 0.42));
                     await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
-                        Math.abs(document.querySelector('audio').volume - 0.42) < 0.001 &&
+                        [0.42, 1].includes(document.querySelector('audio').volume) &&
                         Number(document.querySelector('.volume input').value) === 0.42
                     )`);
                     // Use the native setter so React sees the slider interaction.
@@ -408,10 +408,19 @@ app.on("browser-window-created", (_, win) => {
                         slider.dispatchEvent(new Event('input', { bubbles: true }));
                     })()`);
                     await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
-                        Math.abs(document.querySelector('audio').volume - 0.65) < 0.001
+                        Number(document.querySelector('[aria-label="Volume"]').value) === 0.65
                     )`);
                     const volume = await properties.Get(iface, "Volume");
                     if (Math.abs(volume.value - 0.65) > 0.001) throw new Error("Desktop volume did not follow the app slider");
+                    win.webContents.send("media-command", { action: "stream-volume", volume: 0.65, native: true });
+                    await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        document.querySelector('audio').volume === 1 &&
+                        Number(document.querySelector('[aria-label="Volume"]').value) === 0.65
+                    )`);
+                    win.webContents.send("media-command", { action: "stream-volume", volume: 0.65, native: false });
+                    await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        document.querySelector('audio').volume === 0.65
+                    )`);
                 }
                 finally {
                     client.disconnect();
@@ -897,7 +906,7 @@ app.on("browser-window-created", (_, win) => {
                 const volume=document.querySelector('[aria-label="Volume"]');
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(volume,'0.23');
                 volume.dispatchEvent(new Event('input',{bubbles:true}));
-                await window.uiReview.waitFor(()=>document.querySelector('audio').volume===0.23);
+                await window.uiReview.waitFor(()=>Number(document.querySelector('[aria-label="Volume"]').value)===0.23);
                 await window.uiReview.waitFor(()=>JSON.parse(localStorage.getItem('btunes.volume.v1'))===0.23);
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {
@@ -923,7 +932,7 @@ app.on("browser-window-created", (_, win) => {
                     if(performance.now()>deadline) throw new Error('Reload did not restore library');
                     await new Promise(resolve=>setTimeout(resolve,20));
                 }
-                if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || document.querySelector('audio').volume!==0.23) throw new Error('Volume did not persist after reopening');
+                if(Number(document.querySelector('[aria-label="Volume"]').value)!==0.23 || ![0.23,1].includes(document.querySelector('audio').volume)) throw new Error('Volume did not persist after reopening');
                 if(document.querySelector('.player-bar [aria-label="Shuffle"]').getAttribute('aria-pressed')!=='true') throw new Error('Shuffle did not persist after reopening');
                 if(document.querySelector('[aria-label="Repeat"]').dataset.repeat!=='one') throw new Error('Repeat did not persist after reopening');
                 if(!document.querySelector('.sound-visualizer[data-style="waveform"]')) throw new Error('Visualizer style did not persist after reopening');

@@ -31,6 +31,10 @@ export function useMediaSession(player: PlayerState, track?: Track) {
             case "toggle":
                 player.toggle();
                 break;
+            case "stream-volume":
+                player.setVolume(command.volume);
+                player.setNativeVolume(command.native);
+                break;
             case "volume":
                 player.setVolume(command.volume);
                 break;

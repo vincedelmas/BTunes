@@ -17,6 +17,7 @@ import {DeviceSyncService} from "./services/device-sync";
 import {FileImportService} from "./services/file-import";
 import {LibraryRepository} from "./repositories/library";
 import {DownloadRepository} from "./repositories/downloads";
+import {StreamVolumeService} from "./services/stream-volume";
 import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {version as applicationVersion} from "../../package.json";
 import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell} from "electron";
@@ -72,6 +73,7 @@ let updates: AppUpdateService;
 let service: LibraryService;
 let devices: DeviceSyncService;
 let downloads: DownloaderService;
+let streamVolume: StreamVolumeService | undefined;
 let desktopMedia: Awaited<ReturnType<typeof startMediaPlayer>> | undefined;
 const pendingWrites = new Set<Promise<unknown>>();
 
@@ -119,7 +121,10 @@ void app.whenReady().then(async () => {
     const routes = {
         "media.update": {
             schema: rpcSchemas["media.update"],
-            run: (input: RpcInput<"media.update">) => desktopMedia?.player.update(input),
+            run: (input: RpcInput<"media.update">) => {
+                desktopMedia?.player.update(input);
+                void streamVolume?.setVolume(input.volume);
+            },
         },
         "updates.get": { schema: rpcSchemas["updates.get"], run: () => updates.get() },
         "updates.check": { schema: rpcSchemas["updates.check"], run: () => updates.check() },
@@ -261,6 +266,10 @@ void app.whenReady().then(async () => {
     });
 
     if (process.platform === "linux") {
+        streamVolume = new StreamVolumeService((volume, native) => {
+            if (!win.isDestroyed()) win.webContents.send("media-command", { action: "stream-volume", volume, native });
+        });
+        streamVolume.start();
         desktopMedia = await startMediaPlayer((command) => {
             if (!win.isDestroyed()) win.webContents.send("media-command", command);
         }).catch((error: unknown) => {
@@ -269,7 +278,10 @@ void app.whenReady().then(async () => {
         });
     }
 
-    win.on("closed", () => desktopMedia?.close());
+    win.on("closed", () => {
+        streamVolume?.close();
+        desktopMedia?.close();
+    });
 
     win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     win.webContents.on("will-navigate", (ev, url) => {

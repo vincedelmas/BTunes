@@ -20,6 +20,7 @@ export function usePlayer(onError: (message: string) => void, onSkip: (track: Tr
     const [currentTrack, setCurrentTrack] = useState<Track>();
     const [volume, setVolume] = usePreference("btunes.volume.v1", volumeSchema, 0.7);
     const [repeat, setRepeat] = usePreference<RepeatMode>("btunes.repeat.v1", repeatSchema, "off");
+    const [nativeVolume, setNativeVolume] = useState(false);
     const [playing, setPlaying] = useState(false);
 
     const audio = useRef<HTMLAudioElement>(null);
@@ -106,8 +107,8 @@ export function usePlayer(onError: (message: string) => void, onSkip: (track: Tr
     }, [currentTrackId]);
 
     useEffect(() => {
-        if (audio.current) audio.current.volume = volume;
-    }, [volume]);
+        if (audio.current) audio.current.volume = nativeVolume ? 1 : volume;
+    }, [volume, nativeVolume]);
 
     function stop() {
         audio.current?.pause();
@@ -223,6 +224,7 @@ export function usePlayer(onError: (message: string) => void, onSkip: (track: Tr
         cycleRepeat,
         ended,
         setVolume,
+        setNativeVolume,
         setPlaying,
         setShuffle,
         updateTime,
