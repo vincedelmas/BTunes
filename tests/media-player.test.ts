@@ -19,6 +19,12 @@ void test("desktop volume and playback commands travel through an isolated D-Bus
         import {strict as assert} from "node:assert";
         import {startMediaPlayer} from "./src/main/services/media-player.ts";
 
+        const {default: Module} = await import("node:module");
+        const load = Module._load;
+        Module._load = function (name, ...args) {
+            assert.notEqual(name, "usocket", "MPRIS must use Node's built-in Unix sockets");
+            return load.call(this, name, ...args);
+        };
         const commands = [];
         const service = await startMediaPlayer((command) => commands.push(command));
         const client = dbus.sessionBus();

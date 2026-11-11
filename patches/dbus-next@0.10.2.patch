@@ -1,0 +1,18 @@
+diff --git a/lib/connection.js b/lib/connection.js
+index 780dc041c58e83ebfcd84434e500ec471020813a..7468ef8ede30a05db46eca28aee36b1f905418ef 100644
+--- a/lib/connection.js
++++ b/lib/connection.js
+@@ -41,6 +41,13 @@ function createStream (opts) {
+           return net.createConnection(port, host);
+         }
+         case 'unix': {
++          // MPRIS needs no file descriptors. Avoid usocket's obsolete Node APIs
++          // and native addon when the built-in socket transport is sufficient.
++          if (!negotiateUnixFd && (params.path || params.abstract)) {
++            const path = params.path || '\u0000' + params.abstract;
++            return net.createConnection(path);
++          }
++
+           if (params.socket) {
+             return net.createConnection(params.socket);
+           }

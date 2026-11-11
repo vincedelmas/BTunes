@@ -6,6 +6,7 @@
     ],
     "entry": [
         "tests/*.test.ts",
+        "tests/appimage-smoke.cjs",
         "tests/electron-smoke.cjs",
         "tests/library-ui.cjs",
         "tests/downloader-ui.cjs",

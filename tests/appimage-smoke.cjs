@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const dbus = require("dbus-next");
 const {spawn} = require("node:child_process");
 const {mkdtemp, readdir, readFile, rm} = require("node:fs/promises");
 const {tmpdir} = require("node:os");
@@ -25,6 +26,7 @@ async function main() {
 
     let logs = "";
     let socket;
+    let mediaBus;
     let sequence = 0;
     const pending = new Map();
     const deadline = Date.now() + 45000;
@@ -100,6 +102,21 @@ async function main() {
         await evaluate("[...document.querySelectorAll('[role=tab]')].find(item => item.textContent.trim() === 'About').click()");
         await waitFor(() => evaluate("Boolean([...document.querySelectorAll('button')].find(item => item.textContent.trim() === 'Check for updates' && !item.disabled))"));
 
+        mediaBus = dbus.sessionBus();
+        mediaBus.on("error", appendLog);
+        const desktop = await mediaBus.getProxyObject("org.freedesktop.DBus", "/org/freedesktop/DBus");
+        const names = await desktop.getInterface("org.freedesktop.DBus").ListNames();
+        const mediaName = names.find((name) => name.startsWith("org.mpris.MediaPlayer2.btunes.instance"));
+        assert.ok(mediaName, "Packaged application must register desktop media controls");
+        const media = await mediaBus.getProxyObject(mediaName, "/org/mpris/MediaPlayer2");
+        const properties = media.getInterface("org.freedesktop.DBus.Properties");
+        const mediaInterface = "org.mpris.MediaPlayer2.Player";
+        assert.equal((await properties.Get(mediaInterface, "Volume")).value, 0.7);
+        await properties.Set(mediaInterface, "Volume", new dbus.Variant("d", 0.42));
+        await waitFor(() => evaluate("document.querySelector('audio').volume === 0.42"));
+        assert.equal((await properties.Get(mediaInterface, "Volume")).value, 0.42);
+        assert.doesNotMatch(logs, /util\.isError is not a function/);
+
         const packageJson = JSON.parse(await readFile("package.json", "utf8"));
         assert.equal(result.version, packageJson.version, "Packaged version must match package.json");
         const updateConfig = await readFile("dist/linux-unpacked/resources/app-update.yml", "utf8");
@@ -111,6 +128,7 @@ async function main() {
     finally {
         clearTimeout(watchdog);
         socket?.close();
+        mediaBus?.disconnect();
         terminate("SIGTERM");
         await Promise.race([once(child, "exit").catch(() => undefined), delay(3000)]);
         terminate("SIGKILL");

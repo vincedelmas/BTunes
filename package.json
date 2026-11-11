@@ -11,7 +11,7 @@
         "lint": "oxlint --max-warnings=0",
         "db:generate": "drizzle-kit generate",
         "lint:fix": "oxlint --fix --max-warnings=0",
-        "test:appimage": "node tests/appimage-smoke.cjs",
+        "test:appimage": "dbus-run-session -- node tests/appimage-smoke.cjs",
         "build": "bun run typecheck && electron-vite build",
         "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
         "package": "bun run build && electron-builder --linux dir",
@@ -112,5 +112,8 @@
     "author": {
         "name": "Vince Delmas",
         "url": "https://github.com/vincedelmas"
+    },
+    "patchedDependencies": {
+        "dbus-next@0.10.2": "patches/dbus-next@0.10.2.patch"
     }
 }
