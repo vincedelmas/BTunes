@@ -140,6 +140,11 @@ app.on("browser-window-created", (_, win) => {
                 document.dispatchEvent(new KeyboardEvent('keydown',{key:'f',ctrlKey:true,bubbles:true,cancelable:true}));
                 await waitFor(()=>document.activeElement===document.querySelector('[aria-label="Search your library"]'));
                 if(!document.querySelector('.page-header [aria-label="Close search"]')) throw new Error('Ctrl+F did not expand header search');
+                button('Play all').focus();
+                await waitFor(()=>document.querySelector('.page-header [aria-label="Open search"]'));
+                if(document.activeElement!==button('Play all')) throw new Error('Empty search should collapse without taking focus from the next control');
+                document.querySelector('[aria-label="Open search"]').click();
+                await waitFor(()=>document.activeElement===document.querySelector('[aria-label="Search your library"]'));
                 document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
                 await waitFor(()=>document.querySelector('.page-header [aria-label="Open search"]'));
                 if(document.activeElement!==document.querySelector('[aria-label="Open search"]')) throw new Error('Closing search should restore focus to its trigger');
@@ -264,12 +269,14 @@ app.on("browser-window-created", (_, win) => {
                 };
                 setSearch('Song 2299');
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
+                button('Play all').focus();
+                if(!document.querySelector('.page-header [aria-label="Close search"]')) throw new Error('Search with an active query should remain expanded after blur');
                 if(document.querySelector('.library-hero [aria-label="Total duration"]').textContent.trim()!=='1 min') throw new Error('Duration does not reflect filtered songs');
                 await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
                 document.querySelector('[aria-label="Clear search"]').click();
                 await waitFor(()=>document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2301');
                 if(search.value || document.querySelector('[aria-label="Clear search"]')) throw new Error('Search was not cleared');
-                if(document.activeElement!==search) throw new Error('Search input should retain focus after clearing');
+                if(document.activeElement!==document.querySelector('[aria-label="Open search"]')) throw new Error('Clearing search should collapse it and focus its trigger');
                 window.dispatchEvent(new MouseEvent('mouseup',{button:4,bubbles:true,cancelable:true}));
                 await waitFor(()=>search.value==='Song 2299' && document.querySelector('.track-table')?.getAttribute('aria-rowcount')==='2');
                 window.dispatchEvent(new MouseEvent('mouseup',{button:3,bubbles:true,cancelable:true}));

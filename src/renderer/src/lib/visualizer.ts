@@ -54,7 +54,7 @@ export function drawVisualizer(
         return;
     }
 
-    const bars = 32;
+    const bars = Math.min(96, Math.max(32, Math.floor(width / 6)));
     const spacing = width / bars;
 
     for (let index = 0; index < bars; index++) {

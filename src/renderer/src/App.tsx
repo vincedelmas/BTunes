@@ -66,7 +66,9 @@ export function App() {
         ? library.data.tracks.filter((track) => openedCollectionIds.has(track.id))
         : [];
     const current = library.data.tracks.find((track) => track.id === player.currentTrack?.id) ?? player.currentTrack;
-    const visualizer = <SoundVisualizer analyser={analyser} style={appearance.visualizer} playing={player.playing}/>;
+    const visualizer = appearance.visualizer !== "off"
+        ? <SoundVisualizer analyser={analyser} style={appearance.visualizer} playing={player.playing}/>
+        : undefined;
     const searchControl = <LibrarySearch scope={view} value={search} onChange={setSearch} onClear={clearSearch}/>;
 
     const actions: TrackActions = {

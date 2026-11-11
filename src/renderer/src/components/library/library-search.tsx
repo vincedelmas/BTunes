@@ -49,7 +49,13 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
     }
 
     return (
-        <div className="header-search flex shrink-0 items-center">
+        <div
+            className="header-search flex shrink-0 items-center"
+            onBlur={(ev) => {
+                if (value || ev.currentTarget.contains(ev.relatedTarget)) return;
+                setOpenScope(undefined);
+            }}
+        >
             <Button
                 ref={trigger}
                 variant="ghost"
@@ -91,11 +97,7 @@ export function LibrarySearch({ scope, value, placeholder = "Search this page", 
                             size="icon-xs"
                             aria-label="Clear search"
                             title="Clear search"
-                            onClick={() => {
-                                setOpenScope(scope);
-                                onClear();
-                                input.current?.focus();
-                            }}
+                            onClick={closeSearch}
                         >
                             <X aria-hidden="true"/>
                         </InputGroupButton>

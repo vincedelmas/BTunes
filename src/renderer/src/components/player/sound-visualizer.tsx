@@ -80,7 +80,7 @@ export function SoundVisualizer({ analyser, style, playing }: SoundVisualizerPro
 
     return <canvas
         ref={canvas}
-        className="sound-visualizer h-8 w-40 shrink-0"
+        className="sound-visualizer h-28 w-full"
         role="img"
         aria-label={"Sound visualizer: " + style}
         data-style={style}
