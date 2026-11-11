@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/vincedelmas/BTunes/compare/v1.1.1...v1.1.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* isolate D-Bus session for Electron CI tests ([1eea9f1](https://github.com/vincedelmas/BTunes/commit/1eea9f197296f456964de9d438c99964cde2a420))
+
 ## [1.1.1](https://github.com/vincedelmas/BTunes/compare/v1.1.0...v1.1.1) (2026-11-11)
 
 
