@@ -244,8 +244,8 @@ export function App() {
 
     return (
         <div
-            className="app-shell grid grid-cols-[232px_minmax(0,_1fr)] grid-rows-[minmax(0,_1fr)_98px] h-[100vh] gap-2 pt-2 px-2 pb-0
-            overflow-hidden max-[1150px]:grid-cols-[210px_minmax(0,_1fr)]"
+            className="app-shell grid grid-cols-[256px_minmax(0,_1fr)] grid-rows-[minmax(0,_1fr)_98px] h-[100vh] gap-2 pt-2 px-2 pb-0
+            overflow-hidden max-[1150px]:grid-cols-[232px_minmax(0,_1fr)]"
         >
             <Sidebar
                 view={view}
