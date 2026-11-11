@@ -1,5 +1,6 @@
 import type {z} from "zod";
 import type {Snapshot} from "./library";
+import type {MediaCommand} from "./media";
 import type {UpdateState} from "./updates";
 import type {ArtworkCandidate} from "./artwork";
 import type {rpcSchemas} from "../schemas/rpc.ts";
@@ -10,6 +11,7 @@ import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downl
 
 
 type RpcOutputs = {
+    "media.update": void;
     "updates.get": UpdateState;
     "updates.check": void;
     "updates.download": void;
@@ -61,7 +63,12 @@ export type Rpc = <K extends keyof RpcOutputs>(method: K, input: RpcInput<K>) =>
 
 declare global {
     interface Window {
-        btunes: { rpc: Rpc; filePaths: (files: File[]) => string[] };
+        btunes: {
+            rpc: Rpc;
+            nativeMedia: boolean;
+            filePaths: (files: File[]) => string[];
+            onMediaCommand: (listener: (command: MediaCommand) => void) => () => void;
+        };
     }
 }
 

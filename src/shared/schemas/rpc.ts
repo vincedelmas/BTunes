@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {mediaStateSchema} from "./media.ts";
 import {tagPatchFieldsSchema} from "./tags.ts";
 import {deviceFolderSchema} from "./devices.ts";
 import {fileDropSchema} from "./file-import.ts";
@@ -23,6 +24,7 @@ const playlistDetails = {
 
 
 export const rpcSchemas = {
+    "media.update": mediaStateSchema,
     "track.reveal": idSchema,
     "track.played": idSchema,
     "track.favorite": idSchema,

@@ -386,6 +386,38 @@ app.on("browser-window-created", (_, win) => {
             })()`, true);
 
 
+            if (process.platform === "linux") {
+                const dbus = require("dbus-next");
+                const client = dbus.sessionBus();
+                try {
+                    const object = await client.getProxyObject(
+                        `org.mpris.MediaPlayer2.btunes.instance${process.pid}`,
+                        "/org/mpris/MediaPlayer2",
+                    );
+                    const properties = object.getInterface("org.freedesktop.DBus.Properties");
+                    const iface = "org.mpris.MediaPlayer2.Player";
+                    await properties.Set(iface, "Volume", new dbus.Variant("d", 0.42));
+                    await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        Math.abs(document.querySelector('audio').volume - 0.42) < 0.001 &&
+                        Number(document.querySelector('.volume input').value) === 0.42
+                    )`);
+                    // Use the native setter so React sees the slider interaction.
+                    await win.webContents.executeJavaScript(`(() => {
+                        const slider = document.querySelector('.volume input');
+                        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(slider, '0.65');
+                        slider.dispatchEvent(new Event('input', { bubbles: true }));
+                    })()`);
+                    await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        Math.abs(document.querySelector('audio').volume - 0.65) < 0.001
+                    )`);
+                    const volume = await properties.Get(iface, "Volume");
+                    if (Math.abs(volume.value - 0.65) > 0.001) throw new Error("Desktop volume did not follow the app slider");
+                }
+                finally {
+                    client.disconnect();
+                }
+            }
+
             const interactions = await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,frame,button} = window.uiReview;
                 [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Add to queue').click();

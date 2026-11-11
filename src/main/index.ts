@@ -12,6 +12,7 @@ import {DownloaderService} from "./services/downloads";
 import {fileDropMenu} from "./services/file-drop-menu";
 import {AppUpdateService} from "./services/app-updates";
 import {DownloadTools} from "./services/download-tools";
+import {startMediaPlayer} from "./services/media-player";
 import {DeviceSyncService} from "./services/device-sync";
 import {FileImportService} from "./services/file-import";
 import {LibraryRepository} from "./repositories/library";
@@ -26,6 +27,11 @@ app.setName("BTunes");
 
 if (process.platform === "linux") {
     app.setDesktopName("btunes.desktop");
+    // BTunes publishes writable MPRIS volume; Chromium publishes a fixed 100%.
+    app.commandLine.appendSwitch("disable-features", [
+        app.commandLine.getSwitchValue("disable-features"),
+        "HardwareMediaKeyHandling",
+    ].filter(Boolean).join(","));
 
     const platform = app.commandLine.getSwitchValue("ozone-platform");
     const waylandSession = process.env.XDG_SESSION_TYPE === "wayland" || Boolean(process.env.WAYLAND_DISPLAY);
@@ -66,6 +72,7 @@ let updates: AppUpdateService;
 let service: LibraryService;
 let devices: DeviceSyncService;
 let downloads: DownloaderService;
+let desktopMedia: Awaited<ReturnType<typeof startMediaPlayer>> | undefined;
 const pendingWrites = new Set<Promise<unknown>>();
 
 async function trackWrite<T>(write: Promise<T>) {
@@ -110,6 +117,10 @@ void app.whenReady().then(async () => {
     });
 
     const routes = {
+        "media.update": {
+            schema: rpcSchemas["media.update"],
+            run: (input: RpcInput<"media.update">) => desktopMedia?.player.update(input),
+        },
         "updates.get": { schema: rpcSchemas["updates.get"], run: () => updates.get() },
         "updates.check": { schema: rpcSchemas["updates.check"], run: () => updates.check() },
         "updates.download": { schema: rpcSchemas["updates.download"], run: () => updates.download() },
@@ -248,6 +259,17 @@ void app.whenReady().then(async () => {
             preload: join(__dirname, "../preload/index.js"),
         },
     });
+
+    if (process.platform === "linux") {
+        desktopMedia = await startMediaPlayer((command) => {
+            if (!win.isDestroyed()) win.webContents.send("media-command", command);
+        }).catch((error: unknown) => {
+            console.error("Desktop media controls unavailable:", error);
+            return undefined;
+        });
+    }
+
+    win.on("closed", () => desktopMedia?.close());
 
     win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     win.webContents.on("will-navigate", (ev, url) => {
