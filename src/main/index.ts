@@ -20,7 +20,8 @@ import {DownloadRepository} from "./repositories/downloads";
 import {StreamVolumeService} from "./services/stream-volume";
 import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {version as applicationVersion} from "../../package.json";
-import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell} from "electron";
+import {readWindowState, saveWindowState} from "./services/window-state";
+import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, screen, shell} from "electron";
 
 
 app.setName("BTunes");
@@ -249,9 +250,14 @@ void app.whenReady().then(async () => {
         },
     } satisfies RpcRoutes;
 
+    const windowStatePath = join(app.getPath("userData"), "window-state.json");
+    const windowState = readWindowState(windowStatePath, screen.getAllDisplays().map((display) => display.workArea));
+
     const win = new BrowserWindow({
-        width: 1440,
-        height: 940,
+        x: windowState?.x,
+        y: windowState?.y,
+        width: windowState?.width ?? 1440,
+        height: windowState?.height ?? 940,
         minWidth: 1000,
         minHeight: 700,
         title: "BTunes",
@@ -264,6 +270,10 @@ void app.whenReady().then(async () => {
             preload: join(__dirname, "../preload/index.js"),
         },
     });
+
+    win.on("close", () => saveWindowState(windowStatePath, win));
+    if (windowState?.maximized) win.maximize();
+    if (windowState?.fullscreen) win.setFullScreen(true);
 
     if (process.platform === "linux") {
         streamVolume = new StreamVolumeService((volume, native) => {
