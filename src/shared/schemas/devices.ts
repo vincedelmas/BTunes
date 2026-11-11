@@ -8,6 +8,7 @@ const phonePath = z.string().max(4096).refine((value) => {
 export const deviceFolderSchema = z.object({ storageId, path: phonePath });
 export const mtpPathsSchema = z.array(z.string().regex(/^\/modules\/kmtpd\/device\d+(?:\/storage\d+)?$/));
 export const mtpFileSchema = z.tuple([
+    // KDE's D-Bus tuple is positional: IDs, name, size, modified time, and MIME type.
     z.number().int().nonnegative(), z.number().int().nonnegative(), z.number().int().nonnegative(),
     z.string(), z.number().int().nonnegative(), z.number(), z.string(),
 ]);

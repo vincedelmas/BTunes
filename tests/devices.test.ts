@@ -110,13 +110,24 @@ void test("MTP uses bulk D-Bus listings and passes literal, encoded paths to KDE
         if (method === "friendlyName") return JSON.stringify({ data: "My Phone" });
         if (method === "description") return JSON.stringify({ data: "Internal storage" });
         if (method === "freeSpaceInBytes") return JSON.stringify({ data: 100000 });
-        if (method === "getFilesAndFolders") return JSON.stringify({ data: [[[1, 0, 1, "AC/DC", 10, 0, "audio/mpeg"]], 0] });
+        if (method === "getFilesAndFolders") {
+            const entries = args.at(-1) === "/Music"
+                ? [[1, 0, 1, "AC/DC", 10, 0, "audio/mpeg"]]
+                : [[1, 0, 1, "Albums", 0, 0, "inode/directory"], [2, 0, 1, "Song.mp3", 128, 42, "audio/mpeg"]];
+            return JSON.stringify({ data: [entries, 0] });
+        }
+        if (method === "getFileMetadata") return JSON.stringify({ data: [[2, 0, 1, "Song.mp3", 128, 42, "audio/mpeg"]] });
         throw new Error("Unexpected command: " + args.join(" "));
     });
     await client.copy(storageId, "/tmp/Song $(touch nope).mp3", "/Music/Song #1.mp3");
     const upload = calls.find((call) => call.command === "kioclient")!;
     assert.deepEqual(upload.args, ["--noninteractive", "copy", "file:///tmp/Song%20$(touch%20nope).mp3", "mtp:/My%20Phone/Internal%20storage/Music/Song%20%231.mp3"]);
     assert.ok(!upload.args.includes("--overwrite"));
+    assert.deepEqual(await client.files(storageId, "/"), [
+        { name: "Albums", path: "/Albums", size: 0, directory: true },
+        { name: "Song.mp3", path: "/Song.mp3", size: 128, directory: false },
+    ]);
+    assert.deepEqual(await client.metadata(storageId, "/Song.mp3"), { name: "Song.mp3", path: "/Song.mp3", size: 128, directory: false });
     await assert.rejects(client.files(storageId, "/Music"), /invalid filename/);
     assert.equal(deviceFolderSchema.safeParse({ storageId, path: "/Music/../Android" }).success, false);
     assert.equal(deviceFolderSchema.safeParse({ storageId: "/arbitrary/object", path: "/Music" }).success, false);

@@ -146,11 +146,6 @@ export function LibraryPage({
                     details={
                         <div className="flex flex-col gap-1">
                             <LibraryStats tracks={tracks}/>
-                            {collection.smartMix && (
-                                <p>
-                                    {collection.smartMix.description}
-                                </p>
-                            )}
                         </div>
                     }
                     actions={
