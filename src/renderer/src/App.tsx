@@ -36,7 +36,7 @@ export function App() {
     const library = useLibrary();
     const updates = useAppUpdates();
     const locator = useItemReveal();
-    const player = usePlayer(library.setError);
+    const player = usePlayer(library.setError, followSkippedTrack);
     const [appearance, setAppearance] = useAppearance();
     const analyser = useAudioAnalyser(player.audio, appearance.visualizer !== "off");
     const [editing, setEditing] = useState<Track[]>();
@@ -116,6 +116,13 @@ export function App() {
         if (view === "albums") key = albumKey(current);
         if (view === "artists") key = getAlbumArtist(current);
         locator.show(key);
+    }
+
+    function followSkippedTrack(track: Track) {
+        if (view !== "tracks") return;
+
+        clearFilters();
+        locator.show(track.id, false);
     }
 
     usePlaybackFollow(

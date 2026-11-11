@@ -526,11 +526,42 @@ app.on("browser-window-created", (_, win) => {
                 if(document.querySelector('[data-track-id][aria-selected="true"]')) throw new Error('Automatic following must preserve selection');
                 viewport.scrollTop=viewport.scrollHeight;
                 await waitFor(()=>!visible(document.querySelector('[data-track-id="1"]'),viewport));
+                viewport.dispatchEvent(new WheelEvent('wheel',{bubbles:true,deltaY:100}));
+                await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
+                document.querySelector('[data-track-id="2300"]').click();
+                await waitFor(()=>document.querySelector('[data-track-id="2300"][aria-selected="true"]'));
                 document.querySelector('.player-bar [aria-label="Next track"]').click();
                 await waitFor(()=>visible(document.querySelector('[data-track-id="2"]'),viewport) && !audio.paused);
-                if(document.querySelector('[data-track-id][aria-selected="true"]')) throw new Error('Track advancement changed selection');
                 document.querySelector('.player-bar [aria-label="Previous track"]').click();
-                await waitFor(()=>audio.src.endsWith('/1') && !audio.paused);
+                await waitFor(()=>audio.src.endsWith('/1') && !audio.paused && visible(document.querySelector('[data-track-id="1"]'),viewport));
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>document.querySelector('[data-track-id="2300"][aria-selected="true"]'));
+                document.querySelector('.track-table').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+                await waitFor(()=>!document.querySelector('[data-track-id][aria-selected="true"]'));
+
+                document.querySelector('[aria-label="Sort by Artist"]').click();
+                await waitFor(()=>document.querySelector('th[data-column="artist"]').getAttribute('aria-sort')==='ascending');
+                viewport.scrollTop=viewport.scrollHeight;
+                await waitFor(()=>visible(document.querySelector('[data-track-id="1"]'),viewport));
+                const shuffle=document.querySelector('.player-bar [aria-label="Shuffle"]');
+                const random=Math.random;
+                try {
+                    Math.random=()=>0.999999;
+                    shuffle.click();
+                } finally {
+                    Math.random=random;
+                }
+                await waitFor(()=>shuffle.getAttribute('aria-pressed')==='true');
+                const sourcePosition=viewport.scrollTop;
+                document.querySelector('.player-bar [aria-label="Next track"]').click();
+                await waitFor(()=>audio.src.endsWith('/2') && visible(document.querySelector('[data-track-id="2"]'),viewport));
+                if(sourcePosition-viewport.scrollTop<viewport.clientHeight*2) throw new Error('Shuffle follow did not cross the distant rows');
+                window.mediaSessionActions.previoustrack({action:'previoustrack'});
+                await waitFor(()=>audio.src.endsWith('/1') && visible(document.querySelector('[data-track-id="1"]'),viewport));
+                shuffle.click();
+                await waitFor(()=>shuffle.getAttribute('aria-pressed')==='false');
+                document.querySelector('[aria-label="Sort by Title"]').click();
+                await waitFor(()=>document.querySelector('th[data-column="title"]').getAttribute('aria-sort')==='ascending');
                 await pause();
                 viewport.scrollTop=viewport.scrollHeight;
                 await waitFor(()=>document.querySelector('[data-track-id="2300"]'));
@@ -549,6 +580,11 @@ app.on("browser-window-created", (_, win) => {
                 button('Albums').click();
                 await resume();
                 if(document.querySelector('h1').textContent!=='Albums') throw new Error('Playback must not navigate away from another page');
+                document.querySelector('.player-bar [aria-label="Next track"]').click();
+                await waitFor(()=>audio.src.endsWith('/2'));
+                if(document.querySelector('h1').textContent!=='Albums') throw new Error('Manual track changes must preserve the current page');
+                document.querySelector('.player-bar [aria-label="Previous track"]').click();
+                await waitFor(()=>audio.src.endsWith('/1'));
                 button('Songs').click();
                 await waitFor(()=>document.querySelector('.track-scroll'));
             })()`, true);

@@ -9,7 +9,7 @@ import type {PlaybackQueue} from "../../../shared/types/playback-queue";
 import {clearUpcoming, removeQueuedTrack, reorderUpcoming, restoreUpcoming, shuffleUpcoming} from "../../../shared/playback-queue";
 
 
-export function usePlayer(onError: (message: string) => void) {
+export function usePlayer(onError: (message: string) => void, onSkip: (track: Track) => void) {
     const sequence = useRef(0);
     const queueRef = useRef<PlaybackQueue>({ entries: [], index: -1 });
     const [queue, setQueue] = useState<PlaybackQueue>({ entries: [], index: -1 });
@@ -114,7 +114,7 @@ export function usePlayer(onError: (message: string) => void) {
         seek(0);
     }
 
-    function next(direction = 1) {
+    function advance(direction = 1) {
         const currentQueue = queueRef.current;
         if (!currentTrack || !currentQueue.entries.length) return;
 
@@ -131,6 +131,12 @@ export function usePlayer(onError: (message: string) => void) {
         }
 
         jumpToQueue(index);
+        return currentQueue.entries[index].track;
+    }
+
+    function next(direction = 1) {
+        const track = advance(direction);
+        if (track) onSkip(track);
     }
 
     function cycleRepeat() {
@@ -149,7 +155,7 @@ export function usePlayer(onError: (message: string) => void) {
             return;
         }
 
-        next();
+        advance();
     }
 
     function enqueue(tracks: Track[], playNext = false) {
