@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/vincedelmas/BTunes/compare/v1.3.1...v1.3.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* **devices:** clarify sync and preserve playlist names ([7a0c5b9](https://github.com/vincedelmas/BTunes/commit/7a0c5b9ecf07acf11782250dfd72889db5f03c55))
+
 ## [1.3.1](https://github.com/vincedelmas/BTunes/compare/v1.3.0...v1.3.1) (2026-11-15)
 
 
