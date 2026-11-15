@@ -19,7 +19,6 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 interface SettingsPageProps {
     busy: boolean;
     error: string;
-    notice: string;
     playing: boolean;
     tab: SettingsTab;
     folders: string[];
@@ -36,7 +35,7 @@ interface SettingsPageProps {
 }
 
 
-export function SettingsPage({ appearance, analyser, playing, onAppearanceChange, updates, tab, onTabChange, folders, busy, songCount, notice, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
+export function SettingsPage({ appearance, analyser, playing, onAppearanceChange, updates, tab, onTabChange, folders, busy, songCount, error, onImport, onRefresh, sidebarLayout, playlists }: SettingsPageProps) {
     return (
         <div className="settings-page min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4">
             <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
@@ -64,14 +63,6 @@ export function SettingsPage({ appearance, analyser, playing, onAppearanceChange
                             {error}
                         </AlertDescription>
                     </Alert>
-                )}
-                {notice && (
-                    <p
-                        role="status"
-                        className="text-xs text-muted-foreground"
-                    >
-                        {notice}
-                    </p>
                 )}
                 <Tabs
                     value={tab}

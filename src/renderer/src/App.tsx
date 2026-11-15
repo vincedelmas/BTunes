@@ -2,6 +2,7 @@ import {usePlayer} from "@/hooks/use-player";
 import {Button} from "@/components/ui/button";
 import {useLibrary} from "@/hooks/use-library";
 import {useEffect, useRef, useState} from "react";
+import {AppNotice} from "@/components/app-notice";
 import {TagEditor} from "@/components/tag-editor";
 import type {SettingsTab} from "@/types/settings";
 import {Sidebar} from "@/components/library/sidebar";
@@ -159,14 +160,6 @@ export function App() {
                     </AlertDescription>
                 </Alert>
             )}
-            {library.notice && (
-                <p
-                    role="status"
-                    className="notice mb-5 max-h-16 shrink-0 overflow-auto text-xs text-primary [overflow-wrap:anywhere]"
-                >
-                    {library.notice}
-                </p>
-            )}
         </>
     );
 
@@ -180,7 +173,6 @@ export function App() {
                     busy={library.busy}
                     error={library.error}
                     appearance={appearance}
-                    notice={library.notice}
                     playing={player.playing}
                     onTabChange={setSettingsTab}
                     sidebarLayout={sidebarLayout}
@@ -265,9 +257,13 @@ export function App() {
             />
             <main
                 ref={main}
-                className="isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col"
+                className="relative isolate overflow-hidden min-w-0 rounded-xl border border-border bg-background flex flex-col"
             >
                 {renderPage()}
+                <AppNotice
+                    message={library.notice}
+                    onDismiss={() => library.setNotice("")}
+                />
             </main>
             {showQueue && (
                 <QueuePanel

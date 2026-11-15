@@ -297,6 +297,25 @@ app.on("browser-window-created", (_, win) => {
                 for (const label of ['Play now','Play next','Add to queue','Edit tags','Add to playlist','Go to artist','Go to album','Show in folder','Copy file path']) {
                     if (!menu.includes(label)) throw new Error("Missing context action: "+label);
                 }
+                const tableBefore=document.querySelector('.track-table').getBoundingClientRect();
+                const playlistTrigger=[...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Add to playlist');
+                playlistTrigger.click();
+                await waitFor(()=>[...document.querySelectorAll('[role="menuitem"]')].some(item=>item.textContent.trim()==='Road trip'));
+                [...document.querySelectorAll('[role="menuitem"]')].find(item=>item.textContent.trim()==='Road trip').click();
+                await waitFor(()=>document.querySelector('.notice').textContent.includes('Songs added to playlist.'));
+                await frame();
+                const tableAfter=document.querySelector('.track-table').getBoundingClientRect();
+                if(tableAfter.top!==tableBefore.top || tableAfter.height!==tableBefore.height) throw new Error('Playlist confirmation shifted the library layout');
+                const noticeBounds=document.querySelector('.notice').getBoundingClientRect();
+                const mainBounds=document.querySelector('main').getBoundingClientRect();
+                if(noticeBounds.left<mainBounds.left || noticeBounds.right>mainBounds.right || noticeBounds.bottom>mainBounds.bottom) throw new Error('Notification extends outside the content area');
+                document.querySelector('[aria-label="Dismiss notification"]').click();
+                await waitFor(()=>!document.querySelector('.notice [data-slot="alert"]'));
+                const tableDismissed=document.querySelector('.track-table').getBoundingClientRect();
+                if(tableDismissed.top!==tableBefore.top || tableDismissed.height!==tableBefore.height) throw new Error('Dismissing confirmation shifted the library layout');
+                const reopenedBounds=first.getBoundingClientRect();
+                first.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,button:2,clientX:reopenedBounds.x+200,clientY:reopenedBounds.y+30}));
+                await waitFor(()=>document.querySelector('[role="menu"]'));
                 return {songs:2300, mountedSongRows:songNodes, mountedAlbums:albumNodes};
             })()`, true);
 
