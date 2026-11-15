@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/vincedelmas/BTunes/compare/v1.2.1...v1.3.0) (2026-11-15)
+
+
+### Features
+
+* **devices:** sync selected playlists to Android ([9f841a6](https://github.com/vincedelmas/BTunes/commit/9f841a6ebb8b2573aa7414b53e1a0a0867c1ee49))
+
 ## [1.2.1](https://github.com/vincedelmas/BTunes/compare/v1.2.0...v1.2.1) (2026-11-11)
 
 
