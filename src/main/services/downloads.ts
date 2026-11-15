@@ -1,5 +1,6 @@
 import {fileHash} from "./file-hash.ts";
 import {parseFile} from "music-metadata";
+import {scanBookmarks} from "./bookmarks.ts";
 import {tagArguments} from "./tag-arguments.ts";
 import type {LibraryService} from "./library.ts";
 import type {ArtworkService} from "./artwork.ts";
@@ -7,10 +8,10 @@ import {FileImportService} from "./file-import.ts";
 import {downloadProcess} from "./download-process.ts";
 import {pictureHashes, readTags} from "./metadata.ts";
 import {getErrorMessage} from "../../shared/errors.ts";
+import {safeFilename} from "../../shared/filenames.ts";
 import {DownloadMetadata} from "./download-metadata.ts";
 import type {TagPatch} from "../../shared/types/tags.ts";
 import {basename, dirname, join, resolve} from "node:path";
-import {safeDownloadName, scanBookmarks} from "./bookmarks.ts";
 import {tagPatchFieldsSchema} from "../../shared/schemas/tags.ts";
 import type {DownloadRepository} from "../repositories/downloads.ts";
 import {mkdir, mkdtemp, readFile, rm, stat, writeFile} from "node:fs/promises";
@@ -126,7 +127,7 @@ export class DownloaderService {
             }
             for (const entry of entries) {
                 if (!history.has(entry.id)) {
-                    const names = byFilename.get(key(safeDownloadName(entry.name) + ".mp3"));
+                    const names = byFilename.get(key(safeFilename(entry.name) + ".mp3"));
                     const tags = byTags.get(key(entry.artist) + "\0" + key(entry.title));
                     const matches = names?.length === 1 ? names : tags;
                     if (matches?.length === 1) {
@@ -283,7 +284,7 @@ export class DownloaderService {
                     args.push("-i", join(stage, "cover.jpg"), "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic");
                 }
                 else args.push("-map", "0:a");
-                const filename = safeDownloadName(tags.artist + " - " + tags.title) + ".mp3";
+                const filename = safeFilename(tags.artist + " - " + tags.title) + ".mp3";
                 const prepared = join(stage, filename);
                 args.push("-map_metadata", "-1", "-c", "copy", ...tagArguments(tags), "-metadata", "comment=" + item.url, "-f", "mp3", prepared);
                 await this.run(tools.ffmpeg, args, new AbortController().signal);

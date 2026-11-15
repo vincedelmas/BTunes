@@ -6,8 +6,8 @@ import {PageHeader} from "@/components/page-header";
 import {EmptyState} from "@/components/empty-state";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import type {Playlist} from "../../../../shared/types/library";
-import {DevicePlaylists} from "@/components/devices/device-playlists";
 import {DeviceComparison} from "@/components/devices/device-comparison";
+import {DeviceSyncOptions} from "@/components/devices/device-sync-options";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {ArrowLeft, ChevronRight, Folder, FolderPlus, RefreshCw, Smartphone, Usb} from "lucide-react";
 
@@ -131,10 +131,10 @@ export function DevicesPage({ visualizer, searchControl, query, playlists }: Dev
                     <Card>
                         <CardHeader>
                             <CardTitle>
-                                Choose the music folder
+                                1. Choose the phone music folder
                             </CardTitle>
                             <CardDescription>
-                                Open the folder containing your phone’s music, then compare it with the PC library.
+                                Audio and selected playlist files will be saved in this folder on your phone.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
@@ -180,20 +180,7 @@ export function DevicesPage({ visualizer, searchControl, query, playlists }: Dev
                                 </p>
                             }
 
-                            <DevicePlaylists
-                                playlists={playlists}
-                                selected={phone.playlistIds}
-                                onToggle={phone.togglePlaylist}
-                                disabled={phone.busy || phone.opening}
-                            />
                             <div className="flex flex-wrap gap-3">
-                                <Button
-                                    onClick={() => void phone.compare()}
-                                    disabled={phone.path === "/" || phone.busy || phone.opening}
-                                >
-                                    Compare with PC
-                                </Button>
-
                                 {phone.path === "/" && !folders.some((folder) => folder.name.toLowerCase() === "music") &&
                                     <Button
                                         variant="outline"
@@ -207,6 +194,15 @@ export function DevicesPage({ visualizer, searchControl, query, playlists }: Dev
                             </div>
                         </CardContent>
                     </Card>
+                }
+                {selectedDevice && phone.path !== "/" &&
+                    <DeviceSyncOptions
+                        playlists={playlists}
+                        selected={phone.playlistIds}
+                        onToggle={phone.togglePlaylist}
+                        onCompare={() => void phone.compare()}
+                        disabled={phone.busy || phone.opening}
+                    />
                 }
                 <DeviceComparison
                     state={phone.state}

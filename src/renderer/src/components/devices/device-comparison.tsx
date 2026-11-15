@@ -1,7 +1,9 @@
 import {formatBytes} from "@/lib/music";
 import {Button} from "@/components/ui/button";
+import {Separator} from "@/components/ui/separator";
 import {ArrowDownToLine, Check, Square} from "lucide-react";
 import type {DeviceSyncState} from "../../../../shared/types/devices";
+import {DevicePlaylistSummary} from "@/components/devices/device-playlist-summary";
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
 
 
@@ -16,6 +18,8 @@ interface DeviceComparisonProps {
 export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceComparisonProps) {
     const comparison = state.comparison;
     const syncing = state.phase === "syncing";
+    const completed = state.completed + (state.playlistsCompleted ?? 0);
+    const total = state.total + (state.playlists ?? 0);
     const busy = state.phase === "comparing" || state.phase === "syncing";
 
     if (state.phase === "idle") return (
@@ -27,8 +31,8 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
             <CardHeader>
                 <CardTitle>
                     {state.phase === "complete"
-                        ? "Your music is on your phone"
-                        : "Sync to phone"
+                        ? "Sync complete"
+                        : "3. Review and transfer"
                     }
                 </CardTitle>
                 <CardDescription>
@@ -40,7 +44,7 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                     <div role="status" className="flex min-w-0 flex-col gap-2 text-sm">
                         <p>
                             {syncing
-                                ? "Syncing · " + state.completed + " of " + state.total + " songs copied"
+                                ? "Transferring · " + completed + " of " + total + " files"
                                 : "Checking phone · " + state.completed + " songs found"
                             }
                         </p>
@@ -48,13 +52,31 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                             {state.current}
                         </p>
                         <progress
-                            max={state.total || 1}
+                            max={total || 1}
                             className="h-1.5 w-full accent-primary"
-                            value={syncing ? state.completed : undefined}
+                            value={syncing ? completed : undefined}
                             aria-label={syncing ? "Copy progress" : "Phone scan progress"}
                         />
                     </div>
                 }
+
+                {comparison && (
+                    <div className="flex flex-col gap-1">
+                        <h3 className="text-sm font-medium">
+                            Music files
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {comparison.missing}
+                            {" "}
+                            songs to copy ·
+                            {" "}
+                            {formatBytes(comparison.bytes)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Different versions are skipped. Songs found only on your phone are kept.
+                        </p>
+                    </div>
+                )}
 
                 {comparison &&
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -118,13 +140,12 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                     </p>
                 }
 
-                {Boolean(state.playlists) &&
-                    <p role="status" className="text-sm text-muted-foreground">
-                        Playlists exported: {state.playlistsCompleted ?? 0} / {state.playlists}.
-                        {" "}
-                        In Pulsar, rescan or import the M3U8 files from your music folder if needed.
-                    </p>
-                }
+                {comparison && (
+                    <>
+                        <Separator/>
+                        <DevicePlaylistSummary state={state}/>
+                    </>
+                )}
 
                 {state.phase === "cancelled" &&
                     <p role="status" className="text-sm text-muted-foreground">
@@ -139,18 +160,23 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                 )}
             </CardContent>
             {(busy || state.phase === "ready") &&
-                <CardFooter>
+                <CardFooter className="flex flex-wrap items-center gap-3">
                     {busy ?
                         <Button variant="outline" onClick={onCancel}>
                             <Square data-icon="inline-start"/>
-                            {syncing ? "Stop after this song" : "Stop comparison"}
+                            {syncing ? "Stop after current file" : "Stop comparison"}
                         </Button>
                         :
                         <Button onClick={onSync} disabled={!(comparison?.missing || state.playlists) || !canSync}>
                             <ArrowDownToLine data-icon="inline-start"/>
-                            Sync songs and selected playlists
+                            Start sync
                         </Button>
                     }
+                    {!busy && !canSync && (
+                        <p className="text-xs text-muted-foreground">
+                            Your destination or playlist selection changed. Review sync again before transferring.
+                        </p>
+                    )}
                 </CardFooter>
             }
         </Card>

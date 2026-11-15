@@ -5,8 +5,9 @@ import {compareDeviceMusic} from "./device-matching.ts";
 import {isAudioFile} from "../../shared/audio-files.ts";
 import {mkdtemp, rm, stat, writeFile} from "node:fs/promises";
 import type {LibraryRepository} from "../repositories/library.ts";
-import type {DeviceSyncPlan, DeviceTransport, DevicePlaylistPlan} from "../types/devices.ts";
+import {playlistFilenames} from "../../shared/device-playlists.ts";
 import type {DeviceFile, DeviceSyncState} from "../../shared/types/devices.ts";
+import type {DeviceSyncPlan, DeviceTransport, DevicePlaylistPlan} from "../types/devices.ts";
 
 export class DeviceSyncService {
     private readonly repo: Pick<LibraryRepository, "snapshot" | "playlist">;
@@ -64,6 +65,7 @@ export class DeviceSyncService {
             for (const track of missing) paths.set(track.id, posix.join(path, basename(track.path)));
 
             const tracksById = new Map(tracks.map((track) => [track.id, track]));
+            const filenames = playlistFilenames(snapshot.playlists);
             const playlistsById = new Map(snapshot.playlists.map((playlist) => [playlist.id, playlist]));
 
             const playlists = [...new Set(playlistIds)].map((id) => {
@@ -79,17 +81,17 @@ export class DeviceSyncService {
                     if (/[\r\n\\]/u.test(destination)) throw new Error("Unsupported playlist path: " + destination);
                     return { path: destination, size: track.size };
                 });
-                // IDs avoid collisions and keep the same destination when a playlist is renamed.
-                const destination = posix.join(path, "BTunes-" + id + ".m3u8");
+                const destination = posix.join(path, filenames.get(id)!);
                 const title = playlist.name.replace(/[\r\n]/gu, " ");
                 const entries = references.map((reference) => "./" + posix.relative(path, reference.path));
                 const content = ["#EXTM3U", "#PLAYLIST:" + title, ...entries, ""].join("\n");
-                return { path: destination, content, references };
+                return { name: playlist.name, path: destination, content, references };
             });
 
             this.plan = { storageId, path, tracks: missing, playlists, revision: snapshot.revision };
             this.state = {
                 playlists: playlists.length, playlistsCompleted: 0,
+                playlistFiles: playlists.map((playlist) => ({ name: playlist.name, filename: posix.basename(playlist.path) })),
                 folder: path, storageId, phase: "ready", completed: 0, total: missing.length, current: "", errors: [],
                 comparison: {
                     missing: missing.length, present, different,

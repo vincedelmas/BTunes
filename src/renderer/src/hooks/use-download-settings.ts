@@ -72,18 +72,6 @@ export function useDownloadSettings() {
         });
     }
 
-    function importSettings() {
-        return run(async () => {
-            const settings = await rpc("downloads.settings.import", undefined);
-            if (!settings) return;
-
-            setSettings(settings);
-            setSaved(settings);
-            setFolders(await rpc("downloads.bookmarks.folders", { path: settings.bookmarksFile }));
-            setNotice("Music Downloader settings imported.");
-        });
-    }
-
     function save() {
         return run(async () => {
             const parsed = downloaderSettingsSchema.safeParse(settings);
@@ -112,6 +100,6 @@ export function useDownloadSettings() {
     return {
         settings, folders, busy, error, notice,
         dirty: Boolean(settings && JSON.stringify(settings) !== JSON.stringify(saved)),
-        change, chooseBookmarks, importSettings, save, reset,
+        change, chooseBookmarks, save, reset,
     };
 }

@@ -4,8 +4,8 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {Separator} from "@/components/ui/separator";
 import {FilterSelect} from "@/components/filter-select";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Check, FileJson, FolderOpen, Save} from "lucide-react";
 import {useDownloadSettings} from "@/hooks/use-download-settings";
-import {Check, FileJson, FolderOpen, Import, Save} from "lucide-react";
 import {SettingsSection} from "@/components/settings/settings-section";
 import {downloaderSettingsSchema} from "../../../../shared/schemas/downloads";
 import {BookmarkPatternFields} from "@/components/downloads/bookmark-pattern-fields";
@@ -38,12 +38,6 @@ export function DownloadSettings({ musicFolders }: DownloadSettingsProps) {
             <SettingsSection
                 title="Bookmarks"
                 description="Select the bookmarks file and folder used for downloads."
-                action={
-                    <Button variant="ghost" disabled={busy} onClick={() => void form.importSettings()}>
-                        <Import data-icon="inline-start"/>
-                        Import Go app settings
-                    </Button>
-                }
             >
                 <FieldGroup>
                     <Field>

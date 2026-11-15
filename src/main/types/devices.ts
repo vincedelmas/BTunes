@@ -21,6 +21,7 @@ export interface DeviceSyncPlan {
 
 
 export interface DevicePlaylistPlan {
+    name: string;
     path: string;
     content: string;
     references: { path: string; size: number }[];

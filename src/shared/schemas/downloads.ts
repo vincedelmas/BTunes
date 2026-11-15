@@ -66,13 +66,6 @@ export const recordingResponseSchema = z.object({
 });
 
 
-export const goDownloaderSettingsSchema = z.object({
-    name_pattern: z.string().optional(), audio_quality: z.string().optional(),
-    bookmark_path: z.string(), bookmark_position: z.number().int().nonnegative(),
-    max_concurrent: z.number().optional(), fetch_metadata: z.boolean().optional(),
-});
-
-
 export const stagedDownloadSchema = z.object({
     stage: z.string(),
     item: z.object({

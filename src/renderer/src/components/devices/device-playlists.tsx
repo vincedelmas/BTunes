@@ -1,5 +1,6 @@
 import {Checkbox} from "@/components/ui/checkbox";
 import type {Playlist} from "../../../../shared/types/library";
+import {playlistFilenames} from "../../../../shared/device-playlists";
 import {Field, FieldGroup, FieldLabel, FieldSet, FieldLegend, FieldDescription} from "@/components/ui/field";
 
 
@@ -12,14 +13,16 @@ interface DevicePlaylistsProps {
 
 
 export function DevicePlaylists({ disabled, selected, playlists, onToggle }: DevicePlaylistsProps) {
+    const filenames = playlistFilenames(playlists);
+
     return (
         <FieldSet disabled={disabled}>
             <FieldLegend>
-                Playlists to sync
+                Playlist files · optional
             </FieldLegend>
             <FieldDescription>
-                Check the playlists to export, then compare again after changing your selection.
-                Missing songs from the whole PC library will still be copied. Unchecked playlists on the phone are kept.
+                Export only the playlists you check. These small files organize songs already on your phone;
+                they do not create extra audio copies. Leave everything unchecked to copy music only.
             </FieldDescription>
             <FieldGroup>
                 {playlists.map((playlist) => (
@@ -30,9 +33,14 @@ export function DevicePlaylists({ disabled, selected, playlists, onToggle }: Dev
                             checked={selected.includes(playlist.id)}
                             onCheckedChange={(checked) => onToggle(playlist.id, checked === true)}
                         />
-                        <FieldLabel htmlFor={"device-playlist-" + playlist.id}>
-                            {playlist.name}
-                        </FieldLabel>
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <FieldLabel htmlFor={"device-playlist-" + playlist.id}>
+                                {playlist.name}
+                            </FieldLabel>
+                            <FieldDescription className="break-words">
+                                {filenames.get(playlist.id)}
+                            </FieldDescription>
+                        </div>
                     </Field>
                 ))}
             </FieldGroup>

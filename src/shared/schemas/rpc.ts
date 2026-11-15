@@ -57,7 +57,6 @@ export const rpcSchemas = {
     "playlist.remove": playlistMutationSchema,
     "downloads.publish": publishDownloadSchema,
     "tags.save": z.object({ token: z.uuid() }),
-    "downloads.settings.import": z.undefined(),
     "downloads.bookmarks.choose": z.undefined(),
     "playlist.create": z.object(playlistDetails),
     "downloads.settings.save": downloaderSettingsSchema,

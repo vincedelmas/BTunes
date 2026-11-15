@@ -70,11 +70,3 @@ export async function scanBookmarks(settings: DownloaderSettings): Promise<Downl
     }
     return [...items.values()];
 }
-
-export function safeDownloadName(value: string) {
-    let name = value.split("").filter((character) => character.charCodeAt(0) >= 32).join("").replace(/[<>:"/\\|?*]/g, "_").trim();
-    const characters = Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(name), (part) => part.segment);
-    while (Buffer.byteLength(characters.join("")) > 200) characters.pop();
-    name = characters.join("").replace(/[. ]+$/, "");
-    return name || "Song";
-}

@@ -1,5 +1,4 @@
-import {join} from "node:path";
-import {app, dialog} from "electron";
+import {dialog} from "electron";
 import {readFile, stat} from "node:fs/promises";
 import {rpcSchemas} from "../../shared/schemas/rpc";
 import type {LibraryService} from "../services/library";
@@ -9,7 +8,6 @@ import type {DownloaderService} from "../services/downloads";
 import type {DownloadTools} from "../services/download-tools";
 import type {RpcInput, RpcRoutes} from "../../shared/types/rpc";
 import type {DownloadRepository} from "../repositories/downloads";
-import {downloaderSettingsSchema, goDownloaderSettingsSchema} from "../../shared/schemas/downloads";
 
 export function downloadRoutes(downloads: DownloaderService, downloadRepo: DownloadRepository, library: LibraryService, tools: DownloadTools, artwork: ArtworkService) {
     return {
@@ -42,26 +40,6 @@ export function downloadRoutes(downloads: DownloaderService, downloadRepo: Downl
                 const bookmarks = await readBookmarkFolders(input.bookmarksFile);
                 if (!bookmarks.nodes.has(input.folderId)) throw new Error("Choose a bookmark folder.");
                 return downloadRepo.saveSettings(input);
-            },
-        },
-        "downloads.settings.import": {
-            schema: rpcSchemas["downloads.settings.import"],
-            run: async () => {
-                const choice = await dialog.showOpenDialog({
-                    title: "Import Music Downloader settings",
-                    defaultPath: join(app.getPath("appData"), "music-downloader", "config.json"),
-                    properties: ["openFile"],
-                    filters: [{ name: "Settings", extensions: ["json"] }]
-                });
-                if (choice.canceled) return null;
-                const config = goDownloaderSettingsSchema.parse(JSON.parse(await readFile(choice.filePaths[0], "utf8")));
-                const bookmarks = await readBookmarkFolders(config.bookmark_path);
-                const folder = bookmarks.roots.bookmark_bar?.children?.[config.bookmark_position];
-                return downloadRepo.saveSettings(downloaderSettingsSchema.parse({
-                    bookmarksFile: config.bookmark_path, folderId: folder?.id ?? "",
-                    destination: downloadRepo.settings().destination || library.repo.watchedFolders()[0]?.path || "",
-                    namePattern: config.name_pattern, quality: config.audio_quality, concurrency: config.max_concurrent, fetchMetadata: config.fetch_metadata,
-                }));
             },
         },
         "downloads.bookmarks.choose": {

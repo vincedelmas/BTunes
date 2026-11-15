@@ -25,7 +25,6 @@ type RpcOutputs = {
     "downloads.tools": void;
     "downloads.settings.get": DownloaderSettings;
     "downloads.settings.save": DownloaderSettings;
-    "downloads.settings.import": DownloaderSettings | null;
     "downloads.bookmarks.choose": string | null;
     "downloads.bookmarks.folders": BookmarkFolder[];
     "artwork.local": ArtworkCandidate | null;

@@ -40,5 +40,6 @@ export interface DeviceSyncState {
     playlists?: number;
     playlistsCompleted?: number;
     comparison?: DeviceComparison;
+    playlistFiles?: { name: string; filename: string }[];
     phase: "idle" | "comparing" | "ready" | "syncing" | "complete" | "cancelled" | "error";
 }

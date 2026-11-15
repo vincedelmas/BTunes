@@ -754,16 +754,19 @@ app.on("browser-window-created", (_, win) => {
                 storage.click();
                 await waitFor(()=>[...document.querySelectorAll('button')].some(item=>item.textContent.trim()==='Music'));
                 button('Music').click();
-                await waitFor(()=>!button('Compare with PC').disabled);
-                button('Compare with PC').click();
-                await waitFor(()=>button('Sync songs and selected playlists') && !button('Sync songs and selected playlists').disabled);
+                await waitFor(()=>button('Review sync') && !button('Review sync').disabled);
+                button('Review sync').click();
+                await waitFor(()=>button('Start sync') && !button('Start sync').disabled);
+                if(!document.querySelector('.device-content').textContent.includes('Music files · always included')) throw new Error('Music copy scope is unclear');
+                if(!document.querySelector('[aria-label="Playlist export summary"]').textContent.includes('No playlists selected')) throw new Error('Music-only review should explicitly exclude playlists');
+                if(!document.querySelector('main').textContent.includes('Road trip.m3u8')) throw new Error('Playlist filename preview is missing');
                 const playlistCheckbox=document.getElementById('device-playlist-1');
                 if(!playlistCheckbox) throw new Error('Playlist selection is missing');
                 if(playlistCheckbox.getAttribute('aria-checked')==='true') throw new Error('Playlists must start unchecked');
                 playlistCheckbox.click();
-                await waitFor(()=>button('Sync songs and selected playlists').disabled);
+                await waitFor(()=>button('Start sync').disabled);
                 playlistCheckbox.click();
-                await waitFor(()=>!button('Sync songs and selected playlists').disabled);
+                await waitFor(()=>!button('Start sync').disabled);
                 if(!document.querySelector('.devices-page').textContent.includes('Missing on phone')) throw new Error('Phone comparison did not render');
                 const page=document.querySelector('.device-content');
                 if(page.scrollHeight<=page.clientHeight) throw new Error('Device content must scroll vertically');
@@ -771,7 +774,7 @@ app.on("browser-window-created", (_, win) => {
                     if(card.scrollHeight>card.clientHeight+1) throw new Error('Device card contents are clipped');
                 }
                 page.scrollTop=page.scrollHeight;
-                await waitFor(()=>visible(button('Sync songs and selected playlists'),page));
+                await waitFor(()=>visible(button('Start sync'),page));
                 if(!visible(document.querySelector('.devices-page .page-header'),document.querySelector('main'))) throw new Error('Device header scrolled out of view');
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {
