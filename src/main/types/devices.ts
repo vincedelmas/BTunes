@@ -7,12 +7,21 @@ export interface DeviceTransport {
     devices: () => Promise<MusicDevice[]>;
     mkdir: (storageId: string, path: string) => Promise<void>;
     files: (storageId: string, path: string) => Promise<DeviceFile[]>;
-    copy: (storageId: string, source: string, path: string) => Promise<void>;
     metadata: (storageId: string, path: string) => Promise<DeviceFile | undefined>;
+    copy: (storageId: string, source: string, path: string, overwrite?: boolean) => Promise<void>;
 }
 
 export interface DeviceSyncPlan {
     path: string;
     tracks: Track[];
+    revision: number;
     storageId: string;
+    playlists: DevicePlaylistPlan[];
+}
+
+
+export interface DevicePlaylistPlan {
+    path: string;
+    content: string;
+    references: { path: string; size: number }[];
 }

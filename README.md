@@ -36,7 +36,15 @@ Right-click songs or albums for playback, playlists, tag editing, and file actio
 
 For downloads, choose a Chrome or Brave bookmarks file and a destination folder in **Settings → Downloads**.
 For USB transfers, unlock your phone, enable **File Transfer**, and open **Devices** in BTunes.
-USB transfers copy missing songs and leave existing phone files alone.
+USB transfers copy missing songs from the PC library and preserve existing audio files.
+To export playlists, check them in **Devices**, compare, then sync. Selected playlists are written as
+UTF-8 M3U8 files in the chosen music folder, referencing existing songs without duplicating audio.
+Sync also works when no songs are missing. Recompare after editing a playlist or changing the selection.
+BTunes replaces its selected BTunes-<playlist ID>.m3u8 exports; unchecked or deleted playlists' exports remain on the phone.
+The playlist name is stored in the M3U8 header. Players that ignore this header may display the filename.
+Ambiguous or different song versions block the selected playlist export rather than linking the wrong recording.
+In Pulsar, rescan or use its playlist import/restore function if exports do not appear or refresh automatically.
+Recognition and refresh behavior must be verified on the target phone.
 
 Tag writing supports **MP3, FLAC, and M4A**. BTunes backs up originals before replacing them;
 there is no in-app undo or automatic backup cleanup yet.

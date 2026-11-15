@@ -210,6 +210,7 @@ export function App() {
                     ) : (
                         <DevicesPage
                             query={search}
+                            playlists={library.data.playlists}
                             visualizer={visualizer}
                             searchControl={searchControl}
                         />

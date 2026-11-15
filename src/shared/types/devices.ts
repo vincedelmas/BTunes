@@ -37,6 +37,8 @@ export interface DeviceSyncState {
     errors: string[];
     completed: number;
     storageId?: string;
+    playlists?: number;
+    playlistsCompleted?: number;
     comparison?: DeviceComparison;
     phase: "idle" | "comparing" | "ready" | "syncing" | "complete" | "cancelled" | "error";
 }

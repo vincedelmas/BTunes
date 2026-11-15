@@ -57,6 +57,7 @@ export function compareDeviceMusic(tracks: Track[], phoneFiles: DeviceFile[], ro
     }
 
     const missing: Track[] = [];
+    const paths = new Map<number, string>();
     let present = 0;
     let different = 0;
 
@@ -68,10 +69,21 @@ export function compareDeviceMusic(tracks: Track[], phoneFiles: DeviceFile[], ro
 
         // A flat destination cannot safely distinguish two PC files with the same name.
         if ((nameCounts.get(filenameKey(basename(track.path))) ?? 0) > 1) different++;
-        else if ([...strong].some((file) => file.size === track.size)) present++;
+        else if ([...strong].some((file) => file.size === track.size)) {
+            present++;
+            const candidates = [...strong].filter((file) => file.size === track.size);
+            if (candidates.length === 1) paths.set(track.id, candidates[0]!.path);
+        }
         else if (strong.size || weak.size) different++;
         else missing.push(track);
     }
 
-    return { missing, present, different, phoneOnly: phoneFiles.filter((file) => !matched.has(file)).length };
+    // A single device file must never stand in for two distinct library tracks.
+    const pathCounts = new Map<string, number>();
+    for (const path of paths.values()) pathCounts.set(path, (pathCounts.get(path) ?? 0) + 1);
+    for (const [id, path] of paths) {
+        if (pathCounts.get(path)! > 1) paths.delete(id);
+    }
+
+    return { paths, missing, present, different, phoneOnly: phoneFiles.filter((file) => !matched.has(file)).length };
 }

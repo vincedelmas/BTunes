@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {join, basename} from "node:path";
 import {setImmediate} from "node:timers/promises";
 import {MtpClient} from "../src/main/services/mtp.ts";
+import {rpcSchemas} from "../src/shared/schemas/rpc.ts";
 import type {DeviceFile} from "../src/shared/types/devices.ts";
 import type {DeviceTransport} from "../src/main/types/devices.ts";
 import {deviceFolderSchema} from "../src/shared/schemas/devices.ts";
@@ -71,8 +72,14 @@ void test("USB comparison copies only missing audio and preserves phone-only and
             missing: 1, present: 1, different: 1, phoneOnly: 1, bytes: 9,
             preview: [{ title: "Missing.mp3", artist: "Fixture" }],
         });
+        const initialPlaylist = repo.create("New songs");
+        repo.add(initialPlaylist, repo.snapshot().tracks.find((track) => track.title === "Missing.mp3")!.id);
+        sync.compare(storageId, "/Music", [initialPlaylist]);
+        await settle(sync);
         sync.sync();
         await settle(sync);
+        assert.equal(await readFile(join(phone, "Music", "BTunes-" + initialPlaylist + ".m3u8"), "utf8"),
+            "#EXTM3U\n#PLAYLIST:New songs\n./Missing.mp3\n");
         assert.equal(sync.status().phase, "complete");
         assert.equal(sync.status().completed, 1);
         assert.equal(await readFile(join(phone, "Music", "Missing.mp3"), "utf8"), "copy this");
@@ -81,6 +88,54 @@ void test("USB comparison copies only missing audio and preserves phone-only and
         sync.compare(storageId, "/Music");
         await settle(sync);
         assert.equal(sync.status().comparison?.missing, 0, "Second sync must not copy existing songs again");
+
+        const tracks = repo.snapshot().tracks;
+        const present = tracks.find((track) => track.title === "Present.mp3")!;
+        const missing = tracks.find((track) => track.title === "Missing.mp3")!;
+        const playlist = repo.create("Road trip é");
+        const unchecked = repo.create("Not selected");
+        repo.add(playlist, [missing.id, present.id]);
+        repo.add(unchecked, present.id);
+        sync.compare(storageId, "/Music", [playlist]);
+        await settle(sync);
+        assert.equal(sync.status().comparison?.missing, 0);
+        assert.equal(sync.status().playlists, 1);
+        repo.updatePlaylist(playlist, "Road trip é");
+        assert.throws(() => sync.sync(), /library changed/);
+        sync.compare(storageId, "/Music", [playlist]);
+        await settle(sync);
+        sync.sync();
+        await settle(sync);
+        const exported = join(phone, "Music", "BTunes-" + playlist + ".m3u8");
+        assert.equal(sync.status().phase, "complete");
+        assert.equal(sync.status().playlistsCompleted, 1);
+        assert.equal(await readFile(exported, "utf8"),
+            "#EXTM3U\n#PLAYLIST:Road trip é\n./Missing.mp3\n./Old/present.MP3\n");
+        await assert.rejects(stat(join(phone, "Music", "BTunes-" + unchecked + ".m3u8")), { code: "ENOENT" });
+
+        repo.removeFromPlaylist(playlist, missing.id);
+        repo.updatePlaylist(playlist, "Renamed");
+        sync.compare(storageId, "/Music", [playlist]);
+        await settle(sync);
+        sync.sync();
+        await settle(sync);
+        assert.equal(sync.status().phase, "complete");
+        const updated = "#EXTM3U\n#PLAYLIST:Renamed\n./Old/present.MP3\n";
+        assert.equal(await readFile(exported, "utf8"), updated);
+
+        const unresolved = repo.create("Different version");
+        repo.add(unresolved, tracks.find((track) => track.title === "Different.mp3")!.id);
+        sync.compare(storageId, "/Music", [unresolved]);
+        await settle(sync);
+        assert.equal(sync.status().phase, "error");
+        assert.match(sync.status().errors[0]!, /unresolved or ambiguous/);
+        assert.equal(await readFile(exported, "utf8"), updated);
+        assert.throws(() => sync.sync(), /Compare your library/);
+
+        sync.compare(storageId, "/Music", [999999]);
+        await settle(sync);
+        assert.equal(sync.status().phase, "error");
+        assert.match(sync.status().errors[0]!, /no longer exists/);
 
         await rm(join(phone, "Music", "Missing.mp3"));
         sync.compare(storageId, "/Music");
@@ -123,6 +178,10 @@ void test("MTP uses bulk D-Bus listings and passes literal, encoded paths to KDE
     const upload = calls.find((call) => call.command === "kioclient")!;
     assert.deepEqual(upload.args, ["--noninteractive", "copy", "file:///tmp/Song%20$(touch%20nope).mp3", "mtp:/My%20Phone/Internal%20storage/Music/Song%20%231.mp3"]);
     assert.ok(!upload.args.includes("--overwrite"));
+    await client.copy(storageId, "/tmp/playlist.m3u8", "/Music/BTunes-1.m3u8", true);
+    assert.ok(calls.filter((call) => call.command === "kioclient").at(-1)!.args.includes("--overwrite"));
+    assert.equal(rpcSchemas["devices.compare"].safeParse({ storageId, path: "/Music", playlistIds: [-1] }).success, false);
+    assert.equal(rpcSchemas["devices.compare"].safeParse({ storageId, path: "/Music", playlistIds: [1.5] }).success, false);
     assert.deepEqual(await client.files(storageId, "/"), [
         { name: "Albums", path: "/Albums", size: 0, directory: true },
         { name: "Song.mp3", path: "/Song.mp3", size: 128, directory: false },

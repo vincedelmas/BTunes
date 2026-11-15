@@ -156,7 +156,7 @@ void app.whenReady().then(async () => {
         },
         "devices.compare": {
             schema: rpcSchemas["devices.compare"],
-            run: (input: RpcInput<"devices.compare">) => devices.compare(input.storageId, input.path),
+            run: (input: RpcInput<"devices.compare">) => devices.compare(input.storageId, input.path, input.playlistIds),
         },
         "devices.status": { schema: rpcSchemas["devices.status"], run: () => devices.status() },
         "devices.sync": { schema: rpcSchemas["devices.sync"], run: () => devices.sync() },

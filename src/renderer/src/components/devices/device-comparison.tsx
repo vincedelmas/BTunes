@@ -18,7 +18,9 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
     const syncing = state.phase === "syncing";
     const busy = state.phase === "comparing" || state.phase === "syncing";
 
-    if (state.phase === "idle") return null;
+    if (state.phase === "idle") return (
+        null
+    );
 
     return (
         <Card className="min-w-0">
@@ -38,7 +40,7 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                     <div role="status" className="flex min-w-0 flex-col gap-2 text-sm">
                         <p>
                             {syncing
-                                ? "Copying " + state.completed + " of " + state.total + " songs"
+                                ? "Syncing · " + state.completed + " of " + state.total + " songs copied"
                                 : "Checking phone · " + state.completed + " songs found"
                             }
                         </p>
@@ -116,6 +118,14 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                     </p>
                 }
 
+                {Boolean(state.playlists) &&
+                    <p role="status" className="text-sm text-muted-foreground">
+                        Playlists exported: {state.playlistsCompleted ?? 0} / {state.playlists}.
+                        {" "}
+                        In Pulsar, rescan or import the M3U8 files from your music folder if needed.
+                    </p>
+                }
+
                 {state.phase === "cancelled" &&
                     <p role="status" className="text-sm text-muted-foreground">
                         Stopped. Compare again to continue.
@@ -136,9 +146,9 @@ export function DeviceComparison({ state, canSync, onSync, onCancel }: DeviceCom
                             {syncing ? "Stop after this song" : "Stop comparison"}
                         </Button>
                         :
-                        <Button onClick={onSync} disabled={!comparison?.missing || !canSync}>
+                        <Button onClick={onSync} disabled={!(comparison?.missing || state.playlists) || !canSync}>
                             <ArrowDownToLine data-icon="inline-start"/>
-                            Copy missing songs
+                            Sync songs and selected playlists
                         </Button>
                     }
                 </CardFooter>

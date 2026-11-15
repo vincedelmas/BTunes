@@ -88,13 +88,13 @@ export class MtpClient implements DeviceTransport {
         if (typeof result !== "number" || result <= 0) throw new Error("Could not create the music folder on the phone.");
     }
 
-    async copy(storageId: string, source: string, path: string) {
+    async copy(storageId: string, source: string, path: string, overwrite = false) {
         deviceFolderSchema.parse({ storageId, path });
-        // KDE handles the MTP upload and closes it before the command returns. No shell or overwrite flag.
+        // Only generated playlist updates opt into replacement; audio copies never overwrite.
         if (!this.roots.has(storageId)) await this.devices();
         const root = this.roots.get(storageId);
         if (!root) throw new Error("The selected phone is no longer connected.");
         const destination = root + "/" + path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
-        await this.run("kioclient", ["--noninteractive", "copy", pathToFileURL(source).href, destination], 15 * 60 * 1000);
+        await this.run("kioclient", ["--noninteractive", ...(overwrite ? ["--overwrite"] : []), "copy", pathToFileURL(source).href, destination], 15 * 60 * 1000);
     }
 }

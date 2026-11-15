@@ -5,6 +5,8 @@ import {useDevices} from "@/hooks/use-devices";
 import {PageHeader} from "@/components/page-header";
 import {EmptyState} from "@/components/empty-state";
 import {Alert, AlertDescription} from "@/components/ui/alert";
+import type {Playlist} from "../../../../shared/types/library";
+import {DevicePlaylists} from "@/components/devices/device-playlists";
 import {DeviceComparison} from "@/components/devices/device-comparison";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {ArrowLeft, ChevronRight, Folder, FolderPlus, RefreshCw, Smartphone, Usb} from "lucide-react";
@@ -13,11 +15,12 @@ import {ArrowLeft, ChevronRight, Folder, FolderPlus, RefreshCw, Smartphone, Usb}
 interface DevicesPageProps {
     query: string;
     visualizer: ReactNode;
+    playlists: Playlist[];
     searchControl: ReactNode;
 }
 
 
-export function DevicesPage({ visualizer, searchControl, query }: DevicesPageProps) {
+export function DevicesPage({ visualizer, searchControl, query, playlists }: DevicesPageProps) {
     const phone = useDevices();
     const search = query.trim().toLocaleLowerCase();
 
@@ -177,6 +180,12 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                                 </p>
                             }
 
+                            <DevicePlaylists
+                                playlists={playlists}
+                                selected={phone.playlistIds}
+                                onToggle={phone.togglePlaylist}
+                                disabled={phone.busy || phone.opening}
+                            />
                             <div className="flex flex-wrap gap-3">
                                 <Button
                                     onClick={() => void phone.compare()}
@@ -203,7 +212,7 @@ export function DevicesPage({ visualizer, searchControl, query }: DevicesPagePro
                     state={phone.state}
                     onSync={() => void phone.sync()}
                     onCancel={() => void phone.cancel()}
-                    canSync={phone.state.storageId === phone.storageId && phone.state.folder === phone.path}
+                    canSync={phone.selectionCompared && phone.state.storageId === phone.storageId && phone.state.folder === phone.path}
                 />
             </div>
         </div>

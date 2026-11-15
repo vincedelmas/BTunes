@@ -6,6 +6,8 @@ import type {DeviceFile, DeviceSyncState, MusicDevice} from "../../../shared/typ
 export function useDevices() {
     const [devices, setDevices] = useState<MusicDevice[]>([]);
     const [storageId, setStorageId] = useState("");
+    const [playlistIds, setPlaylistIds] = useState<number[]>([]);
+    const [comparedPlaylists, setComparedPlaylists] = useState("");
     const [path, setPath] = useState("/");
     const [files, setFiles] = useState<DeviceFile[]>([]);
     const [loading, setLoading] = useState(false);
@@ -104,8 +106,18 @@ export function useDevices() {
         }
     }
 
+    function togglePlaylist(id: number, checked: boolean) {
+        setPlaylistIds((current) => {
+            if (!checked) return current.filter((item) => item !== id);
+            if (current.includes(id)) return current;
+
+            return [...current, id];
+        });
+    }
+
     function compare() {
-        return updateSync(() => rpc("devices.compare", { storageId, path }));
+        setComparedPlaylists(JSON.stringify(playlistIds));
+        return updateSync(() => rpc("devices.compare", { storageId, path, playlistIds }));
     }
 
     function sync() {
@@ -129,5 +141,6 @@ export function useDevices() {
     return {
         devices, storageId, path, files, loading, opening, error: error || discoveryError, state, busy,
         refresh, browse, compare, sync, createMusicFolder, cancel,
+        playlistIds, togglePlaylist, selectionCompared: comparedPlaylists === JSON.stringify(playlistIds),
     };
 }

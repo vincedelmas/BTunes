@@ -49,7 +49,7 @@ export const rpcSchemas = {
     "devices.mkdir": deviceFolderSchema,
     "devices.browse": deviceFolderSchema,
     "downloads.start": downloadIdsSchema,
-    "devices.compare": deviceFolderSchema,
+    "devices.compare": deviceFolderSchema.extend({ playlistIds: z.array(trackId).max(1000).default([]) }),
     "artwork.search": artworkSearchSchema,
     "playlist.add": playlistMutationSchema,
     "downloads.settings.get": z.undefined(),

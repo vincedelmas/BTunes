@@ -737,7 +737,14 @@ app.on("browser-window-created", (_, win) => {
                 button('Music').click();
                 await waitFor(()=>!button('Compare with PC').disabled);
                 button('Compare with PC').click();
-                await waitFor(()=>button('Copy missing songs') && !button('Copy missing songs').disabled);
+                await waitFor(()=>button('Sync songs and selected playlists') && !button('Sync songs and selected playlists').disabled);
+                const playlistCheckbox=document.getElementById('device-playlist-1');
+                if(!playlistCheckbox) throw new Error('Playlist selection is missing');
+                if(playlistCheckbox.getAttribute('aria-checked')==='true') throw new Error('Playlists must start unchecked');
+                playlistCheckbox.click();
+                await waitFor(()=>button('Sync songs and selected playlists').disabled);
+                playlistCheckbox.click();
+                await waitFor(()=>!button('Sync songs and selected playlists').disabled);
                 if(!document.querySelector('.devices-page').textContent.includes('Missing on phone')) throw new Error('Phone comparison did not render');
                 const page=document.querySelector('.device-content');
                 if(page.scrollHeight<=page.clientHeight) throw new Error('Device content must scroll vertically');
@@ -745,7 +752,7 @@ app.on("browser-window-created", (_, win) => {
                     if(card.scrollHeight>card.clientHeight+1) throw new Error('Device card contents are clipped');
                 }
                 page.scrollTop=page.scrollHeight;
-                await waitFor(()=>visible(button('Copy missing songs'),page));
+                await waitFor(()=>visible(button('Sync songs and selected playlists'),page));
                 if(!visible(document.querySelector('.devices-page .page-header'),document.querySelector('main'))) throw new Error('Device header scrolled out of view');
             })()`, true);
             await win.webContents.executeJavaScript(`(async () => {
