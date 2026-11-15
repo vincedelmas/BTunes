@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/vincedelmas/BTunes/compare/v1.3.0...v1.3.1) (2026-11-15)
+
+
+### Bug Fixes
+
+* **ui:** prevent confirmation messages from shifting layout ([7dfaf69](https://github.com/vincedelmas/BTunes/commit/7dfaf69de6017e5f0c6b3c3d7cdf1e26f1c2b987))
+
 ## [1.3.0](https://github.com/vincedelmas/BTunes/compare/v1.2.1...v1.3.0) (2026-11-15)
 
 
