@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/vincedelmas/BTunes/compare/v1.3.2...v1.4.0) (2026-11-18)
+
+
+### Features
+
+* **downloads:** allow deleting songs awaiting review ([dfd625f](https://github.com/vincedelmas/BTunes/commit/dfd625fd0eca852977473c37ca2db23984c0af39))
+
 ## [1.3.2](https://github.com/vincedelmas/BTunes/compare/v1.3.1...v1.3.2) (2026-11-15)
 
 
