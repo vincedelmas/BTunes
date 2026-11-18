@@ -28,6 +28,7 @@ export class DownloaderService {
     private controller?: AbortController;
     private batch?: Promise<void>;
     private publishing = new Set<Promise<void>>();
+    private discarding = new Map<string, Promise<void>>();
     private readonly repo: DownloadRepository;
     private readonly library: LibraryService;
     private readonly artwork: Pick<ArtworkService, "search" | "get">;
@@ -260,10 +261,47 @@ export class DownloaderService {
         }
     }
 
+    discard(id: string) {
+        const item = this.items.get(id);
+        const stage = this.stages.get(id);
+        if (!item || item.status !== "review" || !stage || this.discarding.has(id)) {
+            throw new Error("Only downloaded songs awaiting review can be deleted.");
+        }
+
+        this.repo.removeReview(id);
+        const task = (async () => {
+            try {
+                await rm(stage, { recursive: true, force: true });
+                this.stages.delete(id);
+                this.items.set(id, {
+                    id: item.id,
+                    url: item.url,
+                    name: item.name,
+                    title: item.title,
+                    artist: item.artist,
+                    tags: { artist: item.artist, albumArtist: item.artist, title: item.title, album: "Unknown album", genre: "Uncategorized", year: 0 },
+                    status: "available",
+                    progress: 0,
+                    message: "Download deleted. You can download this song again.",
+                });
+            }
+            catch (error) {
+                this.repo.saveReview(item, stage);
+                throw error;
+            }
+            finally {
+                this.discarding.delete(id);
+                this.changed();
+            }
+        })();
+        this.discarding.set(id, task);
+        return task;
+    }
+
     publish(id: string, patch: TagPatch, artworkId?: string) {
         const item = this.items.get(id);
         const stage = this.stages.get(id);
-        if (!item || item.status !== "review" || !stage) throw new Error("Download the song before saving it to your library.");
+        if (!item || item.status !== "review" || !stage || this.discarding.has(id)) throw new Error("Download the song before saving it to your library.");
         const settings = this.settings();
         const tags = tagPatchFieldsSchema.parse({ ...item.tags, ...patch });
         if (!tags.title || !tags.artist || !tags.album || !tags.genre) throw new Error("Enter a title, artist, album, and genre before saving.");
@@ -339,6 +377,7 @@ export class DownloaderService {
         await this.tools.close();
         await this.batch;
         await Promise.allSettled(this.publishing);
+        await Promise.allSettled(this.discarding.values());
         for (const [id, stage] of this.stages) {
             const item = this.items.get(id);
             if (item?.status === "review") this.repo.saveReview(item, stage);

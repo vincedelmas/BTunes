@@ -6,6 +6,7 @@ import type {DownloadSnapshot} from "../../../shared/types/downloads";
 export function useDownloads() {
     const [snapshot, setSnapshot] = useState<DownloadSnapshot>();
     const [error, setError] = useState("");
+    const [deleting, setDeleting] = useState<string[]>([]);
     const revision = useRef<number | undefined>(undefined);
 
     useEffect(() => {
@@ -50,8 +51,25 @@ export function useDownloads() {
         }
     }
 
+    async function discard(id: string) {
+        setDeleting((previous) => [...previous, id]);
+        try {
+            await run(async () => {
+                await rpc("downloads.discard", { id });
+                const data = await rpc("downloads.get", {});
+                if (data) {
+                    revision.current = data.revision;
+                    setSnapshot(data);
+                }
+            });
+        }
+        finally {
+            setDeleting((previous) => previous.filter((value) => value !== id));
+        }
+    }
+
     return {
-        snapshot, error,
+        snapshot, error, deleting, discard,
         refresh: () => run(() => rpc("downloads.enter", undefined)),
         updateTools: () => run(() => rpc("downloads.tools", undefined)),
         start: (ids: string[]) => run(() => rpc("downloads.start", { ids })),

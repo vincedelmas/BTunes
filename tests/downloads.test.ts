@@ -96,6 +96,41 @@ void test("downloads remain staged until tags are reviewed, then publish once an
         assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "review");
         assert.equal(library.repo.snapshot().tracks.length, 0, "Unreviewed audio must stay out of the library");
         assert.equal(runs, 1, "Duplicate IDs must not download twice");
+        const stage = repo.reviews()[0].stage;
+        await writeFile(join(stage, "suggested-cover.jpg"), "staged cover");
+        await downloader.close();
+        downloader = new DownloaderService(repo, library, new ArtworkService(), tools, join(root, "staging"), run);
+        await downloader.enter();
+        assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "review");
+
+        const removeReview = repo.removeReview.bind(repo);
+        repo.removeReview = () => {
+            throw new Error("Fixture persistence failure");
+        };
+        assert.throws(() => downloader.discard(id), /Fixture persistence failure/);
+        assert.ok((await readFile(join(stage, "audio.mp3"))).length > 0);
+        assert.equal(repo.reviews().length, 1, "Failed deletion must preserve the saved review");
+        repo.removeReview = removeReview;
+
+        const deletion = downloader.discard(id);
+        assert.throws(() => downloader.publish(id, {}), /Download the song/);
+        assert.throws(() => downloader.discard(id), /awaiting review/);
+        await deletion;
+        await assert.rejects(readFile(join(stage, "audio.mp3")), { code: "ENOENT" });
+        await assert.rejects(readFile(join(stage, "suggested-cover.jpg")), { code: "ENOENT" });
+        assert.equal(repo.reviews().length, 0);
+        assert.equal(repo.history().size, 0);
+        assert.equal(library.repo.snapshot().tracks.length, 0);
+        assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "available");
+        assert.throws(() => downloader.discard("missing-id"), /awaiting review/);
+
+        await downloader.close();
+        downloader = new DownloaderService(repo, library, new ArtworkService(), tools, join(root, "staging"), run);
+        await downloader.enter();
+        assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "available");
+        downloader.start([id]);
+        await waitFor(() => !downloader.snapshot()!.busy);
+        assert.equal(runs, 2, "Deleted downloads must be downloadable again");
         await downloader.publish(id, { title: "Thunderstruck", artist: "AC/DC", albumArtist: "AC/DC", album: "The Razors Edge", genre: "Rock", year: 1990 });
         assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "done");
         const track = library.repo.snapshot().tracks[0];
@@ -106,6 +141,8 @@ void test("downloads remain staged until tags are reviewed, then publish once an
         await downloader.scan();
         assert.equal(downloader.snapshot()!.items.find(item => item.id === id)?.status, "done");
         assert.throws(() => downloader.start([id]), /available/);
+        assert.throws(() => downloader.discard(id), /awaiting review/);
+        assert.ok((await readFile(track.path)).length > 0, "Deleting a completed download must not remove library audio");
         assert.throws(() => downloader.publish(id, {}), /Download the song/);
         await writeFile(bookmarks, JSON.stringify({
             roots: {

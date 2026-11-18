@@ -60,6 +60,7 @@ export const rpcSchemas = {
     "downloads.bookmarks.choose": z.undefined(),
     "playlist.create": z.object(playlistDetails),
     "downloads.settings.save": downloaderSettingsSchema,
+    "downloads.discard": publishDownloadSchema.pick({ id: true }),
     "playlist.update": z.object({ id: trackId, ...playlistDetails }),
     "library.get": z.object({ revision: z.number().int().nonnegative() }).optional(),
     "downloads.bookmarks.folders": z.object({ path: z.string().min(1).max(4096) }),

@@ -156,8 +156,10 @@ export function DownloadsPage({ visualizer, searchControl, query, genres, onSett
                         <DownloadRow
                             item={item}
                             busy={Boolean(snapshot?.busy)}
-                            selected={visibleSelection.has(item.id)}
                             onReview={() => setReviewing(item.id)}
+                            selected={visibleSelection.has(item.id)}
+                            deleting={downloads.deleting.includes(item.id)}
+                            onDelete={() => void downloads.discard(item.id)}
                             onSelect={(ev) => selection.select(item.id, ev)}
                             onDownload={() => void downloads.start([item.id])}
                         />

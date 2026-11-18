@@ -176,6 +176,16 @@ app.on('browser-window-created', (_, win) => {
             win.setSize(1000, 700);
             await win.webContents.executeJavaScript(`(async()=>{
     const button=(label)=>[...document.querySelectorAll('button')].find(item=>item.textContent.trim()===label);
+    const deleteButton=document.querySelector('[aria-label="Delete download of Fixture Song"]');
+    if(!deleteButton)throw new Error('Ready download has no delete action');
+    deleteButton.click();
+    await window.downloaderWaitFor(()=>!button('Review & save'));
+    await window.downloaderWaitFor(()=>!button('Download available').disabled);
+    if(document.querySelector('[aria-label="Delete download of Fixture Song"]'))throw new Error('Undownloaded song still has a delete action');
+    const library=await window.btunes.rpc('library.get',undefined);
+    if(library.tracks.length)throw new Error('Deleting a download added a library track');
+    button('Download available').click();
+    await window.downloaderWaitFor(()=>button('Review & save'));
     button('Review & save').click();
     await window.downloaderWaitFor(()=>document.getElementById('tag-album'));
     if(document.getElementById('tag-album').value!=='Fixture Album')throw new Error('Online metadata was not applied');

@@ -20,6 +20,10 @@ export function downloadRoutes(downloads: DownloaderService, downloadRepo: Downl
         "downloads.get": { schema: rpcSchemas["downloads.get"], run: (input: RpcInput<"downloads.get">) => downloads.snapshot(input.revision) },
         "downloads.start": { schema: rpcSchemas["downloads.start"], run: (input: RpcInput<"downloads.start">) => downloads.start(input.ids) },
         "downloads.cancel": { schema: rpcSchemas["downloads.cancel"], run: () => downloads.cancel() },
+        "downloads.discard": {
+            schema: rpcSchemas["downloads.discard"],
+            run: (input: RpcInput<"downloads.discard">) => downloads.discard(input.id),
+        },
         "downloads.publish": {
             schema: rpcSchemas["downloads.publish"],
             run: (input: RpcInput<"downloads.publish">) => downloads.publish(input.id, input.patch, input.artworkId),

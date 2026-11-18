@@ -5,20 +5,22 @@ import {Button} from "@/components/ui/button";
 import type {SelectionModifiers} from "@/types/selection";
 import {canDownload, downloadStatusLabels} from "@/lib/downloads";
 import type {DownloadItem} from "../../../../shared/types/downloads";
-import {ArrowDownToLine, Check, LoaderCircle, TriangleAlert} from "lucide-react";
+import {ArrowDownToLine, Check, Trash2, LoaderCircle, TriangleAlert} from "lucide-react";
 
 
 interface DownloadRowProps {
     busy: boolean;
     selected: boolean;
+    deleting: boolean;
     item: DownloadItem;
     onReview: () => void;
+    onDelete: () => void;
     onDownload: () => void;
     onSelect: (ev: SelectionModifiers) => void;
 }
 
 
-export function DownloadRow({ item, selected, busy, onSelect, onDownload, onReview }: DownloadRowProps) {
+export function DownloadRow({ item, selected, busy, onSelect, onDownload, onReview, deleting, onDelete }: DownloadRowProps) {
     const failed = item.status === "error" || item.status === "invalid";
     const working = item.status === "downloading" || item.status === "enriching" || item.status === "publishing";
 
@@ -86,12 +88,25 @@ export function DownloadRow({ item, selected, busy, onSelect, onDownload, onRevi
                     </p>
                 }
             </div>
-            <div className="flex min-w-36 shrink-0 justify-end">
+            <div className="flex min-w-36 shrink-0 justify-end gap-2">
                 {item.status === "review" &&
-                    <Button size="sm" variant="outline" onClick={onReview}>
-                        <Check data-icon="inline-start"/>
-                        Review & save
-                    </Button>
+                    <>
+                        <Button size="sm" variant="outline" onClick={onReview} disabled={deleting}>
+                            <Check data-icon="inline-start"/>
+                            Review & save
+                        </Button>
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={onDelete}
+                            disabled={deleting}
+                            title="Delete download"
+                            aria-label={"Delete download of " + item.title}
+                            className="text-destructive hover:text-destructive"
+                        >
+                            <Trash2/>
+                        </Button>
+                    </>
                 }
                 {canDownload(item) && (
                     <Button

@@ -21,6 +21,7 @@ type RpcOutputs = {
     "downloads.get": DownloadSnapshot | null;
     "downloads.start": void;
     "downloads.cancel": void;
+    "downloads.discard": void;
     "downloads.publish": void;
     "downloads.tools": void;
     "downloads.settings.get": DownloaderSettings;
