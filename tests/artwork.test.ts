@@ -3,8 +3,8 @@ import {join} from "node:path";
 import {tmpdir} from "node:os";
 import assert from "node:assert/strict";
 import {mkdtemp, rm, writeFile} from "node:fs/promises";
+import {coverSearchQuery} from "../src/shared/artwork.ts";
 import {ArtworkService} from "../src/main/services/artwork.ts";
-import {coverSearchQuery} from "../src/renderer/src/lib/artwork.ts";
 
 function archiveRequest(imageUrl: string, imageResponse: () => Response) {
     return (async (input, options) => {

@@ -58,6 +58,7 @@ db.prepare('INSERT INTO app_settings(key,value) VALUES (?,?)').run('downloader',
     fetchMetadata: true
 }));
 db.close();
+const coverQueries = [];
 global.fetch = async (input) => {
     const url = new URL(input instanceof Request ? input.url : input.toString());
     if (url.hostname === 'api.github.com') return Response.json({tag_name: 'fixture', assets: []});
@@ -69,13 +70,16 @@ global.fetch = async (input) => {
             releases: [{title: 'Fixture Album', date: '2001-01-01', status: 'Official'}]
         }]
     });
-    if (url.hostname === 'itunes.apple.com') return Response.json({
-        results: [{
-            collectionName: 'Fixture Album',
-            artistName: 'Fixture Artist',
-            artworkUrl100: 'https://is1-ssl.mzstatic.com/fixture/100x100bb.jpg'
-        }]
-    });
+    if (url.hostname === 'itunes.apple.com') {
+        coverQueries.push(url.searchParams.get('term'));
+        return Response.json({
+            results: [{
+                collectionName: 'Fixture Album',
+                artistName: 'Fixture Artist',
+                artworkUrl100: 'https://is1-ssl.mzstatic.com/fixture/100x100bb.jpg'
+            }]
+        });
+    }
     if (url.hostname.endsWith('.mzstatic.com')) return new Response(new Uint8Array(readFileSync(image)), {headers: {'Content-Type': 'image/jpeg'}});
     throw new Error('Unexpected network request: ' + url);
 };
@@ -190,10 +194,21 @@ app.on('browser-window-created', (_, win) => {
     await window.downloaderWaitFor(()=>document.getElementById('tag-album'));
     if(document.getElementById('tag-album').value!=='Fixture Album')throw new Error('Online metadata was not applied');
     if(!document.querySelector('[aria-label="Album artwork"] img'))throw new Error('Automatic artwork was not selected');
+    button('Change cover').click();
+    const suggestions=()=>document.querySelector('[aria-label="Cover suggestions"]');
+    const image=()=>suggestions()?.querySelector('img');
+    await window.downloaderWaitFor(()=>image());
+    if(!image().src.startsWith('btunes://artwork/'))throw new Error('Cover picker received the download staging URL');
+    button('Search again').click();
+    await window.downloaderWaitFor(()=>image() && !button('Search again').disabled);
+    button('Cancel').click();
     const album=document.getElementById('tag-album');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(album,'Reviewed Album');
     album.dispatchEvent(new Event('input',{bubbles:true}));
    })()`);
+            if (JSON.stringify(coverQueries) !== JSON.stringify(['Fixture Album Fixture Artist'])) {
+                throw new Error('Download review did not reuse the automatic cover search');
+            }
             if (readdirSync(music).length) throw new Error('Staged files leaked into the music folder');
             await win.webContents.executeJavaScript("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,150))))");
             writeFileSync(join(artifacts, 'download-review.png'), (await win.webContents.capturePage()).toPNG());

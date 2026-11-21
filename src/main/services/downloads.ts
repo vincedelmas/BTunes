@@ -11,6 +11,7 @@ import {getErrorMessage} from "../../shared/errors.ts";
 import {safeFilename} from "../../shared/filenames.ts";
 import {DownloadMetadata} from "./download-metadata.ts";
 import type {TagPatch} from "../../shared/types/tags.ts";
+import {coverSearchQuery} from "../../shared/artwork.ts";
 import {basename, dirname, join, resolve} from "node:path";
 import {tagPatchFieldsSchema} from "../../shared/schemas/tags.ts";
 import type {DownloadRepository} from "../repositories/downloads.ts";
@@ -238,13 +239,13 @@ export class DownloaderService {
                     warnings.push(getErrorMessage(error));
                 }
                 try {
-                    const query = [item.tags.albumArtist || item.tags.artist, item.tags.album === "Unknown album" ? item.tags.title : item.tags.album].filter(Boolean).join(" ");
-                    item.artwork = (await this.artwork.search(query))[0];
-                    if (!item.artwork) warnings.push("No artwork found. Choose a cover before saving.");
+                    const query = coverSearchQuery(item.title, item.tags);
+                    const [candidate] = await this.artwork.search(query);
+                    if (!candidate) warnings.push("No artwork found. Choose a cover before saving.");
                     else {
-                        const image = await this.artwork.get(item.artwork.id);
+                        const image = await this.artwork.get(candidate.id);
                         await writeFile(join(stage, "suggested-cover.jpg"), image.data);
-                        item.artwork.thumbnail = "btunes://download-cover/" + item.id;
+                        item.artwork = { ...candidate, thumbnail: "btunes://download-cover/" + item.id };
                     }
                 }
                 catch (error) {
