@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.3](https://github.com/vincedelmas/BTunes/compare/v1.4.2...v1.4.3) (2026-11-21)
+
+
+### Bug Fixes
+
+* reuse cover search results for bookmark downloads ([d990dfa](https://github.com/vincedelmas/BTunes/commit/d990dfa62e88aef58dde35ffbc9f2e758c6919d7))
+* show readable RPC errors ([8176a93](https://github.com/vincedelmas/BTunes/commit/8176a934b8d69fba5f5e8754a6a9804e2dd51e4b))
+
 ## [1.4.2](https://github.com/vincedelmas/BTunes/compare/v1.4.1...v1.4.2) (2026-11-21)
 
 
