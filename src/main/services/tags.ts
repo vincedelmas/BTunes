@@ -1,6 +1,7 @@
 import {promisify} from "node:util";
 import {randomUUID} from "node:crypto";
 import {fileHash} from "./file-hash.ts";
+import type {BigIntStats} from "node:fs";
 import {parseFile} from "music-metadata";
 import {execFile} from "node:child_process";
 import type {LibraryService} from "./library";
@@ -28,14 +29,20 @@ const formats: Record<string, string> = {
 };
 
 
-async function fingerprint(path: string) {
-    const info = await lstat(path);
+async function sourceInfo(path: string) {
+    const info = await lstat(path, { bigint: true });
 
-    if (!info.isFile() || info.nlink > 1) {
+    if (!info.isFile() || info.nlink !== 1n) {
         throw new Error("Tag editing requires a regular file without hard links.");
     }
 
-    return fileHash(path);
+    return info;
+}
+
+
+function sameSource(first: BigIntStats, second: BigIntStats) {
+    return first.dev === second.dev && first.ino === second.ino && first.size === second.size
+        && first.mtimeNs === second.mtimeNs && first.ctimeNs === second.ctimeNs;
 }
 
 
@@ -99,12 +106,8 @@ export class TagService {
                 throw new Error("Tag writing currently supports MP3, FLAC, and M4A files.");
             }
 
-            const sourceFingerprint = await fingerprint(track.path);
+            const source = await sourceInfo(track.path);
             const currentValues = readTags(await parseFile(track.path));
-
-            if ((await fingerprint(track.path)) !== sourceFingerprint) {
-                throw new Error("A file changed while preparing the preview. Try again.");
-            }
 
             const changes = tagFields
                 .filter((field) => patch[field] !== undefined && patch[field] !== currentValues[field])
@@ -114,9 +117,15 @@ export class TagService {
                     before: currentValues[field],
                 }));
 
-            if (!changes.length && !artwork) continue;
+            const changed = changes.length > 0 || Boolean(artwork);
+            const fingerprint = changed ? await fileHash(track.path) : undefined;
+            if (!sameSource(await sourceInfo(track.path), source)) {
+                throw new Error("A file changed while preparing the preview. Try again.");
+            }
 
-            files.push({ track, fingerprint: sourceFingerprint, patch, artwork });
+            if (!fingerprint) continue;
+
+            files.push({ track, source, fingerprint, patch, artwork });
             preview.files.push({ id, title: track.title, path: track.path, changes });
         }
 
@@ -172,7 +181,7 @@ export class TagService {
             // Prepare and verify output before replacing any source file
             for (const file of plan.files) {
                 const { track, patch } = file;
-                if ((await fingerprint(track.path)) !== file.fingerprint) {
+                if (!sameSource(await sourceInfo(track.path), file.source)) {
                     throw new Error("A file changed since the preview. Preview your changes again.");
                 }
 
@@ -183,7 +192,11 @@ export class TagService {
                 prepared.push(item);
 
                 await copyFile(track.path, backup);
-                const original = await parseFile(track.path);
+                if (await fileHash(backup) !== file.fingerprint) {
+                    throw new Error("A file changed since the preview. Preview your changes again.");
+                }
+
+                const original = await parseFile(backup);
 
                 const imageArguments = file.artwork
                     ? ["-i", imagePath, "-map", "0:a", "-map", "1:v", "-disposition:v:0", "attached_pic"]
@@ -192,7 +205,7 @@ export class TagService {
                 const metadataArguments = tagArguments(patch);
 
                 await run(this.ffmpeg(), [
-                    "-nostdin", "-v", "error", "-n", "-i", track.path, ...imageArguments,
+                    "-nostdin", "-v", "error", "-n", "-i", backup, ...imageArguments,
                     "-map_metadata", "0", "-c", "copy", ...metadataArguments, "-f",
                     formats[extname(track.path).toLowerCase()], temporary,
                 ], { timeout: 120000, maxBuffer: 1024 * 1024 });
@@ -211,12 +224,11 @@ export class TagService {
                     throw new Error("Artwork verification failed. Original file not replaced.");
                 }
 
-                const info = await lstat(track.path);
-                await chmod(temporary, info.mode);
+                await chmod(temporary, Number(file.source.mode));
             }
 
             for (const item of prepared) {
-                if ((await fingerprint(item.file.track.path)) !== item.file.fingerprint) {
+                if (!sameSource(await sourceInfo(item.file.track.path), item.file.source)) {
                     throw new Error("A file changed during the save. Preview your changes again.");
                 }
 

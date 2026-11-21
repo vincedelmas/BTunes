@@ -4,12 +4,17 @@ import {drizzle} from "drizzle-orm/node-sqlite";
 import {genreKey} from "../../shared/genres.ts";
 import {and, eq, inArray, sql} from "drizzle-orm";
 import {migrate} from "drizzle-orm/node-sqlite/migrator";
-import type {IndexedTrack, Snapshot} from "../../shared/types/library";
 import {folders, playlists, playlistTracks, tracks} from "../database/schema.ts";
+import type {IndexedFile, IndexedTrack, Snapshot, TrackActivity, TrackActivityUpdate} from "../../shared/types/library";
+
+
+const activityHistoryLimit = 256;
+const trackActivityColumns = { id: tracks.id, plays: tracks.plays, favorite: tracks.favorite, lastPlayed: tracks.lastPlayed };
 
 
 export class LibraryRepository {
     private currentRevision = 0;
+    private readonly activityHistory = new Map<number, TrackActivity>();
     private readonly changed: () => void;
     readonly db: DatabaseSync;
     private readonly queries: ReturnType<typeof drizzle>;
@@ -33,9 +38,36 @@ export class LibraryRepository {
         return this.currentRevision;
     }
 
-    private bumpRevision() {
+    private bumpRevision(activity?: TrackActivity) {
         this.currentRevision++;
+        if (activity) {
+            this.activityHistory.set(this.revision, activity);
+            if (this.activityHistory.size > activityHistoryLimit) {
+                this.activityHistory.delete(this.activityHistory.keys().next().value!);
+            }
+        }
+        else {
+            this.activityHistory.clear();
+        }
+
         this.changed();
+    }
+
+    changesSince(revision: number): Snapshot | TrackActivityUpdate | null {
+        if (revision === this.revision) return null;
+
+        // The history holds consecutive activity revisions since the last full change or eviction.
+        const oldestBaseRevision = this.revision - this.activityHistory.size;
+        if (revision < oldestBaseRevision || revision > this.revision) {
+            return this.snapshot();
+        }
+
+        const latest = new Map<number, TrackActivity>();
+        for (const [changedAt, activity] of this.activityHistory) {
+            if (changedAt > revision) latest.set(activity.id, activity);
+        }
+
+        return { revision: this.revision, activity: [...latest.values()] };
     }
 
     genres() {
@@ -98,46 +130,62 @@ export class LibraryRepository {
             .get();
     }
 
-    upsert(track: IndexedTrack, scanning = false) {
-        // Scan results are rebuildable. Keep FULL durability for user edits and playlists.
-        if (scanning) this.db.exec("PRAGMA synchronous = NORMAL;");
-        try {
-            this.queries
-                .insert(tracks)
-                .values(track)
-                .onConflictDoUpdate({
-                    set: track,
-                    target: tracks.path,
-                }).run();
-        }
-        finally {
-            if (scanning) this.db.exec("PRAGMA synchronous = FULL;");
-        }
-
-        this.bumpRevision();
-    }
-
-    favorite(id: number) {
-        this.queries
-            .update(tracks)
-            .set({ favorite: sql`1 - ${tracks.favorite}` })
-            .where(eq(tracks.id, id))
+    upsert(track: IndexedTrack) {
+        this.queries.insert(tracks)
+            .values(track)
+            .onConflictDoUpdate({ set: track, target: tracks.path })
             .run();
 
         this.bumpRevision();
     }
 
+    upsertScan(batch: Required<IndexedTrack>[]) {
+        if (!batch.length) return;
+
+        // A multi-row statement commits the batch atomically under FULL durability.
+        this.queries.insert(tracks)
+            .values(batch)
+            .onConflictDoUpdate({
+                target: tracks.path,
+                set: {
+                    year: sql`excluded.year`,
+                    size: sql`excluded.size`,
+                    cover: sql`excluded.cover`,
+                    title: sql`excluded.title`,
+                    genre: sql`excluded.genre`,
+                    album: sql`excluded.album`,
+                    artist: sql`excluded.artist`,
+                    duration: sql`excluded.duration`,
+                    modifiedAt: sql`excluded.modified_at`,
+                    albumArtist: sql`excluded.album_artist`,
+                },
+            }).run();
+        this.bumpRevision();
+    }
+
+    favorite(id: number) {
+        const activity = this.queries
+            .update(tracks)
+            .set({ favorite: sql`1 - ${tracks.favorite}` })
+            .where(eq(tracks.id, id))
+            .returning(trackActivityColumns)
+            .get();
+
+        if (activity) this.bumpRevision(activity);
+    }
+
     played(id: number) {
-        this.queries
+        const activity = this.queries
             .update(tracks)
             .set({
                 lastPlayed: Date.now(),
                 plays: sql`${tracks.plays} + 1`,
             })
             .where(eq(tracks.id, id))
-            .run();
+            .returning(trackActivityColumns)
+            .get();
 
-        this.bumpRevision();
+        if (activity) this.bumpRevision(activity);
     }
 
     folder(path: string, identity = "") {
@@ -157,7 +205,7 @@ export class LibraryRepository {
             .all();
     }
 
-    indexedFiles() {
+    indexedFiles(): IndexedFile[] {
         return this.queries
             .select({
                 path: tracks.path,

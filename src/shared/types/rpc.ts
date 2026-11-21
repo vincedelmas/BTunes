@@ -1,16 +1,17 @@
 import type {z} from "zod";
-import type {Snapshot} from "./library";
 import type {MediaCommand} from "./media";
 import type {UpdateState} from "./updates";
 import type {ArtworkCandidate} from "./artwork";
 import type {rpcSchemas} from "../schemas/rpc.ts";
 import type {FileImportResult} from "./file-import";
 import type {TagPreview, TagSaveResult} from "./tags";
+import type {Snapshot, TrackActivityUpdate} from "./library";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "./devices";
 import type {BookmarkFolder, DownloaderSettings, DownloadSnapshot} from "./downloads";
 
 
 type RpcOutputs = {
+    "app.reload": void;
     "media.update": void;
     "updates.get": UpdateState;
     "updates.check": void;
@@ -39,7 +40,7 @@ type RpcOutputs = {
     "artwork.search": ArtworkCandidate[];
     "tags.preview": TagPreview;
     "tags.save": TagSaveResult;
-    "library.get": Snapshot | null;
+    "library.get": Snapshot | TrackActivityUpdate | null;
     "library.drop": FileImportResult | null;
     "library.refresh": { errors: string[] };
     "library.import": { imported: number; errors: string[] } | null;

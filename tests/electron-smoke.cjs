@@ -57,7 +57,7 @@ setTimeout(() => {
 app.on("browser-window-created", (_, win) => {
     win.hide();
 
-    win.webContents.on("did-finish-load", async () => {
+    win.webContents.once("did-finish-load", async () => {
         try {
             const result = await win.webContents.executeJavaScript(`(async()=>{
     if(document.title!=='BTunes') throw new Error('Incorrect application title');
@@ -86,6 +86,12 @@ app.on("browser-window-created", (_, win) => {
     const id=await window.btunes.rpc('playlist.create',{name:'Smoke'});
     const next=await window.btunes.rpc('library.get',undefined);
     if(!next.playlists.some(p=>p.id===id)) throw new Error('RPC persistence failed');
+    const songId=next.tracks[0].id;
+    await window.btunes.rpc('track.favorite',{id:songId});
+    const update=await window.btunes.rpc('library.get',{revision:next.revision,trackActivity:true});
+    if(update.tracks || update.activity.length!==1 || update.activity[0].id!==songId || update.activity[0].favorite!==1) {
+        throw new Error('Favorite change did not return a compact library update');
+    }
     let rejected=false;try{await window.btunes.rpc('track.favorite',{id:-1})}catch{rejected=true}
     if(!rejected)throw new Error('Invalid input accepted');
 
@@ -175,13 +181,42 @@ app.on("browser-window-created", (_, win) => {
             })()`);
             win.webContents.debugger.detach();
             if (!existsSync(dropped) || !existsSync(join(music, "Dropped.mp3"))) throw new Error("Copy here did not preserve both files");
+
+            await win.webContents.executeJavaScript(`(async () => {
+                const format = Number.prototype.toLocaleString;
+                try {
+                    Number.prototype.toLocaleString = () => { throw new Error('Simulated render failure'); };
+                    [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Settings').click();
+                    const end = Date.now() + 3000;
+                    while (!document.querySelector('section[role="alert"] h1')?.textContent.includes('ran into a problem')) {
+                        if (Date.now() > end) throw new Error('Missing renderer error fallback');
+                        await new Promise(resolve => setTimeout(resolve, 25));
+                    }
+                }
+                finally {
+                    Number.prototype.toLocaleString = format;
+                }
+            })()`);
+            const reloaded = new Promise((resolve) => win.webContents.once("did-finish-load", resolve));
+            await win.webContents.executeJavaScript(`setTimeout(() => {
+                [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Reload BTunes').click();
+            }, 0)`);
+            await reloaded;
+            await win.webContents.executeJavaScript(`(async () => {
+                const end = Date.now() + 3000;
+                while (document.querySelector('h1')?.textContent !== 'Songs' || document.getElementById('startup')) {
+                    if (Date.now() > end) throw new Error('Reload did not restore the library');
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                }
+            })()`);
+
             console.log("Electron smoke passed", JSON.stringify({...result, droppedFilesImported: 1}));
             finish(0);
         } catch (e) {
             console.error(e);
-            console.error(await win.webContents.executeJavaScript("JSON.stringify({time:document.querySelector('audio').currentTime,duration:document.querySelector('audio').duration,readyState:document.querySelector('audio').readyState,slider:document.querySelector('[aria-label=\"Playback position\"]').value})"));
+            console.error(await win.webContents.executeJavaScript("JSON.stringify({time:document.querySelector('audio')?.currentTime,duration:document.querySelector('audio')?.duration,readyState:document.querySelector('audio')?.readyState,slider:document.querySelector('[aria-label=\"Playback position\"]')?.value})"));
             finish(1);
         }
     });
 });
-require("../out/main/index.js");
+require("../out/main/index.cjs");

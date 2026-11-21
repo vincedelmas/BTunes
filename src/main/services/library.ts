@@ -7,10 +7,14 @@ import {createHash, randomUUID} from "node:crypto";
 import {isAudioFile} from "../../shared/audio-files.ts";
 import {basename, extname, join, resolve, sep} from "node:path";
 import type {LibraryRepository} from "../repositories/library.ts";
+import type {IndexedFile, IndexedTrack} from "../../shared/types/library";
 import {access, link, mkdir, readdir, rm, stat, writeFile} from "node:fs/promises";
 
 const scanWorkers = 4;
+const scanBatchSize = 64;
 const folderIdentity = (info: Stats) => info.dev + ":" + info.ino;
+
+type ParsedTrack = { file: Stats; track: Required<IndexedTrack> };
 
 export class LibraryService {
     private closing = false;
@@ -38,64 +42,121 @@ export class LibraryService {
         return operation;
     }
 
-    private async enqueue<T>(path: string, action: () => Promise<T>) {
+    private async enqueue<T>(paths: string[], action: () => Promise<T>) {
         if (this.closing) throw new Error("The library is shutting down.");
-        const previous = this.jobs.get(path) ?? Promise.resolve();
-        const job = Promise.all([previous.catch(() => undefined), this.coverSweep]).then(action);
-        this.jobs.set(path, job);
+
+        const previous = new Set<Promise<unknown>>([this.coverSweep]);
+        for (const path of paths) {
+            const pending = this.jobs.get(path);
+            if (pending) previous.add(pending);
+        }
+
+        const job = Promise.allSettled(previous).then(action);
+        for (const path of paths) this.jobs.set(path, job);
 
         try {
             return await job;
         }
         finally {
-            if (this.jobs.get(path) === job) this.jobs.delete(path);
+            for (const path of paths) {
+                if (this.jobs.get(path) === job) this.jobs.delete(path);
+            }
         }
     }
 
     async index(path: string) {
-        if (isAudioFile(path)) await this.indexFile(path);
+        if (!isAudioFile(path)) return;
+
+        await this.enqueue([path], async () => {
+            const indexed = await this.readTrack(path);
+            if (!indexed) return;
+
+            await this.verifyTrack(path, indexed.file);
+            this.repo.upsert(indexed.track);
+        });
     }
 
-    private indexFile(path: string, previous?: ReturnType<LibraryRepository["indexedFiles"]>[number], scanning = false) {
-        return this.enqueue(path, async () => {
-            const file = await stat(path);
-            if (previous?.albumArtist && previous.duration > 0 && previous.modifiedAt === file.mtimeMs && previous.size === file.size) {
-                return false;
-            }
+    private async readTrack(path: string, previous?: IndexedFile): Promise<ParsedTrack | undefined> {
+        const file = await stat(path);
+        if (previous?.albumArtist && previous.duration > 0 && previous.modifiedAt === file.mtimeMs && previous.size === file.size) {
+            return;
+        }
 
-            let metadata = await this.readMetadata(path);
-            if (!Number.isFinite(metadata.format.duration) || !metadata.format.duration || metadata.format.duration < 0) {
-                // Some MP3 headers report zero; scan audio frames only when the quick read has no usable duration.
-                metadata = await this.readMetadata(path, { duration: true });
-            }
+        let metadata = await this.readMetadata(path);
+        if (!Number.isFinite(metadata.format.duration) || !metadata.format.duration || metadata.format.duration < 0) {
+            // Some MP3 headers report zero; scan audio frames only when the quick read has no usable duration.
+            metadata = await this.readMetadata(path, { duration: true });
+        }
 
-            const tags = readTags(metadata);
-            let cover: string | null = null;
+        const tags = readTags(metadata);
+        let cover: string | null = null;
 
-            if (metadata.common.picture?.[0]) {
-                const picture = metadata.common.picture[0];
-                cover = createHash("sha256").update(picture.data).digest("hex");
-                await this.storeCover(cover, picture.data);
-            }
+        if (metadata.common.picture?.[0]) {
+            const picture = metadata.common.picture[0];
+            cover = createHash("sha256").update(picture.data).digest("hex");
+            await this.storeCover(cover, picture.data);
+        }
 
-            const current = await stat(path);
-            if (current.dev !== file.dev || current.ino !== file.ino ||
-                current.size !== file.size || current.mtimeMs !== file.mtimeMs) {
-                throw new Error("File changed while indexing: " + path);
-            }
+        const track: Required<IndexedTrack> = {
+            path, cover, size: file.size, modifiedAt: file.mtimeMs,
+            year: tags.year || 0,
+            genre: tags.genre || "Uncategorized",
+            album: tags.album || "Unknown album",
+            artist: tags.artist || "Unknown artist",
+            duration: metadata.format.duration || 0,
+            title: tags.title || basename(path, extname(path)),
+            albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
+        };
 
-            this.repo.upsert({
-                path, cover, size: file.size, modifiedAt: file.mtimeMs,
-                year: tags.year || 0,
-                genre: tags.genre || "Uncategorized",
-                album: tags.album || "Unknown album",
-                artist: tags.artist || "Unknown artist",
-                duration: metadata.format.duration || 0,
-                title: tags.title || basename(path, extname(path)),
-                albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
-            }, scanning);
+        return { file, track };
+    }
 
-            return true;
+    private async verifyTrack(path: string, file: Stats) {
+        const current = await stat(path);
+        if (current.dev !== file.dev || current.ino !== file.ino ||
+            current.size !== file.size || current.mtimeMs !== file.mtimeMs || current.ctimeMs !== file.ctimeMs) {
+            throw new Error("File changed while indexing: " + path);
+        }
+    }
+
+    private async indexScanBatch(
+        paths: string[],
+        known: ReadonlyMap<string, IndexedFile>,
+        recordError: (path: string, error: unknown) => void,
+    ) {
+        return this.enqueue(paths, async () => {
+            const prepared: ParsedTrack[] = [];
+            const pending = paths.values();
+
+            const worker = async () => {
+                for (const path of pending) {
+                    if (this.closing) break;
+
+                    try {
+                        const indexed = await this.readTrack(path, known.get(path));
+                        if (indexed) prepared.push(indexed);
+                    }
+                    catch (error) {
+                        recordError(path, error);
+                    }
+                }
+            };
+
+            await Promise.all(Array.from({ length: scanWorkers }, worker));
+            const verified = await Promise.all(prepared.map(async ({ file, track }) => {
+                try {
+                    await this.verifyTrack(track.path, file);
+                    return track;
+                }
+                catch (error) {
+                    recordError(track.path, error);
+                    return undefined;
+                }
+            }));
+
+            const batch = verified.filter((track) => track !== undefined);
+            this.repo.upsertScan(batch);
+            return batch.length;
         });
     }
 
@@ -126,7 +187,7 @@ export class LibraryService {
 
     private pruneCovers() {
         // Finish queued writes before reading references. New jobs wait for this sweep.
-        this.coverSweep = Promise.allSettled([this.coverSweep, ...this.jobs.values()]).then(async () => {
+        this.coverSweep = Promise.allSettled([this.coverSweep, ...new Set(this.jobs.values())]).then(async () => {
             const entries = await readdir(this.covers, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
                 if (error.code === "ENOENT") return [];
                 throw error;
@@ -147,7 +208,7 @@ export class LibraryService {
     }
 
     remove(path: string) {
-        return this.enqueue(path, async () => {
+        return this.enqueue([path], async () => {
             const folder = this.repo.watchedFolders()
                 .filter((folder) => path.startsWith(folder.path.endsWith(sep) ? folder.path : folder.path + sep))
                 .sort((first, second) => second.path.length - first.path.length)[0];
@@ -187,7 +248,8 @@ export class LibraryService {
                 const result = await this.scanFolder(folder.path, false, folder.identity);
                 errors.push(...result.errors);
             }
-            catch {
+            catch (error) {
+                console.warn("Could not refresh music folder", folder.path, error);
                 errors.push(folder.path);
             }
         }
@@ -199,12 +261,19 @@ export class LibraryService {
         const root = await stat(folder);
         if (!root.isDirectory()) throw new Error("Music folder is unavailable.");
         const identity = folderIdentity(root);
-        if (!importing && expectedIdentity && identity !== expectedIdentity) return { imported: 0, errors: [folder] };
+        if (!importing && expectedIdentity && identity !== expectedIdentity) {
+            console.warn("Music folder has a different filesystem identity:", folder);
+            return { imported: 0, errors: [folder] };
+        }
 
         let imported = 0;
         let found = 0;
         const seen = new Set<string>();
         const errors: string[] = [];
+        const recordError = (path: string, error: unknown) => {
+            console.warn("Could not index library path", path, error);
+            errors.push(path);
+        };
         const prefix = folder.endsWith(sep) ? folder : folder + sep;
         const indexed = this.repo.indexedFiles().filter((track) => track.path.startsWith(prefix));
         const known = new Map(indexed.map((track) => [track.path, track]));
@@ -216,8 +285,8 @@ export class LibraryService {
                     try {
                         yield* visit(path);
                     }
-                    catch {
-                        errors.push(path);
+                    catch (error) {
+                        recordError(path, error);
                     }
                 }
                 else if (entry.isFile() && isAudioFile(path)) {
@@ -228,28 +297,22 @@ export class LibraryService {
             }
         };
 
-        const paths = visit(folder);
-        const worker = async () => {
-            while (!this.closing) {
-                const next = await paths.next();
-                if (next.done || this.closing) return;
+        let batch: string[] = [];
+        for await (const path of visit(folder)) {
+            if (this.closing) break;
 
-                try {
-                    if (await this.indexFile(next.value, known.get(next.value), true)) imported++;
-                }
-                catch {
-                    errors.push(next.value);
-                }
-            }
-        };
+            batch.push(path);
+            if (batch.length < scanBatchSize) continue;
 
-        const results = await Promise.allSettled(Array.from({ length: scanWorkers }, worker));
-        await paths.return(undefined);
-        for (const result of results) {
-            if (result.status === "rejected") throw result.reason;
+            imported += await this.indexScanBatch(batch, known, recordError);
+            batch = [];
         }
+        if (!this.closing && batch.length) imported += await this.indexScanBatch(batch, known, recordError);
         if (this.closing) return { imported, errors };
-        if (folderIdentity(await stat(folder)) !== identity) return { imported, errors: [...errors, folder] };
+        if (folderIdentity(await stat(folder)) !== identity) {
+            recordError(folder, new Error("Music folder changed during the scan."));
+            return { imported, errors };
+        }
 
         // An empty mount-point stub must never erase a previously indexed drive.
         const canIdentify = importing || Boolean(expectedIdentity) || found > 0;
@@ -257,7 +320,7 @@ export class LibraryService {
             for (const track of indexed) {
                 if (this.closing) break;
                 if (seen.has(track.path)) continue;
-                await this.remove(track.path).catch(() => errors.push(track.path));
+                await this.remove(track.path).catch((error: unknown) => recordError(track.path, error));
             }
         }
 

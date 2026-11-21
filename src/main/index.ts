@@ -142,12 +142,15 @@ void app.whenReady().then(async () => {
         tags.removeCompletedBackups().catch((error: unknown) => console.warn("Could not prune tag backups:", error)),
     ]);
 
+    let mediaRendererReady = false;
     const routes = {
+        "app.reload": { schema: rpcSchemas["app.reload"], run: () => win.webContents.reload() },
         "media.update": {
             schema: rpcSchemas["media.update"],
             run: (input: RpcInput<"media.update">) => {
                 desktopMedia?.player.update(input);
-                void streamVolume?.setVolume(input.volume, input.playing);
+                void streamVolume?.setVolume(input.volume, input.playing, !mediaRendererReady);
+                mediaRendererReady = true;
             },
         },
         "updates.get": { schema: rpcSchemas["updates.get"], run: () => updates.get() },
@@ -203,7 +206,10 @@ void app.whenReady().then(async () => {
 
         "library.get": {
             schema: rpcSchemas["library.get"],
-            run: (input: RpcInput<"library.get">) => input?.revision === repo.revision ? null : repo.snapshot(),
+            run: (input: RpcInput<"library.get">) => {
+                if (input?.trackActivity) return repo.changesSince(input.revision);
+                return input?.revision === repo.revision ? null : repo.snapshot();
+            },
         },
         "track.reveal": {
             schema: rpcSchemas["track.reveal"],
@@ -290,7 +296,7 @@ void app.whenReady().then(async () => {
             sandbox: true,
             contextIsolation: true,
             nodeIntegration: false,
-            preload: join(__dirname, "../preload/index.js"),
+            preload: join(__dirname, "../preload/index.cjs"),
         },
     });
 
@@ -339,6 +345,9 @@ void app.whenReady().then(async () => {
     });
 
     win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+    win.webContents.on("did-start-navigation", (ev) => {
+        if (ev.isMainFrame && !ev.isSameDocument) mediaRendererReady = false;
+    });
     win.webContents.on("will-navigate", (ev, url) => {
         const developmentUrl = process.env.ELECTRON_RENDERER_URL;
         if (developmentUrl && new URL(url).href === new URL(developmentUrl).href) return;

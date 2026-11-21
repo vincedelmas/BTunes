@@ -1,5 +1,5 @@
+import {sortTracks} from "./track-sorting.ts";
 import type {Track} from "./types/library.ts";
-import {compareTracks} from "./track-sorting.ts";
 import type {TrackSort} from "./types/track-sorting.ts";
 
 
@@ -36,11 +36,12 @@ export function selectSmartMix(view: string, tracks: Track[]) {
         if (view === "mix:never-played") return track.plays === 0;
         if (view === "history") return track.lastPlayed > 0;
         return true;
-    }).sort((first, second) => compareTracks(first, second, mix.sort));
+    });
+    const sorted = sortTracks(matching, mix.sort);
 
     if (view === "mix:recently-added" || view === "mix:most-played") {
-        return matching.slice(0, 100);
+        return sorted.slice(0, 100);
     }
 
-    return matching;
+    return sorted;
 }

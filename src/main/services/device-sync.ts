@@ -124,6 +124,7 @@ export class DeviceSyncService {
             if (!storage) throw new Error("The selected phone is no longer connected.");
             const playlistBytes = plan.playlists.reduce((total, playlist) => total + Buffer.byteLength(playlist.content), 0);
             if (storage.freeBytes < (this.state.comparison?.bytes ?? 0) + playlistBytes) throw new Error("There is not enough free space on the phone.");
+            const verified = new Map<string, number>();
             for (const track of plan.tracks) {
                 if (this.cancelled) break;
                 this.state.current = track.title;
@@ -142,7 +143,10 @@ export class DeviceSyncService {
                     throw new Error("A source file changed during the copy. Compare again: " + track.title);
                 }
                 const written = await this.transport.metadata(plan.storageId, destination);
-                if (!written || written.size !== source.size) throw new Error("Could not verify the transferred file: " + track.title);
+                if (!written || written.directory || written.size !== source.size) {
+                    throw new Error("Could not verify the transferred file: " + track.title);
+                }
+                verified.set(destination, written.size);
                 this.state.completed++;
                 if (this.state.comparison) {
                     this.state.comparison.missing--;
@@ -151,34 +155,56 @@ export class DeviceSyncService {
                 }
             }
 
+            // Recheck existing references once per folder so edits since Compare are detected.
+            const checkedFolders = new Set<string>();
             for (const playlist of plan.playlists) {
                 if (this.cancelled) break;
-                await this.exportPlaylist(plan.storageId, playlist);
+                await this.exportPlaylist(plan.storageId, playlist, verified, checkedFolders);
             }
             this.plan = undefined;
             if (!this.cancelled) this.state.phase = "complete";
         });
     }
 
-    private async exportPlaylist(storageId: string, playlist: DevicePlaylistPlan) {
+    private async exportPlaylist(
+        storageId: string,
+        playlist: DevicePlaylistPlan,
+        verified: Map<string, number>,
+        checkedFolders: Set<string>,
+    ) {
         this.state.current = posix.basename(playlist.path);
         this.changed();
 
         for (const reference of playlist.references) {
-            const file = await this.transport.metadata(storageId, reference.path);
-            if (!file || file.directory || file.size !== reference.size) {
+            if (this.cancelled) return;
+
+            const folder = posix.dirname(reference.path);
+            if (!verified.has(reference.path) && !checkedFolders.has(folder)) {
+                const entries = await this.transport.files(storageId, folder);
+                if (this.cancelled) return;
+
+                checkedFolders.add(folder);
+                for (const entry of entries) {
+                    if (!entry.directory && !verified.has(entry.path)) verified.set(entry.path, entry.size);
+                }
+            }
+
+            if (verified.get(reference.path) !== reference.size) {
                 throw new Error("A playlist song changed on the phone. Compare again: " + reference.path);
             }
         }
         if (this.cancelled) return;
 
         const existing = await this.transport.metadata(storageId, playlist.path);
+        if (this.cancelled) return;
         if (existing?.directory) throw new Error("A folder blocks playlist export: " + playlist.path);
         const temporary = await mkdtemp(join(tmpdir(), "btunes-playlist-"));
 
         try {
             const source = join(temporary, "playlist.m3u8");
             await writeFile(source, playlist.content, "utf8");
+            if (this.cancelled) return;
+
             await this.transport.copy(storageId, source, playlist.path, Boolean(existing));
 
             const written = await this.transport.metadata(storageId, playlist.path);

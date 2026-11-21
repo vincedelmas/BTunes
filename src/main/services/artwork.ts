@@ -70,12 +70,13 @@ export class ArtworkService {
     }
 
     async search(query: string): Promise<ArtworkCandidate[]> {
+        this.pruneCandidates();
         const key = query.trim().replace(/\s+/g, " ").toLowerCase();
         const cached = this.searches.get(key);
 
         if (cached && cached.expiresAt > Date.now()) {
             const results = await cached.pending;
-            if (results.every((result) => this.candidates.has(result.id))) return results;
+            if (results.every((result) => (this.candidates.get(result.id)?.expiresAt ?? 0) > Date.now())) return results;
         }
 
         const pending = this.findCandidates(query);
@@ -171,31 +172,44 @@ export class ArtworkService {
     }
 
     private registerCandidate(imageUrl: string, previewUrl: string, album: string, artist: string): ArtworkCandidate {
+        const id = this.cacheCandidate({ url: approvedImageUrl(imageUrl), previewUrl: approvedImageUrl(previewUrl) });
+        return { id, album, artist, thumbnail: "btunes://artwork/" + id };
+    }
+
+    private pruneCandidates(now = Date.now()) {
+        for (const [id, candidate] of this.candidates) {
+            if (candidate.expiresAt <= now) this.candidates.delete(id);
+        }
+    }
+
+    private cacheCandidate(candidate: Omit<CachedArtwork, "expiresAt">) {
+        const now = Date.now();
+        this.pruneCandidates(now);
+
         const id = randomUUID();
-        this.candidates.set(id, { url: approvedImageUrl(imageUrl), previewUrl: approvedImageUrl(previewUrl), expiresAt: Date.now() + 30 * 60 * 1000 });
+        this.candidates.set(id, { ...candidate, expiresAt: now + 30 * 60 * 1000 });
 
         while (this.candidates.size > 64) {
             this.candidates.delete(this.candidates.keys().next().value!);
         }
 
-        return { id, album, artist, thumbnail: "btunes://artwork/" + id };
+        return id;
     }
 
     async local(data: Buffer): Promise<ArtworkCandidate> {
         if (data.length > maxImageBytes) throw new Error("Choose an image smaller than 10 MB.");
         const normalized = await normalizeArtwork(data, this.ffmpeg());
-        const id = randomUUID();
-        this.candidates.set(id, {
+        const id = this.cacheCandidate({
             url: "", previewUrl: "", preview: { data: normalized, contentType: "image/jpeg" },
             artwork: { data: normalized, hash: createHash("sha256").update(normalized).digest("hex") },
-            expiresAt: Date.now() + 30 * 60 * 1000,
         });
         return { id, album: "Local cover", artist: "", thumbnail: "btunes://artwork/" + id };
     }
 
     private candidate(id: string) {
+        this.pruneCandidates();
         const candidate = this.candidates.get(id);
-        if (!candidate || candidate.expiresAt < Date.now()) {
+        if (!candidate) {
             throw new Error("Cover search expired. Search again to select a cover.");
         }
         return candidate;

@@ -38,10 +38,12 @@ export class DownloaderService {
     private readonly root: string;
     private readonly run: DownloadRunner;
     private readonly metadata = new DownloadMetadata();
+    private readonly fileImport: FileImportService;
 
     constructor(repo: DownloadRepository, library: LibraryService, artwork: Pick<ArtworkService, "search" | "get">, tools: DownloadToolProvider, root: string, run: DownloadRunner = downloadProcess, notify = () => {}) {
         this.repo = repo;
         this.library = library;
+        this.fileImport = new FileImportService(library);
         this.artwork = artwork;
         this.tools = tools;
         this.root = root;
@@ -212,7 +214,7 @@ export class DownloaderService {
             stage = await mkdtemp(join(this.root, item.id + "-"));
             await this.run(tools.ytDlp, [
                 "--ignore-config", "--no-playlist", "--no-overwrites", "--extract-audio", "--audio-format", "mp3", "--audio-quality", settings.quality,
-                "--ffmpeg-location", tools.ffmpeg.slice(0, tools.ffmpeg.lastIndexOf("/")), "--js-runtimes", "node", "--newline", "--progress", "--quiet",
+                "--ffmpeg-location", dirname(tools.ffmpeg), "--js-runtimes", "node", "--newline", "--progress", "--quiet",
                 "--progress-template", "download:%(progress._percent_str)s", "--output", join(stage, "audio.%(ext)s"), "--", item.url,
             ], signal, (line) => {
                 const percent = /^download:\s*(\d+(?:\.\d+)?)%/.exec(line);
@@ -343,7 +345,7 @@ export class DownloaderService {
                 for (const [key, value] of Object.entries(tags)) {
                     if (written[key as keyof typeof written] !== value) throw new Error("Could not verify the downloaded song's " + key + " tag.");
                 }
-                const result = await new FileImportService(this.library).import([prepared], { folder: settings.destination, operation: "copy" });
+                const result = await this.fileImport.import([prepared], { folder: settings.destination, operation: "copy" });
                 if (!result.imported) throw new Error(result.errors[0]?.message || "The song could not be added to the library.");
                 item.path = result.paths[0];
                 item.tags = tags;

@@ -32,14 +32,22 @@ void test("USB comparison copies only missing audio and preserves phone-only and
     await mkdir(pc);
     await mkdir(join(phone, "Music", "Old"), { recursive: true });
     const repo = new LibraryRepository(":memory:");
+    const metadataReads: string[] = [];
+    const folderReads: string[] = [];
+    let beforeFolderRead: ((path: string) => void) | undefined;
     const entry = async (path: string): Promise<DeviceFile> => {
         const info = await stat(join(phone, path));
         return { name: basename(path), path, size: info.size, directory: info.isDirectory() };
     };
     const transport: DeviceTransport = {
         devices: async () => [{ id: "phone", name: "Fixture phone", storages: [{ id: storageId, name: "Internal", freeBytes: 100000 }] }],
-        files: async (_id, path) => Promise.all((await readdir(join(phone, path))).map((name) => entry(path + "/" + name))),
+        files: async (_id, path) => {
+            folderReads.push(path);
+            beforeFolderRead?.(path);
+            return Promise.all((await readdir(join(phone, path))).map((name) => entry(path + "/" + name)));
+        },
         metadata: async (_id, path) => {
+            metadataReads.push(path);
             try {
                 return await entry(path);
             }
@@ -79,8 +87,10 @@ void test("USB comparison copies only missing audio and preserves phone-only and
         await writeFile(legacyExport, "#EXTM3U\n#PLAYLIST:Old export\n");
         sync.compare(storageId, "/Music", [initialPlaylist]);
         await settle(sync);
+        metadataReads.length = 0;
         sync.sync();
         await settle(sync);
+        assert.equal(metadataReads.filter((path) => path === "/Music/Missing.mp3").length, 2, "Playlist export should reuse post-copy verification");
         assert.equal(await readFile(join(phone, "Music", "Bib' Voiture.m3u8"), "utf8"),
             "#EXTM3U\n#PLAYLIST:Bib' Voiture\n./Missing.mp3\n");
         assert.equal(sync.status().phase, "complete");
@@ -97,8 +107,10 @@ void test("USB comparison copies only missing audio and preserves phone-only and
         const present = tracks.find((track) => track.title === "Present.mp3")!;
         const missing = tracks.find((track) => track.title === "Missing.mp3")!;
         const playlist = repo.create("Road trip é");
+        const shared = repo.create("Shared reference");
         const unchecked = repo.create("Not selected");
         repo.add(playlist, [missing.id, present.id]);
+        repo.add(shared, present.id);
         repo.add(unchecked, present.id);
         sync.compare(storageId, "/Music", [playlist]);
         await settle(sync);
@@ -106,13 +118,17 @@ void test("USB comparison copies only missing audio and preserves phone-only and
         assert.equal(sync.status().playlists, 1);
         repo.updatePlaylist(playlist, "Road trip é");
         assert.throws(() => sync.sync(), /library changed/);
-        sync.compare(storageId, "/Music", [playlist]);
+        sync.compare(storageId, "/Music", [playlist, shared]);
         await settle(sync);
+        folderReads.length = 0;
+        metadataReads.length = 0;
         sync.sync();
         await settle(sync);
         let exported = join(phone, "Music", "Road trip é.m3u8");
         assert.equal(sync.status().phase, "complete");
-        assert.equal(sync.status().playlistsCompleted, 1);
+        assert.equal(sync.status().playlistsCompleted, 2);
+        assert.deepEqual(folderReads, ["/Music", "/Music/Old"]);
+        assert.ok(metadataReads.every((path) => path.endsWith(".m3u8")));
         assert.equal(await readFile(exported, "utf8"),
             "#EXTM3U\n#PLAYLIST:Road trip é\n./Missing.mp3\n./Old/present.MP3\n");
         await assert.rejects(stat(join(phone, "Music", "Not selected.m3u8")), { code: "ENOENT" });
@@ -140,6 +156,32 @@ void test("USB comparison copies only missing audio and preserves phone-only and
         await settle(sync);
         sync.sync();
         await settle(sync);
+
+        sync.compare(storageId, "/Music", [playlist]);
+        await settle(sync);
+        let cancelledFolder: string | undefined;
+        beforeFolderRead = (path) => {
+            cancelledFolder = path;
+            sync.cancel();
+        };
+        metadataReads.length = 0;
+        sync.sync();
+        await settle(sync);
+        assert.equal(cancelledFolder, "/Music/Old");
+        assert.equal(sync.status().phase, "cancelled");
+        assert.deepEqual(metadataReads, [], "Cancellation during folder verification should skip the export");
+        beforeFolderRead = undefined;
+
+        sync.compare(storageId, "/Music", [playlist]);
+        await settle(sync);
+        const presentPath = join(phone, "Music", "Old", "present.MP3");
+        await writeFile(presentPath, "changed on phone");
+        sync.sync();
+        await settle(sync);
+        assert.equal(sync.status().phase, "error");
+        assert.match(sync.status().errors[0], /playlist song changed/);
+        assert.equal(await readFile(exported, "utf8"), updated);
+        await writeFile(presentPath, "already here");
 
         const unresolved = repo.create("Different version");
         repo.add(unresolved, tracks.find((track) => track.title === "Different.mp3")!.id);

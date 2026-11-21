@@ -6,11 +6,15 @@ import {StreamVolumeService} from "../src/main/services/stream-volume.ts";
 function fixture() {
     const writes: string[][] = [];
     const notifications: { volume: number; native: boolean }[] = [];
+    let reads = 0;
     let inputs = [stream(1, 10), stream(2, 20)];
     const service = new StreamVolumeService(
         (volume, native) => notifications.push({ volume, native }),
         async (args) => {
-            if (args[0] === "-f") return JSON.stringify(inputs);
+            if (args[0] === "-f") {
+                reads++;
+                return JSON.stringify(inputs);
+            }
             writes.push(args);
             const input = inputs.find((item) => item.index === Number(args[1]));
             if (input && args[0] === "set-sink-input-volume") {
@@ -20,7 +24,7 @@ function fixture() {
         },
         async (pid) => pid === 10,
     );
-    return { service, writes, notifications, replace: (value: typeof inputs) => { inputs = value; } };
+    return { service, writes, notifications, reads: () => reads, replace: (value: typeof inputs) => { inputs = value; } };
 }
 
 
@@ -97,7 +101,10 @@ void test("a reopened renderer receives the active stream mode even when volume 
     await state.service.setVolume(0.4);
     state.notifications.length = 0;
     await state.service.setVolume(0.4);
+    assert.deepEqual(state.notifications, []);
+    await state.service.setVolume(0.4, false, true);
     assert.deepEqual(state.notifications, [{ volume: 0.4, native: true }]);
+    assert.equal(state.reads(), 1, "Unchanged media state and renderer reloads should reuse the known stream mode");
     state.service.close();
 });
 

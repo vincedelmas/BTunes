@@ -24,11 +24,25 @@ export function useLibrary() {
     const refresh = useCallback(() => {
         if (refreshing.current) return refreshing.current;
 
-        const request = rpc("library.get", revision.current === undefined ? undefined : { revision: revision.current })
-            .then((snapshot) => {
-                if (!snapshot) return;
-                revision.current = snapshot.revision;
-                setData(snapshot);
+        const input = revision.current === undefined ? undefined : { revision: revision.current, trackActivity: true };
+        const request = rpc("library.get", input)
+            .then((update) => {
+                if (!update) return;
+                revision.current = update.revision;
+                if ("tracks" in update) {
+                    setData(update);
+                    return;
+                }
+
+                const activity = new Map(update.activity.map((track) => [track.id, track]));
+                setData((previous) => ({
+                    ...previous,
+                    revision: update.revision,
+                    tracks: previous.tracks.map((track) => {
+                        const change = activity.get(track.id);
+                        return change ? { ...track, ...change } : track;
+                    }),
+                }));
             })
             .finally(() => {
                 refreshing.current = undefined;

@@ -20,12 +20,43 @@ void test("indexing preserves favorites and play history on rescan", () => {
         const id = repo.snapshot().tracks[0].id;
         repo.favorite(id);
         repo.played(id);
-        repo.upsert({ ...track, title: "New title" });
+        const revision = repo.revision;
+        const updated = { ...track, title: "New title", albumArtist: "Test", modifiedAt: 123 };
+        repo.upsertScan([updated, { ...updated, path: "/music/b.flac", title: "Second title" }]);
         const rows = repo.snapshot().tracks;
-        assert.equal(rows.length, 1);
+        assert.equal(repo.revision, revision + 1);
+        assert.equal(rows.length, 2);
         assert.equal(rows[0].title, "New title");
         assert.equal(rows[0].favorite, 1);
         assert.equal(rows[0].plays, 1);
+    }
+    finally {
+        repo.db.close();
+    }
+});
+
+void test("track activity refreshes return only changed fields and fall back to a snapshot when necessary", () => {
+    const repo = new LibraryRepository(":memory:");
+    try {
+        repo.upsert(track);
+        const { revision, tracks: [song] } = repo.snapshot();
+        repo.favorite(song.id);
+        repo.played(song.id);
+
+        const lastPlayed = repo.get(song.id)?.lastPlayed;
+        assert.ok(lastPlayed);
+        assert.deepEqual(repo.changesSince(revision), {
+            revision: repo.revision,
+            activity: [{ id: song.id, plays: 1, favorite: 1, lastPlayed }],
+        });
+        assert.equal(repo.changesSince(repo.revision), null);
+        assert.deepEqual(repo.changesSince(repo.revision + 1), repo.snapshot());
+
+        repo.create("Favorites");
+        assert.deepEqual(repo.changesSince(revision), repo.snapshot());
+        const oldRevision = repo.revision;
+        for (let count = 0; count < 257; count++) repo.played(song.id);
+        assert.deepEqual(repo.changesSince(oldRevision), repo.snapshot());
     }
     finally {
         repo.db.close();

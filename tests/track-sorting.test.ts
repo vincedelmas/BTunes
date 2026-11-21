@@ -1,8 +1,8 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import type {Track} from "../src/shared/types/library.ts";
+import {sortTracks} from "../src/shared/track-sorting.ts";
 import {selectSmartMix} from "../src/shared/smart-mixes.ts";
-import {compareTracks} from "../src/shared/track-sorting.ts";
 import type {TrackSortField} from "../src/shared/types/track-sorting.ts";
 
 const original: Track = {
@@ -11,7 +11,7 @@ const original: Track = {
 };
 
 function ordered(tracks: Track[], field: TrackSortField, descending = false) {
-    return tracks.toSorted((first, second) => compareTracks(first, second, { field, descending })).map((track) => track.id);
+    return sortTracks(tracks, { field, descending }).map((track) => track.id);
 }
 
 void test("song sorting uses natural titles and numeric durations in both directions", () => {

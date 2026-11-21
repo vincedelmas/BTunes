@@ -1,6 +1,8 @@
 export type Playlist = { id: number; name: string; rule: string | null };
 export type IndexedTrack = Omit<Track, "id" | "favorite" | "plays" | "lastPlayed" | "albumArtist"> & { albumArtist?: string };
 
+export type IndexedFile = Pick<Required<IndexedTrack>, "path" | "size" | "duration" | "modifiedAt" | "albumArtist">;
+
 
 export type Track = {
     id: number;
@@ -26,4 +28,13 @@ export type Snapshot = {
     revision: number;
     folders: string[];
     playlists: Playlist[];
+};
+
+
+export type TrackActivity = Pick<Track, "id" | "plays" | "favorite" | "lastPlayed">;
+
+
+export type TrackActivityUpdate = {
+    revision: number;
+    activity: TrackActivity[];
 };

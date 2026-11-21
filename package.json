@@ -2,8 +2,9 @@
     "name": "btunes",
     "version": "1.4.1",
     "private": true,
+    "type": "module",
     "description": "Local music library manager and player.",
-    "main": "out/main/index.js",
+    "main": "out/main/index.cjs",
     "packageManager": "bun@1.4.4",
     "scripts": {
         "knip": "knip",

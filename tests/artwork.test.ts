@@ -1,5 +1,8 @@
 import {test} from "node:test";
+import {join} from "node:path";
+import {tmpdir} from "node:os";
 import assert from "node:assert/strict";
+import {mkdtemp, rm, writeFile} from "node:fs/promises";
 import {ArtworkService} from "../src/main/services/artwork.ts";
 import {coverSearchQuery} from "../src/renderer/src/lib/artwork.ts";
 
@@ -119,4 +122,29 @@ void test("cover lookup uses current metadata and handles mixed artists without 
     assert.equal(coverSearchQuery("Song", { title: "Song", album: "Brol", artist: "Angèle ft. Roméo Elvis", albumArtist: "Angèle" }), "Brol Angèle");
     assert.equal(coverSearchQuery("Song", { title: "", album: "Big Willie Style", artist: "", albumArtist: "" }), "Big Willie Style");
     assert.equal(coverSearchQuery("Song", { title: "New title", album: "Unknown album", artist: "Artist", albumArtist: "" }), "New title Artist");
+});
+
+void test("local artwork shares the candidate limit and expires", async (context) => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-local-artwork-"));
+    try {
+        const normalizer = join(root, "normalize");
+        await writeFile(normalizer, "#!/bin/sh\nexec cat\n", { mode: 0o700 });
+        const service = new ArtworkService(undefined, () => normalizer);
+        const image = Buffer.from("normalized image fixture");
+        context.mock.timers.enable({ apis: ["Date"] });
+
+        const first = await service.local(image);
+        let latest = first;
+        for (let index = 0; index < 64; index++) {
+            latest = await service.local(image);
+        }
+
+        await assert.rejects(service.get(first.id), /expired/);
+        assert.deepEqual((await service.get(latest.id)).data, image);
+        context.mock.timers.tick(30 * 60 * 1000);
+        await assert.rejects(service.preview(latest.id), /expired/);
+    }
+    finally {
+        await rm(root, { recursive: true, force: true });
+    }
 });

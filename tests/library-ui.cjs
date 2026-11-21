@@ -999,4 +999,4 @@ app.on("browser-window-created", (_, win) => {
     });
 });
 
-require("../out/main/index.js");
+require("../out/main/index.cjs");

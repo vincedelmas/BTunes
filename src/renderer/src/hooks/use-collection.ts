@@ -1,14 +1,14 @@
 import {rpc} from "@/lib/rpc";
 import {genreChoices} from "../../../shared/genres";
 import {usePreference} from "@/hooks/use-preference";
+import {sortTracks} from "../../../shared/track-sorting";
 import type {CollectionLocation} from "@/types/collection";
-import type {Snapshot} from "../../../shared/types/library";
-import {compareTracks} from "../../../shared/track-sorting";
+import type {Snapshot, Track} from "../../../shared/types/library";
 import type {TrackSort} from "../../../shared/types/track-sorting";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
 import {duplicateKey, getAlbumArtist, groupAlbums} from "@/lib/music";
 import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
-import {useDeferredValue, useEffect, useEffectEvent, useRef, useState} from "react";
+import {useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState} from "react";
 
 
 const viewTitles: Record<string, string> = {
@@ -20,6 +20,42 @@ const viewTitles: Record<string, string> = {
     android: "Devices",
     downloads: "Downloads",
 };
+
+
+function collectTracks(
+    tracks: Track[],
+    view: string,
+    artist: string,
+    search: string,
+    playlistIds: number[],
+    sort: TrackSort,
+) {
+    if (view === "settings" || view === "android" || view === "downloads") return [];
+
+    const duplicates = new Map<string, number>();
+    const playlistMembers = new Set(playlistIds);
+    const query = search.trim().toLocaleLowerCase();
+    const isPlaylist = view.startsWith("playlist:");
+    const isDuplicates = view === "duplicates";
+
+    if (isDuplicates) {
+        for (const track of tracks) {
+            const key = duplicateKey(track);
+            duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
+        }
+    }
+
+    const filtered = selectSmartMix(view, tracks).filter((track) => {
+        if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
+        if (artist && getAlbumArtist(track) !== artist) return false;
+        if (isPlaylist && !playlistMembers.has(track.id)) return false;
+
+        return !isDuplicates || (duplicates.get(duplicateKey(track)) ?? 0) >= 2;
+    });
+
+    return sortTracks(filtered, sort);
+}
+
 
 export function useCollection(data: Snapshot, onError: (error: unknown) => void) {
     const history = useRef<CollectionLocation[]>([]);
@@ -61,31 +97,14 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
         return () => {
             active = false;
         };
-    }, [playlistId, data.revision]);
+    }, [playlistId, data.playlists]);
 
-    const duplicates = new Map<string, number>();
-    const playlistMembers = new Set(playlistIds);
-    const query = deferredSearch.trim().toLocaleLowerCase();
-
-    if (view === "duplicates") {
-        for (const track of data.tracks) {
-            const key = duplicateKey(track);
-            duplicates.set(key, (duplicates.get(key) ?? 0) + 1);
-        }
-    }
-
-    const collectionTracks = view === "settings" || view === "android" || view === "downloads" ? [] : selectSmartMix(view, data.tracks);
-    const tracks = collectionTracks.filter((track) => {
-        if (query && ![track.title, track.artist, track.albumArtist, track.album].join(" ").toLocaleLowerCase().includes(query)) return false;
-        if (artist && getAlbumArtist(track) !== artist) return false;
-        if (view === "history" && !track.lastPlayed) return false;
-        if (view.startsWith("playlist:") && !playlistMembers.has(track.id)) return false;
-
-        return !(view === "duplicates" && (duplicates.get(duplicateKey(track)) ?? 0) < 2);
-
-
-    }).sort((first, second) => compareTracks(first, second, sort));
-
+    const allTracks = data.tracks;
+    // TrackTable compares the array by identity at its uncompiled virtualization boundary.
+    const tracks = useMemo(
+        () => collectTracks(allTracks, view, artist, deferredSearch, playlistIds, sort),
+        [allTracks, view, artist, deferredSearch, playlistIds, sort],
+    );
     const albums = view === "albums" ? groupAlbums(tracks) : [];
     const title = smartMix?.name ?? viewTitles[view] ?? activePlaylist?.name ?? "Playlist";
 

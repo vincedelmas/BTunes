@@ -9,20 +9,24 @@ const missingText: Partial<Record<TrackSortField, string>> = {
     genre: "uncategorized",
 };
 
-export function compareTracks(first: Track, second: Track, sort: TrackSort) {
-    const firstValue = first[sort.field];
-    const secondValue = second[sort.field];
-    const firstMissing = isMissing(firstValue, sort.field);
-    const secondMissing = isMissing(secondValue, sort.field);
+export function sortTracks(tracks: readonly Track[], { field, descending }: TrackSort) {
+    const keys = tracks.map((track) => {
+        const value = track[field];
+        return { track, value, missing: isMissing(value, field) };
+    });
 
-    // Missing metadata stays grouped first in either direction.
-    if (firstMissing !== secondMissing) return firstMissing ? -1 : 1;
+    keys.sort((first, second) => {
+        // Missing metadata stays grouped first in either direction.
+        if (first.missing !== second.missing) return first.missing ? -1 : 1;
 
-    const comparison = typeof firstValue === "number" && typeof secondValue === "number"
-        ? firstValue - secondValue
-        : collator.compare(String(firstValue), String(secondValue));
+        const comparison = typeof first.value === "number" && typeof second.value === "number"
+            ? first.value - second.value
+            : collator.compare(String(first.value), String(second.value));
 
-    return (sort.descending ? -comparison : comparison) || first.id - second.id;
+        return (descending ? -comparison : comparison) || first.track.id - second.track.id;
+    });
+
+    return keys.map(({ track }) => track);
 }
 
 function isMissing(value: string | number, field: TrackSortField) {
@@ -30,5 +34,6 @@ function isMissing(value: string | number, field: TrackSortField) {
         return !Number.isFinite(value) || (field !== "plays" && value === 0);
     }
 
-    return !value.trim() || value.trim().toLowerCase() === missingText[field];
+    const trimmed = value.trim();
+    return !trimmed || trimmed.toLowerCase() === missingText[field];
 }

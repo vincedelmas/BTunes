@@ -67,5 +67,5 @@ setTimeout(() => {
 }, 10000);
 server.listen(0, '127.0.0.1', () => {
     process.env.ELECTRON_RENDERER_URL = 'http://127.0.0.1:' + server.address().port + '/';
-    require('../out/main/index.js');
+    require('../out/main/index.cjs');
 });

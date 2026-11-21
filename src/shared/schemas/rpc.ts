@@ -29,6 +29,7 @@ export const rpcSchemas = {
     "track.played": idSchema,
     "track.favorite": idSchema,
     "playlist.tracks": idSchema,
+    "app.reload": z.undefined(),
     "playlist.delete": idSchema,
     "updates.get": z.undefined(),
     "devices.list": z.undefined(),
@@ -62,8 +63,8 @@ export const rpcSchemas = {
     "downloads.settings.save": downloaderSettingsSchema,
     "downloads.discard": publishDownloadSchema.pick({ id: true }),
     "playlist.update": z.object({ id: trackId, ...playlistDetails }),
-    "library.get": z.object({ revision: z.number().int().nonnegative() }).optional(),
     "downloads.bookmarks.folders": z.object({ path: z.string().min(1).max(4096) }),
+    "library.get": z.object({ trackActivity: z.boolean().optional(), revision: z.number().int().nonnegative() }).optional(),
     "tags.preview": z.object({
         patch: tagPatchFieldsSchema,
         artworkId: z.uuid().optional(),

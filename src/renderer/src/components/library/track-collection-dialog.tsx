@@ -8,7 +8,7 @@ import {TagEditor} from "@/components/tag-editor";
 import {useItemReveal} from "@/hooks/use-item-reveal";
 import type {TrackActions} from "@/types/track-actions";
 import {TrackTable} from "@/components/library/track-table";
-import {compareTracks} from "../../../../shared/track-sorting";
+import {sortTracks} from "../../../../shared/track-sorting";
 import {LibraryStats} from "@/components/library/library-stats";
 import type {TrackSort} from "../../../../shared/types/track-sorting";
 import type {Playlist, Track} from "../../../../shared/types/library";
@@ -39,7 +39,7 @@ export function TrackCollectionDialog({ artistName, genres, tracks, playlists, a
     const editLabel = artistName ? "Edit artist tags" : "Edit album tags";
     const selectedIds = new Set(selected);
     const selectedTracks = tracks.filter((track) => selectedIds.has(track.id));
-    const orderedTracks = [...tracks].sort((first, second) => compareTracks(first, second, sort));
+    const orderedTracks = sortTracks(tracks, sort);
 
     const collectionActions: TrackActions = {
         ...actions,

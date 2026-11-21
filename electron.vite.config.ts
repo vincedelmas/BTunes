@@ -5,18 +5,29 @@ import tailwindcss from "@tailwindcss/vite";
 import react, {reactCompilerPreset} from "@vitejs/plugin-react";
 
 
+const commonJsOutput = {
+    format: "cjs",
+    entryFileNames: "[name].cjs",
+    chunkFileNames: "[name]-[hash].cjs",
+} as const;
+
+
 export default defineConfig({
     main: {
         build: {
             externalizeDeps: true,
             rolldownOptions: {
                 external: ["node:sqlite"],
+                output: commonJsOutput,
             },
         },
     },
     preload: {
         build: {
             externalizeDeps: true,
+            rolldownOptions: {
+                output: commonJsOutput,
+            },
         },
     },
     renderer: {

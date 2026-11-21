@@ -6,7 +6,8 @@ import type {MediaCommand} from "../../../shared/types/media";
 
 
 export function useMediaSession(player: PlayerState, track?: Track) {
-    const active = Boolean(track);
+    const { id, title = "", album = "", artist = "" } = track ?? {};
+    const active = id !== undefined;
     const canWrap = player.repeat !== "off" && player.queue.length > 0;
     const canGoNext = active && (player.queueIndex < player.queue.length - 1 || canWrap);
     const canGoPrevious = active && (player.queueIndex > 0 || canWrap);
@@ -56,9 +57,9 @@ export function useMediaSession(player: PlayerState, track?: Track) {
             canGoPrevious,
             volume: player.volume,
             playing: player.playing,
-            track: track ? { id: track.id, title: track.title, album: track.album, artist: track.artist } : undefined,
+            track: id !== undefined ? { id, title, album, artist } : undefined,
         }).catch(console.error);
-    }, [active, canGoNext, canGoPrevious, player.volume, player.playing, track]);
+    }, [active, canGoNext, canGoPrevious, player.volume, player.playing, id, title, album, artist]);
 
     const handleAction = useEffectEvent((action: MediaSessionAction) => {
         switch (action) {
@@ -104,12 +105,8 @@ export function useMediaSession(player: PlayerState, track?: Track) {
     useEffect(() => {
         if (!navigator.mediaSession) return;
 
-        navigator.mediaSession.metadata = track ? new MediaMetadata({
-            title: track.title,
-            album: track.album,
-            artist: track.artist,
-        }) : null;
-    }, [track]);
+        navigator.mediaSession.metadata = active ? new MediaMetadata({ title, album, artist }) : null;
+    }, [active, title, album, artist]);
 
     useEffect(() => {
         if (!navigator.mediaSession) return;

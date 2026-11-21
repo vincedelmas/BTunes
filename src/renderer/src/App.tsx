@@ -86,19 +86,22 @@ export function App() {
         />
     );
 
-    // TrackTable is outside React Compiler so its action props need stable dependencies.
+    const allTracks = library.data.tracks;
+    const removablePlaylistId = activePlaylist && !activePlaylist.rule ? activePlaylist.id : undefined;
+
+    // React Compiler keeps these props stable for the uncompiled TrackTable.
     const actions: TrackActions = {
         onEdit: setEditing,
         onError: setError,
         onEnqueue: enqueue,
         onArtist: showArtist,
         onAlbum: (track) => setOpenedCollection({
-            ids: library.data.tracks.filter((item) => albumKey(item) === albumKey(track)).map((item) => item.id),
+            ids: allTracks.filter((item) => albumKey(item) === albumKey(track)).map((item) => item.id),
         }),
         onPlay: (track, list = tracks) => start(track, list),
         onAdd: (playlistId, trackIds) => void addToPlaylist(playlistId, trackIds),
-        onRemove: activePlaylist && !activePlaylist.rule
-            ? (trackIds) => void removeFromPlaylist(activePlaylist.id, trackIds)
+        onRemove: removablePlaylistId !== undefined
+            ? (trackIds) => void removeFromPlaylist(removablePlaylistId, trackIds)
             : undefined,
     };
 

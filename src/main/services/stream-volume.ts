@@ -123,16 +123,22 @@ export class StreamVolumeService {
         this.subscription?.kill();
     }
 
-    setVolume(volume: number, playing = this.playing) {
+    async setVolume(volume: number, playing = this.playing, replayMode = false) {
+        if (this.closed) return;
+
+        const playingChanged = this.playing !== playing;
         this.playing = playing;
-        // A reloaded renderer needs the current output mode even when volume is unchanged.
-        this.reported = undefined;
-        if (this.volume === volume) return this.refresh();
+        if (this.volume === volume) {
+            // Replay the known mode when a new renderer subscribes.
+            if (replayMode && this.reported) this.notify(this.reported.volume, this.reported.native);
+            if (playingChanged) await this.refresh();
+            return;
+        }
 
         this.volume = volume;
         this.dirty = true;
         this.revision++;
-        return this.refresh();
+        await this.refresh();
     }
 
     private report(native: boolean) {
