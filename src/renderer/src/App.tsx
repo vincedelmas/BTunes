@@ -47,7 +47,8 @@ export function App() {
     const [openedCollection, setOpenedCollection] = useState<OpenedCollection>();
     const collection = useCollection(library.data, library.reportError);
 
-    const { audio: audioRef } = player;
+    const { audio: audioRef, start, enqueue } = player;
+    const { addToPlaylist, removeFromPlaylist, setError } = library;
     const {
         view, search, artist, selected, tracks, genres, activePlaylist,
         setSearch, navigate, goBack, goForward, clearSearch, showArtist, clearFilters,
@@ -85,18 +86,19 @@ export function App() {
         />
     );
 
+    // TrackTable is outside React Compiler so its action props need stable dependencies.
     const actions: TrackActions = {
         onEdit: setEditing,
+        onError: setError,
+        onEnqueue: enqueue,
         onArtist: showArtist,
         onAlbum: (track) => setOpenedCollection({
             ids: library.data.tracks.filter((item) => albumKey(item) === albumKey(track)).map((item) => item.id),
         }),
-        onError: library.setError,
-        onEnqueue: player.enqueue,
-        onPlay: (track, list = tracks) => player.start(track, list),
-        onAdd: (playlistId, trackIds) => void library.addToPlaylist(playlistId, trackIds),
+        onPlay: (track, list = tracks) => start(track, list),
+        onAdd: (playlistId, trackIds) => void addToPlaylist(playlistId, trackIds),
         onRemove: activePlaylist && !activePlaylist.rule
-            ? (trackIds) => void library.removeFromPlaylist(activePlaylist.id, trackIds)
+            ? (trackIds) => void removeFromPlaylist(activePlaylist.id, trackIds)
             : undefined,
     };
 

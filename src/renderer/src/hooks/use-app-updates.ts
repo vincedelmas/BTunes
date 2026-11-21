@@ -2,6 +2,7 @@ import {rpc} from "@/lib/rpc";
 import {useEffect, useRef, useState} from "react";
 import {getErrorMessage} from "../../../shared/errors";
 import type {AppUpdateController} from "@/types/updates";
+import {useStateRefresh} from "@/hooks/use-state-refresh";
 import type {UpdateState} from "../../../shared/types/updates";
 
 export function useAppUpdates(): AppUpdateController {
@@ -11,40 +12,20 @@ export function useAppUpdates(): AppUpdateController {
     const [operationError, setOperationError] = useState("");
     const running = useRef(false);
     const mounted = useRef(false);
-    const lastSnapshot = useRef("");
-
     useEffect(() => {
-        let active = true;
-        let timer: ReturnType<typeof setTimeout>;
         mounted.current = true;
-
-        async function poll() {
-            try {
-                const snapshot = await rpc("updates.get", undefined);
-                if (active) {
-                    const serialized = JSON.stringify(snapshot);
-                    if (serialized !== lastSnapshot.current) {
-                        lastSnapshot.current = serialized;
-                        setState(snapshot);
-                    }
-                    setConnectionError("");
-                }
-            }
-            catch (error) {
-                if (active) setConnectionError(getErrorMessage(error));
-            }
-            finally {
-                if (active) timer = setTimeout(() => void poll(), 1000);
-            }
-        }
-
-        void poll();
         return () => {
-            active = false;
             mounted.current = false;
-            clearTimeout(timer);
         };
     }, []);
+
+    useStateRefresh("updates", async (isActive) => {
+        const snapshot = await rpc("updates.get", undefined);
+        if (!isActive()) return;
+
+        setState(snapshot);
+        setConnectionError("");
+    }, (error) => setConnectionError(getErrorMessage(error)));
 
     async function run(method: "updates.check" | "updates.download" | "updates.install") {
         if (running.current) return;

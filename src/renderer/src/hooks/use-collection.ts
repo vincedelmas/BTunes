@@ -5,10 +5,10 @@ import type {CollectionLocation} from "@/types/collection";
 import type {Snapshot} from "../../../shared/types/library";
 import {compareTracks} from "../../../shared/track-sorting";
 import type {TrackSort} from "../../../shared/types/track-sorting";
-import {useDeferredValue, useEffect, useRef, useState} from "react";
 import {trackSortSchema} from "../../../shared/schemas/preferences";
 import {duplicateKey, getAlbumArtist, groupAlbums} from "@/lib/music";
 import {selectSmartMix, smartMixes} from "../../../shared/smart-mixes";
+import {useDeferredValue, useEffect, useEffectEvent, useRef, useState} from "react";
 
 
 const viewTitles: Record<string, string> = {
@@ -44,6 +44,7 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
     const genres = genreChoices(data.tracks.map((track) => track.genre));
     const activePlaylist = data.playlists.find((playlist) => "playlist:" + playlist.id === view);
     const playlistId = activePlaylist?.id;
+    const reportPlaylistError = useEffectEvent(onError);
 
     useEffect(() => {
         let active = true;
@@ -54,13 +55,13 @@ export function useCollection(data: Snapshot, onError: (error: unknown) => void)
                 if (active) setPlaylistIds(ids);
             })
             .catch((error) => {
-                if (active) onError(error);
+                if (active) reportPlaylistError(error);
             });
 
         return () => {
             active = false;
         };
-    }, [playlistId, data.revision, onError]);
+    }, [playlistId, data.revision]);
 
     const duplicates = new Map<string, number>();
     const playlistMembers = new Set(playlistIds);

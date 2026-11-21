@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import {parseFile} from "music-metadata";
 import {execFileSync} from "node:child_process";
 import {LibraryService} from "../src/main/services/library.ts";
-import {mkdtemp, mkdir, rename, copyFile, rm} from "node:fs/promises";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
+import {copyFile, mkdir, mkdtemp, readdir, rename, rm, stat, utimes, writeFile} from "node:fs/promises";
 
 function deferred() {
     let release: () => void = () => undefined;
@@ -68,12 +68,15 @@ void test("shutdown drains an in-flight import and refuses new work", async () =
     const music = join(root, "music");
     await mkdir(music);
     audio(join(music, "a.flac"));
-    await copyFile(join(music, "a.flac"), join(music, "b.flac"));
+    for (const name of ["b", "c", "d", "e"]) {
+        await copyFile(join(music, "a.flac"), join(music, name + ".flac"));
+    }
     const entered = deferred();
     const gate = deferred();
     const file = join(root, "library.sqlite");
+    let started = 0;
     const library = new LibraryService(new LibraryRepository(file), join(root, "covers"), async (path) => {
-        entered.resolve();
+        if (++started === 4) entered.resolve();
         await gate.promise;
         return parseFile(path);
     });
@@ -82,13 +85,14 @@ void test("shutdown drains an in-flight import and refuses new work", async () =
         const importing = library.scan(music);
         await entered.promise;
         const closing = library.close();
+        assert.equal(started, 4, "Only four metadata readers should run at a time");
         await assert.rejects(library.scan(music), /shutting down/);
         await assert.rejects(library.index(join(music, "b.flac")), /shutting down/);
         gate.resolve();
         await importing;
         await closing;
         const reopened = new LibraryRepository(file);
-        assert.equal(reopened.snapshot().tracks.length, 1);
+        assert.equal(reopened.snapshot().tracks.length, 4);
         reopened.db.close();
     }
     finally {
@@ -129,6 +133,49 @@ void test("deleting a song during indexing cannot resurrect its database entry",
     }
     finally {
         gate.resolve();
+        await library.close();
+        await rm(root, { recursive: true, force: true });
+    }
+});
+
+void test("shared artwork is written once and reconciliation prunes only unreferenced cache files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-covers-"));
+    const music = join(root, "music");
+    const covers = join(root, "covers");
+    await mkdir(music);
+    const first = join(music, "a.flac");
+    const second = join(music, "b.flac");
+    audio(first);
+    await copyFile(first, second);
+
+    const library = new LibraryService(new LibraryRepository(":memory:"), covers, async (path) => {
+        const metadata = await parseFile(path);
+        metadata.common.picture = [{ format: "image/jpeg", data: Buffer.from("shared artwork") }];
+        return metadata;
+    });
+
+    try {
+        assert.equal((await library.scan(music)).imported, 2);
+        const [hash] = await readdir(covers);
+        assert.match(hash, /^[a-f0-9]{64}$/);
+        const cover = join(covers, hash);
+        await utimes(cover, 1000, 1000);
+        await library.index(first);
+        assert.equal((await stat(cover)).mtimeMs, 1000000, "Reindexing a shared cover should reuse the cached file");
+
+        const orphan = "f".repeat(64);
+        await writeFile(join(covers, orphan), "orphan");
+        await writeFile(join(covers, "other.txt"), "unmanaged");
+
+        await rm(first);
+        await library.reconcile();
+        assert.deepEqual((await readdir(covers)).sort(), [hash, "other.txt"].sort());
+
+        await rm(second);
+        await library.reconcile();
+        assert.deepEqual(await readdir(covers), ["other.txt"]);
+    }
+    finally {
         await library.close();
         await rm(root, { recursive: true, force: true });
     }

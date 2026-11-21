@@ -31,6 +31,7 @@ interface AppUpdateOptions {
     enabled: boolean;
     stateFile: string;
     now?: () => number;
+    changed?: () => void;
     adapter?: AppUpdateAdapter;
     beforeInstall: () => Promise<void>;
 }
@@ -100,7 +101,10 @@ export class AppUpdateService {
     check(manual = true): Promise<void> {
         if (!this.state.enabled || this.closed || this.installing) return Promise.resolve();
         if (this.state.status === "downloading" || this.state.status === "downloaded") {
-            if (manual) this.state.showPrompt = true;
+            if (manual) {
+                this.state.showPrompt = true;
+                this.options.changed?.();
+            }
             return Promise.resolve();
         }
         if (this.pending) {
@@ -145,6 +149,7 @@ export class AppUpdateService {
             this.state.error = getErrorMessage(error);
             this.state.showPrompt = true;
             this.installing = false;
+            this.options.changed?.();
             throw error;
         }
     }
@@ -153,6 +158,7 @@ export class AppUpdateService {
         await this.ready;
         this.state.showPrompt = false;
         this.dismissedVersion = this.state.availableVersion;
+        this.options.changed?.();
         await this.save();
     }
 
@@ -174,6 +180,7 @@ export class AppUpdateService {
     private readonly progress = ({ percent }: { percent: number }) => {
         if (!this.closed && this.state.status === "downloading" && Number.isFinite(percent)) {
             this.state.progress = Math.max(0, Math.min(100, percent));
+            this.options.changed?.();
         }
     };
 
@@ -183,6 +190,7 @@ export class AppUpdateService {
 
         this.state.error = getErrorMessage(error);
         if (this.state.status !== "downloaded") this.state.status = "error";
+        this.options.changed?.();
     };
 
     private async runCheck() {
@@ -195,6 +203,7 @@ export class AppUpdateService {
 
         this.state.status = "checking";
         this.state.error = undefined;
+        this.options.changed?.();
 
         try {
             const result = await this.options.adapter?.checkForUpdates();
@@ -216,6 +225,9 @@ export class AppUpdateService {
             this.state.error = getErrorMessage(error);
             this.state.showPrompt = this.manualRequested && Boolean(this.state.availableVersion);
         }
+        finally {
+            if (!this.closed) this.options.changed?.();
+        }
     }
 
     private async runDownload() {
@@ -227,6 +239,7 @@ export class AppUpdateService {
         this.state.progress = 0;
         this.state.error = undefined;
         this.state.showPrompt = true;
+        this.options.changed?.();
 
         try {
             const files = await this.options.adapter?.downloadUpdate();
@@ -244,6 +257,9 @@ export class AppUpdateService {
             this.state.error = getErrorMessage(error);
             this.state.progress = undefined;
         }
+        finally {
+            if (!this.closed) this.options.changed?.();
+        }
     }
 
     private async load() {
@@ -251,6 +267,7 @@ export class AppUpdateService {
             const saved = persistedUpdateStateSchema.parse(JSON.parse(await readFile(this.options.stateFile, "utf8")));
             this.state.lastCheckedAt = saved.lastCheckedAt;
             this.dismissedVersion = saved.dismissedVersion;
+            if (!this.closed) this.options.changed?.();
         }
         catch (error) {
             if ((error as NodeJS.ErrnoException).code !== "ENOENT") console.warn("Could not read update preferences:", getErrorMessage(error));

@@ -1,6 +1,7 @@
 import {rpc} from "@/lib/rpc";
 import {useEffect, useRef, useState} from "react";
 import {getErrorMessage} from "../../../shared/errors";
+import {useStateRefresh} from "@/hooks/use-state-refresh";
 import type {DownloadSnapshot} from "../../../shared/types/downloads";
 
 export function useDownloads() {
@@ -9,35 +10,24 @@ export function useDownloads() {
     const [deleting, setDeleting] = useState<string[]>([]);
     const revision = useRef<number | undefined>(undefined);
 
+    function apply(data: DownloadSnapshot | null) {
+        if (!data || data.revision <= (revision.current ?? -1)) return;
+        revision.current = data.revision;
+        setSnapshot(data);
+    }
+
+    useStateRefresh("downloads", async (isActive) => {
+        const data = await rpc("downloads.get", { revision: revision.current });
+        if (isActive()) apply(data);
+    }, (error) => setError(getErrorMessage(error)));
+
     useEffect(() => {
         let active = true;
-        let pending = false;
-
-        async function poll() {
-            if (pending) return;
-            pending = true;
-            try {
-                const data = await rpc("downloads.get", { revision: revision.current });
-                if (active && data) {
-                    revision.current = data.revision;
-                    setSnapshot(data);
-                }
-            }
-            catch (error) {
-                if (active) setError(getErrorMessage(error));
-            }
-            finally {
-                pending = false;
-            }
-        }
-
-        void rpc("downloads.enter", undefined).then(poll).catch((error: unknown) => {
+        void rpc("downloads.enter", undefined).catch((error: unknown) => {
             if (active) setError(getErrorMessage(error));
         });
-        const timer = setInterval(() => void poll(), 500);
         return () => {
             active = false;
-            clearInterval(timer);
         };
     }, []);
 
@@ -56,11 +46,7 @@ export function useDownloads() {
         try {
             await run(async () => {
                 await rpc("downloads.discard", { id });
-                const data = await rpc("downloads.get", {});
-                if (data) {
-                    revision.current = data.revision;
-                    setSnapshot(data);
-                }
+                apply(await rpc("downloads.get", {}));
             });
         }
         finally {

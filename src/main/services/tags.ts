@@ -13,11 +13,12 @@ import {basename, dirname, extname, join} from "node:path";
 import {genreChoices, resolveGenre} from "../../shared/genres.ts";
 import {tagPatchFieldsSchema} from "../../shared/schemas/tags.ts";
 import type {TagPatch, TagPreview, TagSaveResult} from "../../shared/types/tags.ts";
-import {chmod, copyFile, lstat, mkdir, rename, rm, writeFile} from "node:fs/promises";
+import {chmod, copyFile, lstat, mkdir, readdir, rename, rm, writeFile} from "node:fs/promises";
 
 
 const run = promisify(execFile);
 const previewLifetime = 10 * 60 * 1000;
+const completedBackup = "complete";
 
 
 const formats: Record<string, string> = {
@@ -43,7 +44,7 @@ export class TagService {
     private readonly ffmpeg: () => string;
     private readonly backupRoot: string;
     private plans = new Map<string, SavePlan>();
-    private library: Pick<LibraryService, "repo" | "index">;
+    private readonly library: Pick<LibraryService, "repo" | "index">;
 
     constructor(library: Pick<LibraryService, "repo" | "index">, backupRoot: string, ffmpeg: () => string = () => "ffmpeg") {
         this.ffmpeg = ffmpeg;
@@ -51,11 +52,27 @@ export class TagService {
         this.backupRoot = backupRoot;
     }
 
+    async removeCompletedBackups() {
+        const entries = await readdir(this.backupRoot, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+            if (error.code === "ENOENT") return [];
+            throw error;
+        });
+
+        for (const entry of entries) {
+            if (!entry.isDirectory() || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(entry.name)) continue;
+
+            const path = join(this.backupRoot, entry.name);
+            // An unmarked backup may be the only recoverable original.
+            const marker = await lstat(join(path, completedBackup)).catch(() => undefined);
+            if (marker?.isFile()) await rm(path, { recursive: true, force: true }).catch(console.warn);
+        }
+    }
+
     async preview(ids: number[], input: TagPatch, artwork?: EmbeddedArtwork): Promise<TagPreview> {
         const files: PlannedFile[] = [];
         const patch = tagPatchFieldsSchema.parse(input);
         if (patch.genre) {
-            const genres = genreChoices(this.library.repo.snapshot().tracks.map((track) => track.genre));
+            const genres = genreChoices(this.library.repo.genres());
             patch.genre = resolveGenre(patch.genre, genres);
         }
 
@@ -118,26 +135,27 @@ export class TagService {
             throw new Error("This preview has expired. Preview your changes again.");
         }
 
-        this.saving = true;
         this.plans.delete(token);
+        if (!plan.files.length) return { updated: 0 };
+
+        this.saving = true;
+        let backupCreated = false;
+        let needsRecovery = false;
 
         const replaced: (typeof prepared)[number][] = [];
         const backupDirectory = join(this.backupRoot, token);
         const prepared: { file: PlannedFile; temporary: string; backup: string }[] = [];
 
         try {
-            if (!plan.files.length) {
-                return { updated: 0, backupDirectory: "" };
-            }
-
             try {
                 await run(this.ffmpeg(), ["-version"], { timeout: 10000 });
             }
             catch {
-                throw new Error("FFmpeg is required to save tags. Install it with: sudo pacman -S ffmpeg");
+                throw new Error("FFmpeg is required to save tags. Install FFmpeg for your Linux distribution or set up managed download tools in BTunes.");
             }
 
             await mkdir(backupDirectory, { recursive: true });
+            backupCreated = true;
             await writeFile(
                 join(backupDirectory, "manifest.json"),
                 JSON.stringify(plan.files
@@ -210,7 +228,7 @@ export class TagService {
                 await this.library.index(file.track.path);
             }
 
-            return { updated: prepared.length, backupDirectory };
+            return { updated: prepared.length };
         }
         catch (error) {
             // Restore using sibling temp file so restoration is atomic too
@@ -228,6 +246,7 @@ export class TagService {
             }
 
             if (failures.length) {
+                needsRecovery = true;
                 throw new Error("Could not restore: " + failures.join(", ") + ". Original backups: " + backupDirectory, { cause: error });
             }
 
@@ -235,6 +254,11 @@ export class TagService {
         }
         finally {
             await Promise.allSettled(prepared.map(({ temporary }) => rm(temporary, { force: true })));
+            if (backupCreated && !needsRecovery) {
+                // Leave a cleanup marker if deleting the backup needs to be retried at startup.
+                await writeFile(join(backupDirectory, completedBackup), "", { flag: "wx" }).catch(() => undefined);
+                await rm(backupDirectory, { recursive: true, force: true }).catch(console.warn);
+            }
             this.saving = false;
         }
     }

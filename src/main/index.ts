@@ -16,10 +16,11 @@ import {startMediaPlayer} from "./services/media-player";
 import {DeviceSyncService} from "./services/device-sync";
 import {FileImportService} from "./services/file-import";
 import {LibraryRepository} from "./repositories/library";
+import {downloadProcess} from "./services/download-process";
 import {DownloadRepository} from "./repositories/downloads";
 import {StreamVolumeService} from "./services/stream-volume";
-import type {RpcInput, RpcRoutes} from "../shared/types/rpc";
 import {version as applicationVersion} from "../../package.json";
+import type {RpcInput, RpcRoutes, StateTopic} from "../shared/types/rpc";
 import {readWindowState, saveWindowState} from "./services/window-state";
 import {app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, screen, shell} from "electron";
 
@@ -68,7 +69,12 @@ protocol.registerSchemesAsPrivileged([{
 }]);
 
 
+const ownsProfile = app.requestSingleInstanceLock();
+if (!ownsProfile) app.quit();
+
+
 let quitting = false;
+let shutdownComplete = false;
 let installingUpdate = false;
 let updates: AppUpdateService;
 let service: LibraryService;
@@ -77,6 +83,7 @@ let downloads: DownloaderService;
 let streamVolume: StreamVolumeService | undefined;
 let desktopMedia: Awaited<ReturnType<typeof startMediaPlayer>> | undefined;
 const pendingWrites = new Set<Promise<unknown>>();
+let stateTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function trackWrite<T>(write: Promise<T>) {
     pendingWrites.add(write);
@@ -90,41 +97,57 @@ async function trackWrite<T>(write: Promise<T>) {
 
 
 void app.whenReady().then(async () => {
+    if (!ownsProfile) return;
+
+    const topics = new Set<StateTopic>();
+    let notificationWindow: BrowserWindow | undefined;
+    function notify(topic: StateTopic) {
+        if (quitting) return;
+
+        topics.add(topic);
+        if (stateTimer) return;
+
+        // Coalesce progress updates and bursts of library writes into one renderer refresh.
+        stateTimer = setTimeout(() => {
+            stateTimer = undefined;
+            const contents = notificationWindow?.webContents;
+            if (contents && !contents.isDestroyed()) contents.send("state-changed", [...topics]);
+            topics.clear();
+        }, 150);
+        stateTimer.unref();
+    }
+
     Menu.setApplicationMenu(null);
 
     const repo = new LibraryRepository(
         join(app.getPath("userData"), "library.sqlite"),
         app.isPackaged ? join(process.resourcesPath, "drizzle") : join(__dirname, "../../drizzle"),
+        () => notify("library"),
     );
 
     service = new LibraryService(repo, join(app.getPath("userData"), "covers"));
     const downloadRepo = new DownloadRepository(repo.db);
     const tools = new DownloadTools(join(app.getPath("userData"), "download-tools"), () => downloads.changed());
     const artwork = new ArtworkService(fetch, () => tools.ffmpeg());
-    downloads = new DownloaderService(downloadRepo, service, artwork, tools, join(app.getPath("userData"), "download-staging"));
+    downloads = new DownloaderService(
+        downloadRepo, service, artwork, tools, join(app.getPath("userData"), "download-staging"),
+        downloadProcess, () => notify("downloads"),
+    );
     const fileImport = new FileImportService(service);
-    devices = new DeviceSyncService(repo, new MtpClient());
+    devices = new DeviceSyncService(repo, new MtpClient(), () => notify("devices"));
     const tags = new TagService(service, join(app.getPath("userData"), "tag-backups"), () => tools.ffmpeg());
 
-    const updatesEnabled = app.isPackaged && process.platform === "linux" && process.arch === "x64" && Boolean(process.env.APPIMAGE);
-    updates = new AppUpdateService({
-        adapter: updatesEnabled ? electronUpdater.autoUpdater : undefined,
-        version: app.isPackaged ? app.getVersion() : applicationVersion,
-        enabled: updatesEnabled,
-        stateFile: join(app.getPath("userData"), "app-updates.json"),
-        beforeInstall: async () => {
-            await Promise.allSettled(pendingWrites);
-            await downloads.close();
-            await devices.close();
-        },
-    });
+    await Promise.all([
+        tools.pruneInactive().catch((error: unknown) => console.warn("Could not prune download tools:", error)),
+        tags.removeCompletedBackups().catch((error: unknown) => console.warn("Could not prune tag backups:", error)),
+    ]);
 
     const routes = {
         "media.update": {
             schema: rpcSchemas["media.update"],
             run: (input: RpcInput<"media.update">) => {
                 desktopMedia?.player.update(input);
-                void streamVolume?.setVolume(input.volume);
+                void streamVolume?.setVolume(input.volume, input.playing);
             },
         },
         "updates.get": { schema: rpcSchemas["updates.get"], run: () => updates.get() },
@@ -271,6 +294,27 @@ void app.whenReady().then(async () => {
         },
     });
 
+    notificationWindow = win;
+
+    const updatesEnabled = app.isPackaged && process.platform === "linux" && process.arch === "x64" && Boolean(process.env.APPIMAGE);
+    updates = new AppUpdateService({
+        adapter: updatesEnabled ? electronUpdater.autoUpdater : undefined,
+        version: app.isPackaged ? app.getVersion() : applicationVersion,
+        enabled: updatesEnabled,
+        changed: () => notify("updates"),
+        stateFile: join(app.getPath("userData"), "app-updates.json"),
+        beforeInstall: async () => {
+            await Promise.allSettled(pendingWrites);
+            await closeBackgroundServices();
+        },
+    });
+
+    app.on("second-instance", () => {
+        if (win.isDestroyed()) return;
+        if (win.isMinimized()) win.restore();
+        win.focus();
+    });
+
     win.on("close", () => saveWindowState(windowStatePath, win));
     if (windowState?.maximized) win.maximize();
     if (windowState?.fullscreen) win.setFullScreen(true);
@@ -289,6 +333,7 @@ void app.whenReady().then(async () => {
     }
 
     win.on("closed", () => {
+        notificationWindow = undefined;
         streamVolume?.close();
         desktopMedia?.close();
     });
@@ -338,8 +383,16 @@ void app.whenReady().then(async () => {
             }
         }
 
-        if (url.hostname === "cover" && /^[a-f0-9]{64}$/.test(url.pathname.slice(1)))
-            return net.fetch(pathToFileURL(join(service.covers, url.pathname.slice(1))).href);
+        if (url.hostname === "cover" && /^[a-f0-9]{64}$/.test(url.pathname.slice(1))) {
+            const path = join(service.covers, url.pathname.slice(1));
+            return net.fetch(pathToFileURL(path).href).then((response) => {
+                if (!response.ok) return response;
+
+                const headers = new Headers(response.headers);
+                headers.set("Cache-Control", "private, max-age=31536000, immutable");
+                return new Response(response.body, { status: response.status, headers });
+            }).catch(() => new Response("Cover not found", { status: 404 }));
+        }
 
         return new Response("Not found", { status: 404 });
     });
@@ -371,16 +424,32 @@ void app.whenReady().then(async () => {
 app.on("window-all-closed", () => app.quit());
 
 
-app.on("before-quit", (ev) => {
-    if (service && !quitting) {
-        ev.preventDefault();
-
-        quitting = true;
-        updates?.close();
-        void Promise.allSettled(pendingWrites)
-            .then(() => downloads.close())
-            .then(() => devices.close())
-            .then(() => service.close())
-            .finally(() => app.quit());
+async function closeBackgroundServices() {
+    const results = await Promise.allSettled([downloads?.close(), devices?.close()]);
+    const failures = results.filter((result) => result.status === "rejected").map((result) => result.reason);
+    if (failures.length) {
+        const detail = failures.map((failure) => failure instanceof Error ? failure.message : String(failure)).join("; ");
+        throw new AggregateError(failures, "Could not close background services. " + detail);
     }
+}
+
+
+app.on("before-quit", (ev) => {
+    if (!service || shutdownComplete) return;
+
+    ev.preventDefault();
+    if (quitting) return;
+
+    quitting = true;
+    clearTimeout(stateTimer);
+    updates?.close();
+    void Promise.allSettled(pendingWrites)
+        .then(closeBackgroundServices)
+        .catch((error: unknown) => console.error("Could not close background services:", error))
+        .then(() => service.close())
+        .catch((error: unknown) => console.error("Could not close the library:", error))
+        .finally(() => {
+            shutdownComplete = true;
+            app.quit();
+        });
 });

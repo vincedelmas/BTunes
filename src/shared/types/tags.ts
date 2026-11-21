@@ -16,5 +16,4 @@ export type TagPreview = {
 
 export type TagSaveResult = {
     updated: number;
-    backupDirectory: string;
 };

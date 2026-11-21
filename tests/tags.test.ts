@@ -10,7 +10,7 @@ import {TagService} from "../src/main/services/tags.ts";
 import {tagPatchSchema} from "../src/shared/schemas/tags.ts";
 import {normalizeArtwork} from "../src/main/services/artwork.ts";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
-import {mkdtemp, readFile, rm, writeFile, appendFile} from "node:fs/promises";
+import {appendFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile} from "node:fs/promises";
 
 const run = promisify(execFile);
 
@@ -170,12 +170,7 @@ void test("tag edits round-trip MP3, FLAC, and M4A without changing audio or art
             assert.equal(await f.audioHash(track.path), hash);
             assert.equal(f.repo.get(track.id)?.favorite, 1);
             assert.equal(f.repo.get(track.id)?.title, "After – 夜");
-            assert.deepEqual(
-                await readFile(
-                    join(result.backupDirectory, track.id + "." + extension),
-                ),
-                original,
-            );
+            assert.deepEqual(await readdir(join(f.root, "backups")), []);
             await assert.rejects(f.service.save(preview.token), /expired/);
         }
     }
@@ -278,6 +273,33 @@ void test("a failure after replacement restores every source in a batch", async 
             assert.deepEqual(await readFile(track.path), originals[index]);
             assert.equal(f.repo.get(track.id)?.artist, "Test artist");
         }
+        assert.deepEqual(await readdir(join(f.root, "rollback-backups")), []);
+    }
+    finally {
+        await f.close();
+    }
+});
+
+void test("an incomplete rollback retains the original backup for recovery", async () => {
+    const f = await fixture();
+
+    try {
+        const track = await f.create("mp3");
+        const original = await readFile(track.path);
+        const backupRoot = join(f.root, "recovery-backups");
+        const service = new TagService({
+            repo: f.repo,
+            async index() {
+                throw new Error("Simulated persistent index failure");
+            },
+        }, backupRoot);
+
+        const preview = await service.preview([track.id], { artist: "New artist" });
+        await assert.rejects(service.save(preview.token), /Original backups:/);
+        await service.removeCompletedBackups();
+
+        const backup = join(backupRoot, preview.token, track.id + ".mp3");
+        assert.deepEqual(await readFile(backup), original);
     }
     finally {
         await f.close();
@@ -293,7 +315,6 @@ void test("album artist and a new embedded cover apply to every selected file wi
         const artwork = { data, hash: createHash("sha256").update(data).digest("hex") };
         const tracks = await Promise.all([f.create("mp3"), f.create("flac"), f.create("m4a")]);
         const hashes = await Promise.all(tracks.map((track) => f.audioHash(track.path)));
-        const originals = await Promise.all(tracks.map((track) => readFile(track.path)));
         const prepared = await f.service.preview(tracks.map((track) => track.id), { albumArtist: "Album artist" }, artwork);
         const result = await f.service.save(prepared.token);
         assert.equal(result.updated, 3);
@@ -307,8 +328,9 @@ void test("album artist and a new embedded cover apply to every selected file wi
             assert.equal(after.common.picture?.length, 1);
             assert.deepEqual(Buffer.from(after.common.picture![0].data), data);
             assert.equal(await f.audioHash(track.path), hashes[index]);
-            assert.deepEqual(await readFile(join(result.backupDirectory, track.id + "." + track.path.split(".").at(-1))), originals[index]);
         }
+
+        assert.deepEqual(await readdir(join(f.root, "backups")), []);
 
         const coverOnly = await f.service.preview([tracks[0].id], {}, artwork);
         assert.equal((await f.service.save(coverOnly.token)).updated, 1);
@@ -338,5 +360,27 @@ void test("saving a genre reuses the spelling already present in the library", a
     }
     finally {
         await f.close();
+    }
+});
+
+void test("startup removes marked backups and preserves unmarked recovery backups", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-backup-retention-"));
+    const repo = new LibraryRepository(":memory:");
+    const service = new TagService({ repo, index: async () => {} }, root);
+    const completed = join(root, "00000000-0000-4000-8000-000000000001");
+    const recovery = "00000000-0000-4000-8000-000000000002";
+
+    try {
+        await mkdir(completed);
+        await mkdir(join(root, recovery));
+        await writeFile(join(completed, "complete"), "");
+        await writeFile(join(root, recovery, "track.mp3"), "original");
+
+        await service.removeCompletedBackups();
+        assert.deepEqual(await readdir(root), [recovery]);
+    }
+    finally {
+        repo.db.close();
+        await rm(root, { recursive: true, force: true });
     }
 });

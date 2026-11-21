@@ -1,7 +1,8 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "../../../shared/errors";
+import {useStateRefresh} from "@/hooks/use-state-refresh";
 import type {Snapshot} from "../../../shared/types/library";
-import {useEffect, useEffectEvent, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 
 export function useLibrary() {
@@ -19,7 +20,8 @@ export function useLibrary() {
     const revision = useRef<number | undefined>(undefined);
     const refreshing = useRef<Promise<void> | undefined>(undefined);
 
-    const refresh = () => {
+    // Keep the action callbacks stable for the uncompiled TrackTable.
+    const refresh = useCallback(() => {
         if (refreshing.current) return refreshing.current;
 
         const request = rpc("library.get", revision.current === undefined ? undefined : { revision: revision.current })
@@ -35,7 +37,7 @@ export function useLibrary() {
 
         refreshing.current = request;
         return request;
-    };
+    }, []);
 
     async function reconcile() {
         setBusy(true);
@@ -49,18 +51,13 @@ export function useLibrary() {
         }
     }
 
-    const reportError = (error: unknown) => setError(getErrorMessage(error));
+    const reportError = useCallback((error: unknown) => setError(getErrorMessage(error)), []);
 
-    const pollLibrary = useEffectEvent(() => {
-        void refresh().catch(reportError);
-    });
-
-    useEffect(() => {
-        pollLibrary();
-        const timer = setInterval(() => pollLibrary(), 5000);
-
-        return () => clearInterval(timer);
-    }, []);
+    useStateRefresh("library", async (isActive) => {
+        // A manual refresh may have read the previous revision before this notification.
+        await refreshing.current?.catch(() => undefined);
+        if (isActive()) await refresh();
+    }, reportError);
 
     useEffect(() => {
         if (!notice) return;
@@ -91,7 +88,7 @@ export function useLibrary() {
         }
     }
 
-    async function updatePlaylist(method: "playlist.add" | "playlist.remove", playlistId: number, trackIds: number[], message: string) {
+    const updatePlaylist = useCallback(async (method: "playlist.add" | "playlist.remove", playlistId: number, trackIds: number[], message: string) => {
         try {
             await rpc(method, { playlistId, trackIds });
             setNotice(message);
@@ -100,15 +97,15 @@ export function useLibrary() {
         catch (error) {
             reportError(error);
         }
-    }
+    }, [refresh, reportError]);
 
-    function addToPlaylist(playlistId: number, trackIds: number[]) {
-        return updatePlaylist("playlist.add", playlistId, trackIds, "Songs added to playlist.");
-    }
+    const addToPlaylist = useCallback((playlistId: number, trackIds: number[]) => (
+        updatePlaylist("playlist.add", playlistId, trackIds, "Songs added to playlist.")
+    ), [updatePlaylist]);
 
-    function removeFromPlaylist(playlistId: number, trackIds: number[]) {
-        return updatePlaylist("playlist.remove", playlistId, trackIds, "Songs removed from playlist.");
-    }
+    const removeFromPlaylist = useCallback((playlistId: number, trackIds: number[]) => (
+        updatePlaylist("playlist.remove", playlistId, trackIds, "Songs removed from playlist.")
+    ), [updatePlaylist]);
 
     return {
         ready,

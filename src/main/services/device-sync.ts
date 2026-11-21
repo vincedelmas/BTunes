@@ -10,15 +10,17 @@ import type {DeviceFile, DeviceSyncState} from "../../shared/types/devices.ts";
 import type {DeviceSyncPlan, DeviceTransport, DevicePlaylistPlan} from "../types/devices.ts";
 
 export class DeviceSyncService {
-    private readonly repo: Pick<LibraryRepository, "snapshot" | "playlist">;
+    private readonly repo: Pick<LibraryRepository, "revision" | "snapshot" | "playlist">;
+    private readonly changed: () => void;
     readonly transport: DeviceTransport;
     private state: DeviceSyncState = { phase: "idle", completed: 0, total: 0, current: "", errors: [] };
     private task?: Promise<void>;
     private cancelled = false;
     private plan?: DeviceSyncPlan;
 
-    constructor(repo: Pick<LibraryRepository, "snapshot" | "playlist">, transport: DeviceTransport) {
+    constructor(repo: Pick<LibraryRepository, "revision" | "snapshot" | "playlist">, transport: DeviceTransport, changed = () => {}) {
         this.repo = repo;
+        this.changed = changed;
         this.transport = transport;
     }
 
@@ -38,7 +40,9 @@ export class DeviceSyncService {
                 if (this.cancelled && this.state.phase !== "error") this.state.phase = "cancelled";
                 this.state.current = "";
                 this.task = undefined;
+                this.changed();
             });
+        this.changed();
     }
 
     compare(storageId: string, path: string, playlistIds: number[] = []) {
@@ -50,6 +54,7 @@ export class DeviceSyncService {
             while (folders.length && !this.cancelled) {
                 const folder = folders.pop()!;
                 this.state.current = folder;
+                this.changed();
                 const entries = await this.transport.files(storageId, folder);
                 for (const entry of entries) {
                     if (entry.directory) folders.push(entry.path);
@@ -107,7 +112,7 @@ export class DeviceSyncService {
         const plan = this.plan;
         if (this.state.phase !== "ready" || !plan) throw new Error("Compare your library and phone first.");
 
-        if (this.repo.snapshot().revision !== plan.revision) {
+        if (this.repo.revision !== plan.revision) {
             throw new Error("Your library changed. Compare again before syncing.");
         }
 
@@ -122,6 +127,7 @@ export class DeviceSyncService {
             for (const track of plan.tracks) {
                 if (this.cancelled) break;
                 this.state.current = track.title;
+                this.changed();
                 const destination = posix.join(plan.path, basename(track.path));
                 const source = await stat(track.path);
                 if (source.size !== track.size || (track.modifiedAt && source.mtimeMs !== track.modifiedAt)) {
@@ -156,6 +162,7 @@ export class DeviceSyncService {
 
     private async exportPlaylist(storageId: string, playlist: DevicePlaylistPlan) {
         this.state.current = posix.basename(playlist.path);
+        this.changed();
 
         for (const reference of playlist.references) {
             const file = await this.transport.metadata(storageId, reference.path);

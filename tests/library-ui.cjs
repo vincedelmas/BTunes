@@ -1,4 +1,4 @@
-const {app} = require("electron");
+const {app, net} = require("electron");
 const {DatabaseSync} = require("node:sqlite");
 const {drizzle} = require("drizzle-orm/node-sqlite");
 const {migrate} = require("drizzle-orm/node-sqlite/migrator");
@@ -415,8 +415,15 @@ app.on("browser-window-created", (_, win) => {
                     );
                     const properties = object.getInterface("org.freedesktop.DBus.Properties");
                     const iface = "org.mpris.MediaPlayer2.Player";
+                    await win.webContents.executeJavaScript(`(() => {
+                        window.reportedStreamVolume = undefined;
+                        window.stopWatchingStreamVolume = window.btunes.onMediaCommand((command) => {
+                            if (command.action === 'stream-volume') window.reportedStreamVolume = command.volume;
+                        });
+                    })()`);
                     await properties.Set(iface, "Volume", new dbus.Variant("d", 0.42));
                     await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        window.reportedStreamVolume === 0.42 &&
                         [0.42, 1].includes(document.querySelector('audio').volume) &&
                         Number(document.querySelector('.volume input').value) === 0.42
                     )`);
@@ -427,8 +434,10 @@ app.on("browser-window-created", (_, win) => {
                         slider.dispatchEvent(new Event('input', { bubbles: true }));
                     })()`);
                     await win.webContents.executeJavaScript(`window.uiReview.waitFor(() =>
+                        window.reportedStreamVolume === 0.65 &&
                         Number(document.querySelector('[aria-label="Volume"]').value) === 0.65
                     )`);
+                    await win.webContents.executeJavaScript('window.stopWatchingStreamVolume()');
                     const volume = await properties.Get(iface, "Volume");
                     if (Math.abs(volume.value - 0.65) > 0.001) throw new Error("Desktop volume did not follow the app slider");
                     win.webContents.send("media-command", { action: "stream-volume", volume: 0.65, native: true });
@@ -542,7 +551,7 @@ app.on("browser-window-created", (_, win) => {
                 if(!document.querySelector('[data-slot="dialog-overlay"]')) throw new Error('Tag editor must be a fixed modal');
                 if(!document.getElementById('tag-albumArtist')) throw new Error('Album artist field is missing');
             })()`, true);
-            await win.webContents.executeJavaScript(`(async () => {
+            const cover = await win.webContents.executeJavaScript(`(async () => {
                 const {waitFor,button}=window.uiReview;
                 document.querySelector('[aria-label="Reset Title"]').click();
                 await waitFor(()=>document.getElementById('tag-title').value==='Silence');
@@ -565,8 +574,15 @@ app.on("browser-window-created", (_, win) => {
                 button('Save').click();
                 await waitFor(()=>!document.querySelector('.tag-editor'));
                 const saved=await window.btunes.rpc('library.get',undefined);
-                if(!saved.tracks.find(track=>track.id===1)?.cover) throw new Error('Online artwork did not persist');
+                const cover=saved.tracks.find(track=>track.id===1)?.cover;
+                if(!cover) throw new Error('Online artwork did not persist');
+                return cover;
             })()`, true);
+            const response = await net.fetch('btunes://cover/' + cover);
+            if (!response.ok || response.headers.get('Cache-Control') !== 'private, max-age=31536000, immutable') {
+                throw new Error('Content-addressed artwork did not return immutable cache headers');
+            }
+            await response.arrayBuffer();
             const savedMetadata = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_streams', '-of', 'json', source], {encoding: 'utf8'}));
             if (!savedMetadata.streams.some(stream => stream.disposition?.attached_pic === 1)) throw new Error('Online artwork was not embedded in the audio file');
             await win.webContents.executeJavaScript(`(async () => {

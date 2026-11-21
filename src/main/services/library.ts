@@ -1,26 +1,30 @@
 import {watch} from "chokidar";
 import type {Stats} from "node:fs";
-import {createHash} from "node:crypto";
 import {readTags} from "./metadata.ts";
 import type {FSWatcher} from "chokidar";
 import {parseFile} from "music-metadata";
+import {createHash, randomUUID} from "node:crypto";
 import {isAudioFile} from "../../shared/audio-files.ts";
 import {basename, extname, join, resolve, sep} from "node:path";
-import {mkdir, readdir, stat, writeFile} from "node:fs/promises";
 import type {LibraryRepository} from "../repositories/library.ts";
+import {access, link, mkdir, readdir, rm, stat, writeFile} from "node:fs/promises";
 
+const scanWorkers = 4;
 const folderIdentity = (info: Stats) => info.dev + ":" + info.ino;
 
 export class LibraryService {
     private closing = false;
     private closed?: Promise<void>;
+    private reconciliation?: Promise<{ errors: string[] }>;
     readonly covers: string;
     private watcher?: FSWatcher;
     private watching = Promise.resolve();
+    private coverSweep = Promise.resolve();
+    private coverWrites = new Map<string, Promise<void>>();
     private readonly readMetadata: typeof parseFile;
     readonly repo: LibraryRepository;
     private operations = new Set<Promise<unknown>>();
-    private jobs = new Map<string, Promise<void>>();
+    private jobs = new Map<string, Promise<unknown>>();
 
     constructor(repo: LibraryRepository, covers: string, readMetadata: typeof parseFile = parseFile) {
         this.repo = repo;
@@ -34,25 +38,31 @@ export class LibraryService {
         return operation;
     }
 
-    private async enqueue(path: string, action: () => Promise<void>) {
+    private async enqueue<T>(path: string, action: () => Promise<T>) {
         if (this.closing) throw new Error("The library is shutting down.");
         const previous = this.jobs.get(path) ?? Promise.resolve();
-        const job = previous.catch(() => undefined).then(action);
+        const job = Promise.all([previous.catch(() => undefined), this.coverSweep]).then(action);
         this.jobs.set(path, job);
 
         try {
-            await job;
+            return await job;
         }
         finally {
             if (this.jobs.get(path) === job) this.jobs.delete(path);
         }
     }
 
-    index(path: string) {
-        if (!isAudioFile(path)) return Promise.resolve();
+    async index(path: string) {
+        if (isAudioFile(path)) await this.indexFile(path);
+    }
 
+    private indexFile(path: string, previous?: ReturnType<LibraryRepository["indexedFiles"]>[number], scanning = false) {
         return this.enqueue(path, async () => {
             const file = await stat(path);
+            if (previous?.albumArtist && previous.duration > 0 && previous.modifiedAt === file.mtimeMs && previous.size === file.size) {
+                return false;
+            }
+
             let metadata = await this.readMetadata(path);
             if (!Number.isFinite(metadata.format.duration) || !metadata.format.duration || metadata.format.duration < 0) {
                 // Some MP3 headers report zero; scan audio frames only when the quick read has no usable duration.
@@ -65,12 +75,12 @@ export class LibraryService {
             if (metadata.common.picture?.[0]) {
                 const picture = metadata.common.picture[0];
                 cover = createHash("sha256").update(picture.data).digest("hex");
-                await mkdir(this.covers, { recursive: true });
-                await writeFile(join(this.covers, cover), picture.data);
+                await this.storeCover(cover, picture.data);
             }
 
             const current = await stat(path);
-            if (current.size !== file.size || current.mtimeMs !== file.mtimeMs) {
+            if (current.dev !== file.dev || current.ino !== file.ino ||
+                current.size !== file.size || current.mtimeMs !== file.mtimeMs) {
                 throw new Error("File changed while indexing: " + path);
             }
 
@@ -83,8 +93,57 @@ export class LibraryService {
                 duration: metadata.format.duration || 0,
                 title: tags.title || basename(path, extname(path)),
                 albumArtist: tags.albumArtist || tags.artist || "Unknown artist",
-            });
+            }, scanning);
+
+            return true;
         });
+    }
+
+    private storeCover(hash: string, data: Uint8Array) {
+        const pending = this.coverWrites.get(hash);
+        if (pending) return pending;
+
+        const write = (async () => {
+            const target = join(this.covers, hash);
+            if (await access(target).then(() => true, () => false)) return;
+
+            await mkdir(this.covers, { recursive: true });
+            const temporary = join(this.covers, ".cover-" + randomUUID() + ".tmp");
+            try {
+                await writeFile(temporary, data, { flag: "wx" });
+                await link(temporary, target).catch((error: NodeJS.ErrnoException) => {
+                    if (error.code !== "EEXIST") throw error;
+                });
+            }
+            finally {
+                await rm(temporary, { force: true });
+            }
+        })().finally(() => this.coverWrites.delete(hash));
+
+        this.coverWrites.set(hash, write);
+        return write;
+    }
+
+    private pruneCovers() {
+        // Finish queued writes before reading references. New jobs wait for this sweep.
+        this.coverSweep = Promise.allSettled([this.coverSweep, ...this.jobs.values()]).then(async () => {
+            const entries = await readdir(this.covers, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+                if (error.code === "ENOENT") return [];
+                throw error;
+            });
+            if (!entries.length) return;
+
+            const referenced = new Set(this.repo.coverHashes());
+            if (!this.repo.checkpoint()) return;
+            for (const entry of entries) {
+                if (!entry.isFile() || referenced.has(entry.name)) continue;
+                if (/^[a-f0-9]{64}$|^\.cover-[a-f0-9-]{36}\.tmp$/.test(entry.name)) {
+                    await rm(join(this.covers, entry.name), { force: true });
+                }
+            }
+        }).catch((error: unknown) => console.warn("Could not prune library covers:", error));
+
+        return this.coverSweep;
     }
 
     remove(path: string) {
@@ -114,20 +173,26 @@ export class LibraryService {
 
     reconcile() {
         if (this.closing) return Promise.reject(new Error("The library is shutting down."));
-        return this.track((async () => {
-            const errors: string[] = [];
-            for (const folder of this.repo.watchedFolders()) {
-                if (this.closing) break;
-                try {
-                    const result = await this.scanFolder(folder.path, false, folder.identity);
-                    errors.push(...result.errors);
-                }
-                catch {
-                    errors.push(folder.path);
-                }
+        this.reconciliation ??= this.track(this.reconcileFolders().finally(() => {
+            this.reconciliation = undefined;
+        }));
+        return this.reconciliation;
+    }
+
+    private async reconcileFolders() {
+        const errors: string[] = [];
+        for (const folder of this.repo.watchedFolders()) {
+            if (this.closing) break;
+            try {
+                const result = await this.scanFolder(folder.path, false, folder.identity);
+                errors.push(...result.errors);
             }
-            return { errors };
-        })());
+            catch {
+                errors.push(folder.path);
+            }
+        }
+        if (!this.closing) await this.pruneCovers();
+        return { errors };
     }
 
     private async scanFolder(folder: string, importing: boolean, expectedIdentity = "") {
@@ -144,29 +209,45 @@ export class LibraryService {
         const indexed = this.repo.indexedFiles().filter((track) => track.path.startsWith(prefix));
         const known = new Map(indexed.map((track) => [track.path, track]));
 
-        const visit = async (directory: string) => {
+        const visit = async function* (directory: string): AsyncGenerator<string> {
             for (const entry of await readdir(directory, { withFileTypes: true })) {
-                if (this.closing) return;
                 const path = join(directory, entry.name);
-                try {
-                    if (entry.isDirectory()) await visit(path);
-                    else if (entry.isFile() && isAudioFile(path)) {
-                        found++;
-                        seen.add(path);
-                        const info = await stat(path);
-                        const previous = known.get(path);
-                        if (previous?.albumArtist && previous.duration > 0 && previous.modifiedAt === info.mtimeMs && previous.size === info.size) continue;
-                        await this.index(path);
-                        imported++;
+                if (entry.isDirectory()) {
+                    try {
+                        yield* visit(path);
+                    }
+                    catch {
+                        errors.push(path);
                     }
                 }
-                catch {
-                    errors.push(path);
+                else if (entry.isFile() && isAudioFile(path)) {
+                    found++;
+                    seen.add(path);
+                    yield path;
                 }
             }
         };
 
-        await visit(folder);
+        const paths = visit(folder);
+        const worker = async () => {
+            while (!this.closing) {
+                const next = await paths.next();
+                if (next.done || this.closing) return;
+
+                try {
+                    if (await this.indexFile(next.value, known.get(next.value), true)) imported++;
+                }
+                catch {
+                    errors.push(next.value);
+                }
+            }
+        };
+
+        const results = await Promise.allSettled(Array.from({ length: scanWorkers }, worker));
+        await paths.return(undefined);
+        for (const result of results) {
+            if (result.status === "rejected") throw result.reason;
+        }
         if (this.closing) return { imported, errors };
         if (folderIdentity(await stat(folder)) !== identity) return { imported, errors: [...errors, folder] };
 
@@ -214,7 +295,7 @@ export class LibraryService {
             this.closing = true;
             this.closed = (async () => {
                 await this.watching.catch(() => undefined);
-                await this.watcher?.close();
+                await this.watcher?.close().catch(console.error);
                 await Promise.allSettled(this.operations);
                 await Promise.allSettled(this.jobs.values());
                 this.repo.db.close();

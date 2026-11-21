@@ -1,5 +1,6 @@
 import {rpc} from "@/lib/rpc";
 import {getErrorMessage} from "../../../shared/errors";
+import {useStateRefresh} from "@/hooks/use-state-refresh";
 import {useEffect, useEffectEvent, useRef, useState} from "react";
 import type {DeviceFile, DeviceSyncState, MusicDevice} from "../../../shared/types/devices";
 
@@ -37,44 +38,27 @@ export function useDevices() {
     }
 
     const refreshDevices = useEffectEvent(() => {
-        if (!busy) void refresh();
+        if (!busy && !document.hidden) void refresh();
     });
 
     useEffect(() => {
-        const initial = setTimeout(refreshDevices, 0);
-        const timer = setInterval(refreshDevices, 5000);
+        if (busy) return;
+
+        const initial = setTimeout(() => refreshDevices(), 0);
+        const timer = setInterval(() => refreshDevices(), 15000);
+        const onVisible = () => refreshDevices();
+        document.addEventListener("visibilitychange", onVisible);
         return () => {
             clearTimeout(initial);
             clearInterval(timer);
+            document.removeEventListener("visibilitychange", onVisible);
         };
-    }, []);
+    }, [busy]);
 
-    useEffect(() => {
-        let active = true;
-        let pending = false;
-
-        async function poll() {
-            if (pending) return;
-            pending = true;
-            try {
-                const next = await rpc("devices.status", undefined);
-                if (active) setState(next);
-            }
-            catch (error) {
-                if (active) setError(getErrorMessage(error));
-            }
-            finally {
-                pending = false;
-            }
-        }
-
-        void poll();
-        const timer = setInterval(() => void poll(), 750);
-        return () => {
-            active = false;
-            clearInterval(timer);
-        };
-    }, []);
+    useStateRefresh("devices", async (isActive) => {
+        const next = await rpc("devices.status", undefined);
+        if (isActive()) setState(next);
+    }, (error) => setError(getErrorMessage(error)));
 
     async function browse(nextPath: string, nextStorage = storageId) {
         const request = ++browsing.current;
@@ -99,7 +83,6 @@ export function useDevices() {
         setError("");
         try {
             await operation();
-            setState(await rpc("devices.status", undefined));
         }
         catch (error) {
             setError(getErrorMessage(error));

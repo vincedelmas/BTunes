@@ -1,3 +1,4 @@
+import {userAgent} from "./http-user-agent.ts";
 import {setTimeout} from "node:timers/promises";
 import type {TagPatch} from "../../shared/types/tags.ts";
 import {recordingResponseSchema, storeMetadataResponseSchema} from "../../shared/schemas/downloads.ts";
@@ -24,7 +25,7 @@ export class DownloadMetadata {
                 limit: "5"
             }).toString();
             const response = await this.request(url, {
-                headers: { "User-Agent": "BTunes/0.1 (https://github.com/vincedelmas/BTunes)" },
+                headers: { "User-Agent": userAgent },
                 signal: AbortSignal.any([signal, AbortSignal.timeout(15000)])
             });
             if (!response.ok) throw new Error("MusicBrainz lookup failed (" + response.status + ").");

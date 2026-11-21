@@ -10,14 +10,15 @@ import {LibraryService} from "../src/main/services/library.ts";
 import {ArtworkService} from "../src/main/services/artwork.ts";
 import {scanBookmarks} from "../src/main/services/bookmarks.ts";
 import {DownloaderService} from "../src/main/services/downloads.ts";
+import {DownloadTools} from "../src/main/services/download-tools.ts";
 import {LibraryRepository} from "../src/main/repositories/library.ts";
 import {DownloadRepository} from "../src/main/repositories/downloads.ts";
 import {downloadProcess} from "../src/main/services/download-process.ts";
 import {DownloadMetadata} from "../src/main/services/download-metadata.ts";
 import {downloaderSettingsSchema} from "../src/shared/schemas/downloads.ts";
 import {compileBookmarkPattern, youtubeVideoId} from "../src/shared/bookmarks.ts";
-import {mkdtemp, mkdir, writeFile, copyFile, readFile, rm} from "node:fs/promises";
 import type {DownloadRunner, DownloadToolProvider} from "../src/main/types/downloads.ts";
+import {copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile} from "node:fs/promises";
 
 const execute = promisify(execFile);
 const id = "BaW_jenozKc";
@@ -224,3 +225,33 @@ for (const missingRelease of [false, true]) {
         assert.equal(result.year, 2001);
     });
 }
+
+void test("managed tool cleanup preserves usable installed versions and recovery copies when a binary is missing", async () => {
+    const root = await mkdtemp(join(tmpdir(), "btunes-managed-tools-"));
+    const ffmpeg = join(root, "ffmpeg");
+    const ytDlp = join(root, "yt-dlp");
+    const tools = new DownloadTools(root, () => {});
+
+    try {
+        for (const parent of [ffmpeg, ytDlp]) {
+            for (const version of ["current", "old", ".pending-1234"]) {
+                await mkdir(join(parent, version), { recursive: true });
+            }
+        }
+        await writeFile(join(root, "versions.json"), JSON.stringify({ "yt-dlp": "current", ffmpeg: "current" }));
+        await writeFile(join(ytDlp, "current", "yt-dlp"), "fixture");
+        await writeFile(join(ffmpeg, "current", "ffmpeg"), "fixture");
+
+        await tools.pruneInactive();
+        assert.deepEqual((await readdir(ffmpeg)).sort(), [".pending-1234", "current", "old"]);
+
+        await writeFile(join(ffmpeg, "current", "ffprobe"), "fixture");
+        await tools.pruneInactive();
+        assert.deepEqual(await readdir(ffmpeg), ["current"]);
+        assert.deepEqual(await readdir(ytDlp), ["current"]);
+        assert.equal(tools.ffmpeg(), join(ffmpeg, "current", "ffmpeg"));
+    }
+    finally {
+        await rm(root, { recursive: true, force: true });
+    }
+});

@@ -1,6 +1,7 @@
 import {promisify} from "node:util";
 import {readFile} from "node:fs/promises";
-import {execFile} from "node:child_process";
+import {createInterface} from "node:readline";
+import {execFile, spawn} from "node:child_process";
 
 
 const execute = promisify(execFile);
@@ -38,11 +39,16 @@ async function ownsProcess(pid: number) {
 export class StreamVolumeService {
     private busy = false;
     private closed = false;
+    private playing = false;
+    private refreshAgain = false;
+    private subscription?: ReturnType<typeof spawn>;
+    private retry?: ReturnType<typeof setTimeout>;
+    private eventTimer?: ReturnType<typeof setTimeout>;
+    private fallback?: ReturnType<typeof setInterval>;
     private dirty = false;
     private revision = 0;
     private volume: number | undefined;
     private streams = new Set<number>();
-    private timer: ReturnType<typeof setInterval> | undefined;
     private reported: { volume: number; native: boolean } | undefined;
 
     private readonly run: typeof runPactl;
@@ -60,16 +66,65 @@ export class StreamVolumeService {
     }
 
     start() {
-        this.timer = setInterval(() => void this.refresh(), 300);
-        this.timer.unref();
+        if (this.closed || this.subscription || this.retry) return;
+
+        const subscription = spawn("pactl", ["subscribe"], {
+            env: { ...process.env, LC_ALL: "C" },
+            stdio: ["ignore", "pipe", "ignore"],
+        });
+        this.subscription = subscription;
+        const lines = createInterface({ input: subscription.stdout });
+        lines.on("line", (line) => {
+            clearInterval(this.fallback);
+            this.fallback = undefined;
+            const change = /^Event '(new|change|remove)' on sink-input #(\d+)$/.exec(line);
+            if (!change || this.eventTimer || this.closed) return;
+            if (change[1] !== "new" && !this.streams.has(Number(change[2]))) return;
+
+            this.eventTimer = setTimeout(() => {
+                this.eventTimer = undefined;
+                void this.refresh();
+            }, 50);
+            this.eventTimer.unref();
+        });
+        subscription.on("spawn", () => {
+            void this.refresh();
+        });
+        subscription.on("error", () => {
+            // The close handler handles both missing pactl and a lost audio server.
+        });
+        subscription.once("close", () => {
+            this.subscription = undefined;
+            if (this.closed) return;
+
+            this.streams.clear();
+            void this.refresh();
+
+            if (!this.fallback) {
+                this.fallback = setInterval(() => {
+                    if (this.playing) void this.refresh();
+                }, 2000);
+                this.fallback.unref();
+            }
+
+            this.retry = setTimeout(() => {
+                this.retry = undefined;
+                this.start();
+            }, 30000);
+            this.retry.unref();
+        });
     }
 
     close() {
         this.closed = true;
-        clearInterval(this.timer);
+        clearTimeout(this.retry);
+        clearTimeout(this.eventTimer);
+        clearInterval(this.fallback);
+        this.subscription?.kill();
     }
 
-    setVolume(volume: number) {
+    setVolume(volume: number, playing = this.playing) {
+        this.playing = playing;
         // A reloaded renderer needs the current output mode even when volume is unchanged.
         this.reported = undefined;
         if (this.volume === volume) return this.refresh();
@@ -89,7 +144,11 @@ export class StreamVolumeService {
     }
 
     async refresh() {
-        if (this.closed || this.busy || this.volume === undefined) return;
+        if (this.closed || this.volume === undefined) return;
+        if (this.busy) {
+            this.refreshAgain = true;
+            return;
+        }
 
         this.busy = true;
         const revision = this.revision;
@@ -147,6 +206,10 @@ export class StreamVolumeService {
         }
         finally {
             this.busy = false;
+            if (this.refreshAgain) {
+                this.refreshAgain = false;
+                await this.refresh();
+            }
         }
     }
 }

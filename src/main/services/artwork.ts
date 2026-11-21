@@ -1,4 +1,5 @@
 import {execFile} from "node:child_process";
+import {userAgent} from "./http-user-agent.ts";
 import {createHash, randomUUID} from "node:crypto";
 import type {ArtworkCandidate} from "../../shared/types/artwork.ts";
 import {artworkSearchResponseSchema, releaseGroupSearchSchema} from "../../shared/schemas/artwork.ts";
@@ -141,7 +142,7 @@ export class ArtworkService {
         url.search = new URLSearchParams({ query, fmt: "json", limit: String(maxSuggestions) }).toString();
         const response = await this.request(url, {
             signal: AbortSignal.timeout(8000),
-            headers: { "User-Agent": "BTunes/0.1 (https://github.com/vincedelmas/BTunes)" },
+            headers: { "User-Agent": userAgent },
         });
         if (!response.ok) throw new Error("Cover search is unavailable. Try again shortly.");
 

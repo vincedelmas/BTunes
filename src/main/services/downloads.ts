@@ -21,6 +21,8 @@ import type {DownloadItem, DownloadSnapshot, DownloaderSettings} from "../../sha
 export class DownloaderService {
     private revision = 0;
     private scanning = false;
+    private entering?: Promise<void>;
+    private readonly notify: () => void;
     private restoration?: Promise<void>;
     private error = "";
     private items = new Map<string, DownloadItem>();
@@ -37,17 +39,19 @@ export class DownloaderService {
     private readonly run: DownloadRunner;
     private readonly metadata = new DownloadMetadata();
 
-    constructor(repo: DownloadRepository, library: LibraryService, artwork: Pick<ArtworkService, "search" | "get">, tools: DownloadToolProvider, root: string, run: DownloadRunner = downloadProcess) {
+    constructor(repo: DownloadRepository, library: LibraryService, artwork: Pick<ArtworkService, "search" | "get">, tools: DownloadToolProvider, root: string, run: DownloadRunner = downloadProcess, notify = () => {}) {
         this.repo = repo;
         this.library = library;
         this.artwork = artwork;
         this.tools = tools;
         this.root = root;
         this.run = run;
+        this.notify = notify;
     }
 
     changed() {
         this.revision++;
+        this.notify();
     }
 
     snapshot(revision?: number): DownloadSnapshot | null {
@@ -69,7 +73,14 @@ export class DownloaderService {
         return settings;
     }
 
-    async enter() {
+    enter() {
+        this.entering ??= this.prepare().finally(() => {
+            this.entering = undefined;
+        });
+        return this.entering;
+    }
+
+    private async prepare() {
         void this.tools.check();
         try {
             await this.restore();
@@ -115,7 +126,7 @@ export class DownloaderService {
             const history = this.repo.history();
             const next = new Map<string, DownloadItem>();
             const key = (value: string) => value.normalize("NFKC").trim().toLowerCase();
-            const libraryTracks = this.library.repo.snapshot().tracks;
+            const libraryTracks = this.library.repo.downloadMatches();
             const byTags = new Map<string, string[]>();
             const byFilename = new Map<string, string[]>();
             for (const track of libraryTracks) {
@@ -374,13 +385,15 @@ export class DownloaderService {
 
     async close() {
         this.cancel();
-        await this.tools.close();
-        await this.batch;
+        const operations = await Promise.allSettled([this.tools.close(), this.entering, this.batch]);
         await Promise.allSettled(this.publishing);
         await Promise.allSettled(this.discarding.values());
         for (const [id, stage] of this.stages) {
             const item = this.items.get(id);
             if (item?.status === "review") this.repo.saveReview(item, stage);
+        }
+        for (const operation of operations) {
+            if (operation.status === "rejected") throw operation.reason;
         }
     }
 }

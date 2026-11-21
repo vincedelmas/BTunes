@@ -61,12 +61,16 @@ export type RpcInput<K extends keyof typeof rpcSchemas> = z.infer<(typeof rpcSch
 export type Rpc = <K extends keyof RpcOutputs>(method: K, input: RpcInput<K>) => Promise<RpcOutputs[K]>;
 
 
+export type StateTopic = "library" | "downloads" | "devices" | "updates";
+
+
 declare global {
     interface Window {
         btunes: {
             rpc: Rpc;
             nativeMedia: boolean;
             filePaths: (files: File[]) => string[];
+            onStateChanged: (listener: (topics: StateTopic[]) => void) => () => void;
             onMediaCommand: (listener: (command: MediaCommand) => void) => () => void;
         };
     }

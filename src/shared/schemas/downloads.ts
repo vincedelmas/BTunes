@@ -5,7 +5,10 @@ import {compileBookmarkPattern} from "../bookmarks.ts";
 
 export const downloadRevisionSchema = z.object({ revision: z.number().int().nonnegative().optional() });
 
-export const toolManifestSchema = z.record(z.string(), z.string().regex(/^[A-Za-z0-9._-]{1,100}$/));
+export const toolVersionSchema = z.string().regex(/^[A-Za-z0-9._-]{1,100}$/)
+    .refine((version) => version !== "." && version !== "..");
+
+export const toolManifestSchema = z.record(z.string(), toolVersionSchema);
 
 export const downloadIdsSchema = z.object({ ids: z.array(z.string().regex(/^[\w-]{11}$/)).min(1).max(10000) });
 
@@ -38,7 +41,7 @@ export const publishDownloadSchema = z.object({
 
 
 export const releaseSchema = z.object({
-    tag_name: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/),
+    tag_name: toolVersionSchema,
     assets: z.array(z.object({
         name: z.string(),
         browser_download_url: z.url(),

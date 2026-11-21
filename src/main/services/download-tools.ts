@@ -1,11 +1,12 @@
 import {join} from "node:path";
 import {promisify} from "node:util";
 import {execFile} from "node:child_process";
+import {userAgent} from "./http-user-agent.ts";
 import {createHash, randomUUID} from "node:crypto";
 import {getErrorMessage} from "../../shared/errors.ts";
 import type {ToolStatus} from "../../shared/types/downloads.ts";
-import {releaseSchema, toolManifestSchema} from "../../shared/schemas/downloads.ts";
-import {mkdir, readFile, writeFile, rename, chmod, rm, access} from "node:fs/promises";
+import {access, chmod, mkdir, readdir, readFile, rename, rm, writeFile} from "node:fs/promises";
+import {releaseSchema, toolManifestSchema, toolVersionSchema} from "../../shared/schemas/downloads.ts";
 
 const execute = promisify(execFile);
 const specifications = [
@@ -38,6 +39,23 @@ export class DownloadTools {
         return this.status.ready ? this.path("ffmpeg") : "ffmpeg";
     }
 
+    async pruneInactive() {
+        await this.load();
+        if (!this.status.ready) return;
+
+        // Run before accepting work so older binaries can never be removed from a running job.
+        for (const { key } of specifications) {
+            const parent = join(this.root, key);
+            const entries = await readdir(parent, { withFileTypes: true });
+            for (const entry of entries) {
+                if (!entry.isDirectory() || entry.name === this.versions[key]) continue;
+                if (toolVersionSchema.safeParse(entry.name).success) {
+                    await rm(join(parent, entry.name), { recursive: true, force: true });
+                }
+            }
+        }
+    }
+
     private async load() {
         try {
             this.versions = toolManifestSchema.parse(JSON.parse(await readFile(join(this.root, "versions.json"), "utf8")));
@@ -46,7 +64,8 @@ export class DownloadTools {
             if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
         }
         const paths = [this.path("yt-dlp"), this.path("ffmpeg"), this.path("ffmpeg", "ffprobe")];
-        this.status.ready = (await Promise.all(paths.map((path) => access(path).then(() => true, () => false)))).every(Boolean);
+        this.status.ready = specifications.every(({ key }) => Object.hasOwn(this.versions, key)) &&
+            (await Promise.all(paths.map((path) => access(path).then(() => true, () => false)))).every(Boolean);
         this.status.versions = { ...this.versions };
     }
 
@@ -77,7 +96,7 @@ export class DownloadTools {
         if (process.platform !== "linux" || process.arch !== "x64") throw new Error("Managed downloader tools currently support Linux x64.");
         for (const spec of specifications) {
             const response = await fetch("https://api.github.com/repos/" + spec.repo + "/releases/latest", {
-                headers: { "User-Agent": "BTunes/0.1 (github.com/vincedelmas/BTunes)" }, signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(20000)]),
+                headers: { "User-Agent": userAgent }, signal: AbortSignal.any([this.controller.signal, AbortSignal.timeout(20000)]),
             });
             if (!response.ok) throw new Error("Cannot check " + spec.key + " updates (" + response.status + "). Installed tools are kept.");
             const release = releaseSchema.parse(await response.json());
@@ -116,10 +135,17 @@ export class DownloadTools {
                     if (error.code !== "EEXIST" && error.code !== "ENOTEMPTY") throw error;
                     await access(join(target, spec.key));
                 });
-                this.versions[spec.key] = release.tag_name;
+                const versions = { ...this.versions, [spec.key]: release.tag_name };
                 const manifest = join(this.root, ".versions-" + randomUUID());
-                await writeFile(manifest, JSON.stringify(this.versions));
-                await rename(manifest, join(this.root, "versions.json"));
+                try {
+                    await writeFile(manifest, JSON.stringify(versions), { flag: "wx" });
+                    await rename(manifest, join(this.root, "versions.json"));
+                    this.versions = versions;
+                    this.status.versions = { ...versions };
+                }
+                finally {
+                    await rm(manifest, { force: true });
+                }
             }
             finally {
                 await rm(staging, { recursive: true, force: true });

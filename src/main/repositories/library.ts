@@ -9,13 +9,15 @@ import {folders, playlists, playlistTracks, tracks} from "../database/schema.ts"
 
 
 export class LibraryRepository {
-    revision = 0;
+    private currentRevision = 0;
+    private readonly changed: () => void;
     readonly db: DatabaseSync;
     private readonly queries: ReturnType<typeof drizzle>;
 
-    constructor(file: string, migrationsFolder = resolve("drizzle")) {
+    constructor(file: string, migrationsFolder = resolve("drizzle"), changed = () => {}) {
+        this.changed = changed;
         this.db = new DatabaseSync(file);
-        this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
+        this.db.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON;");
         this.queries = drizzle({ client: this.db });
 
         try {
@@ -25,6 +27,43 @@ export class LibraryRepository {
             this.db.close();
             throw error;
         }
+    }
+
+    get revision() {
+        return this.currentRevision;
+    }
+
+    private bumpRevision() {
+        this.currentRevision++;
+        this.changed();
+    }
+
+    genres() {
+        // Preserve the spelling frequency and tie order used by the library UI.
+        return this.queries.select({ genre: tracks.genre })
+            .from(tracks)
+            .orderBy(tracks.artist, tracks.album, tracks.title)
+            .all()
+            .map((track) => track.genre);
+    }
+
+    downloadMatches() {
+        return this.queries.select({
+            path: tracks.path,
+            title: tracks.title,
+            artist: tracks.artist,
+            albumArtist: tracks.albumArtist,
+        }).from(tracks).all();
+    }
+
+    checkpoint() {
+        const result = this.db.prepare("PRAGMA wal_checkpoint(PASSIVE);").get();
+        return result?.log === result?.checkpointed;
+    }
+
+    coverHashes() {
+        return this.queries.selectDistinct({ cover: tracks.cover })
+            .from(tracks).all().map((track) => track.cover);
     }
 
     snapshot(): Snapshot {
@@ -59,16 +98,23 @@ export class LibraryRepository {
             .get();
     }
 
-    upsert(track: IndexedTrack) {
-        this.queries
-            .insert(tracks)
-            .values(track)
-            .onConflictDoUpdate({
-                set: track,
-                target: tracks.path,
-            }).run();
+    upsert(track: IndexedTrack, scanning = false) {
+        // Scan results are rebuildable. Keep FULL durability for user edits and playlists.
+        if (scanning) this.db.exec("PRAGMA synchronous = NORMAL;");
+        try {
+            this.queries
+                .insert(tracks)
+                .values(track)
+                .onConflictDoUpdate({
+                    set: track,
+                    target: tracks.path,
+                }).run();
+        }
+        finally {
+            if (scanning) this.db.exec("PRAGMA synchronous = FULL;");
+        }
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     favorite(id: number) {
@@ -78,7 +124,7 @@ export class LibraryRepository {
             .where(eq(tracks.id, id))
             .run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     played(id: number) {
@@ -91,7 +137,7 @@ export class LibraryRepository {
             .where(eq(tracks.id, id))
             .run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     folder(path: string, identity = "") {
@@ -101,7 +147,7 @@ export class LibraryRepository {
             .onConflictDoUpdate({ target: folders.path, set: { identity } })
             .run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     watchedFolders() {
@@ -129,7 +175,7 @@ export class LibraryRepository {
             .where(eq(tracks.path, path))
             .run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     create(name: string, rule?: string) {
@@ -139,7 +185,7 @@ export class LibraryRepository {
             .returning({ id: playlists.id })
             .get()!.id;
 
-        this.revision++;
+        this.bumpRevision();
 
         return result;
     }
@@ -153,7 +199,7 @@ export class LibraryRepository {
 
         if (!updated) throw new Error("Playlist not found.");
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     deletePlaylist(id: number) {
@@ -163,7 +209,7 @@ export class LibraryRepository {
 
         if (!deleted) throw new Error("Playlist not found.");
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     private requireClassicPlaylist(id: number) {
@@ -189,7 +235,7 @@ export class LibraryRepository {
             .onConflictDoNothing()
             .run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     removeFromPlaylist(playlistId: number, input: number | number[]) {
@@ -205,7 +251,7 @@ export class LibraryRepository {
                 inArray(playlistTracks.trackId, ids),
             )).run();
 
-        this.revision++;
+        this.bumpRevision();
     }
 
     playlist(id: number) {
