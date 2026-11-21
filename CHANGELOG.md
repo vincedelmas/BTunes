@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/vincedelmas/BTunes/compare/v1.4.1...v1.4.2) (2026-11-21)
+
+
+### Performance Improvements
+
+* improve BTunes reliability and library performance ([8e38bef](https://github.com/vincedelmas/BTunes/commit/8e38befbb8305c9fbcca2ecf5fc442131e354b61))
+
 ## [1.4.1](https://github.com/vincedelmas/BTunes/compare/v1.4.0...v1.4.1) (2026-11-21)
 
 
